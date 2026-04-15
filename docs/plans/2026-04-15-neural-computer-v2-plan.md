@@ -70,7 +70,7 @@ neural-computer/
 │   │   └── handle-intent.ts              # intent dispatcher (LLM stub) — Task 7
 │   ├── app/                              # React mounting — imports from renderer + orchestrator
 │   │   ├── index.ts
-│   │   └── loop.tsx                      # top-level runOrchestrator — Task 10
+│   │   └── nc-app.tsx                    # top-level NCApp component — Task 10
 │   └── integration.test.tsx              # end-to-end test — Task 11
 ├── .eslintrc.cjs                         # buffer-isolation lint rule — Task 12
 ├── vitest.config.ts                      # Task 1
@@ -106,12 +106,11 @@ Edit `package.json`:
 }
 ```
 
-- [ ] **Step 2: Add missing devDeps — @testing-library/react is present; add @testing-library/jest-dom for matchers, react-dom for jsdom rendering**
+- [ ] **Step 2: Add missing devDep — react-dom for jsdom rendering**
 
-Append to `devDependencies` in `package.json`:
+`@testing-library/react` is already present in `package.json`. It requires `react-dom` at runtime for jsdom rendering, so add it as a devDep:
 
 ```json
-    "@testing-library/jest-dom": "^6.1.5",
     "react-dom": "^19.0.0"
 ```
 
@@ -224,11 +223,14 @@ describe("NC core types", () => {
     >();
   });
 
-  it("NCRuntime exposes stagingBuffer, durableStore, emitIntent, destroy", () => {
+  it("NCRuntime exposes stagingBuffer, durableStore, emitIntent, setIntentHandler, destroy", () => {
     expectTypeOf<NCRuntime>().toHaveProperty("stagingBuffer").toEqualTypeOf<StagingBuffer>();
     expectTypeOf<NCRuntime>().toHaveProperty("durableStore").toEqualTypeOf<ObservableDataModel>();
     expectTypeOf<NCRuntime>().toHaveProperty("emitIntent").toEqualTypeOf<
       (event: IntentEvent) => Promise<void>
+    >();
+    expectTypeOf<NCRuntime>().toHaveProperty("setIntentHandler").toEqualTypeOf<
+      (handler: NCIntentHandler) => void
     >();
     expectTypeOf<NCRuntime>().toHaveProperty("destroy").toEqualTypeOf<() => void>();
   });
@@ -282,19 +284,36 @@ export type NCCatalogVersion = string & { readonly __brand: "NCCatalogVersion" }
  * loop. The staging buffer and durable store are shared references
  * between the React renderer, the LLM Observer (headless renderer,
  * planned), and the orchestrator's memoryjs transactions.
+ *
+ * The intent handler is bound LAZILY via setIntentHandler, not at
+ * construction time. This matches React's useEffect lifecycle: the
+ * runtime is created synchronously at app start, but the setTree
+ * reference the stub handler needs only exists after the React app
+ * mounts and useState runs. NCApp handles this wiring internally so
+ * most callers never touch setIntentHandler directly.
  */
 export interface NCRuntime {
   /** Shared staging buffer for in-progress user input. */
   stagingBuffer: StagingBuffer;
-  /** Memoryjs-backed ObservableDataModel for durable state. */
+  /** Memoryjs-backed (or in-memory) ObservableDataModel for durable state. */
   durableStore: ObservableDataModel;
   /**
    * Emit an IntentEvent through NC's backpressure gate. Rejects the
    * event synchronously (and logs) if another intent is already in
-   * flight. Returns when the handler has finished.
+   * flight. Returns when the currently-bound handler has finished.
+   * If no handler has been bound via setIntentHandler, logs a warning
+   * and returns immediately without processing.
    */
   emitIntent: (event: IntentEvent) => Promise<void>;
-  /** Release resources. Dispose the memoryjs adapter and clear any held references. */
+  /**
+   * Install (or replace) the intent handler. The React app calls
+   * this in a useEffect after useState has provided a setTree
+   * reference that the handler can capture. Installing a second
+   * handler replaces the first immediately; any in-flight intent
+   * continues to run with the old handler until it resolves.
+   */
+  setIntentHandler: (handler: NCIntentHandler) => void;
+  /** Release resources. Idempotent. */
   destroy: () => void;
 }
 ```
@@ -502,6 +521,19 @@ export const ncStarterCatalog = createCatalog({
     Button: {
       props: z.object({
         label: z.string(),
+        // Action declaration. NC's Button fires ActionProvider.execute
+        // with this action when clicked. The name must match an entry
+        // in the catalog's `actions` map. Params are optional and may
+        // contain DynamicValue literals ({path: "..."}) that the
+        // staging-aware resolver will substitute at dispatch time.
+        action: z
+          .object({
+            name: z.string(),
+            params: z
+              .record(z.string(), z.unknown())
+              .optional(),
+          })
+          .optional(),
       }),
       description:
         "Fires a catalog action via ActionProvider. Action declared via props.action.",
@@ -1025,53 +1057,33 @@ Create `src/runtime/context.test.ts`:
 
 ```typescript
 import { describe, it, expect, vi } from "vitest";
-import {
-  ManagerContext,
-  createObservableDataModelFromGraph,
-} from "@danielsimonjr/memoryjs";
-import type { IntentEvent } from "@json-ui/core";
-import { promises as fs } from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
+import { createObservableDataModel, type IntentEvent } from "@json-ui/core";
 import { createNCRuntime } from "./context";
-import { defaultNCProjection } from "../memory";
 
-async function makeTempStoragePath(): Promise<string> {
-  const dir = await fs.mkdtemp(join(tmpdir(), "nc-runtime-"));
-  return join(dir, "memory.jsonl");
-}
+// Note: tests use core's in-memory createObservableDataModel rather than
+// the memoryjs adapter because this test verifies the NC runtime wrapper,
+// not memoryjs integration. A separate integration test (Task 11) exercises
+// the memoryjs adapter end-to-end.
 
 describe("createNCRuntime", () => {
   it("returns a runtime with all required handles", async () => {
-    const storagePath = await makeTempStoragePath();
-    const ctx = new ManagerContext(storagePath);
-    const durableStore = await createObservableDataModelFromGraph(ctx.storage, {
-      projection: defaultNCProjection,
-    });
-    const onIntent = vi.fn(async () => {});
-
-    const runtime = await createNCRuntime({
-      durableStore,
-      onIntent,
-    });
+    const durableStore = createObservableDataModel({});
+    const runtime = await createNCRuntime({ durableStore });
 
     expect(runtime.stagingBuffer).toBeDefined();
     expect(runtime.durableStore).toBe(durableStore);
     expect(typeof runtime.emitIntent).toBe("function");
+    expect(typeof runtime.setIntentHandler).toBe("function");
     expect(typeof runtime.destroy).toBe("function");
 
     runtime.destroy();
   });
 
-  it("emitIntent forwards events to the user-provided handler", async () => {
-    const storagePath = await makeTempStoragePath();
-    const ctx = new ManagerContext(storagePath);
-    const durableStore = await createObservableDataModelFromGraph(ctx.storage, {
-      projection: defaultNCProjection,
-    });
-    const onIntent = vi.fn(async () => {});
-
-    const runtime = await createNCRuntime({ durableStore, onIntent });
+  it("emitIntent forwards events to the currently-bound handler", async () => {
+    const durableStore = createObservableDataModel({});
+    const runtime = await createNCRuntime({ durableStore });
+    const handler = vi.fn(async () => {});
+    runtime.setIntentHandler(handler);
 
     const event: IntentEvent = {
       action_name: "submit_form",
@@ -1082,18 +1094,37 @@ describe("createNCRuntime", () => {
 
     await runtime.emitIntent(event);
 
-    expect(onIntent).toHaveBeenCalledTimes(1);
-    expect(onIntent).toHaveBeenCalledWith(event);
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler).toHaveBeenCalledWith(event);
 
     runtime.destroy();
   });
 
+  it("warns (does not throw) when emitIntent is called before setIntentHandler", async () => {
+    const durableStore = createObservableDataModel({});
+    const runtime = await createNCRuntime({ durableStore });
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const event: IntentEvent = {
+      action_name: "submit_form",
+      action_params: {},
+      staging_snapshot: {},
+      timestamp: Date.now(),
+    };
+
+    // No handler set yet — should warn and return, not throw.
+    await expect(runtime.emitIntent(event)).resolves.toBeUndefined();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("setIntentHandler"),
+    );
+
+    warnSpy.mockRestore();
+    runtime.destroy();
+  });
+
   it("rejects new intents while one is in flight (NC Invariant 10)", async () => {
-    const storagePath = await makeTempStoragePath();
-    const ctx = new ManagerContext(storagePath);
-    const durableStore = await createObservableDataModelFromGraph(ctx.storage, {
-      projection: defaultNCProjection,
-    });
+    const durableStore = createObservableDataModel({});
+    const runtime = await createNCRuntime({ durableStore });
 
     // Hold the handler on a deferred promise so we can interleave calls.
     let resolveFirst: () => void = () => {};
@@ -1101,14 +1132,13 @@ describe("createNCRuntime", () => {
       resolveFirst = r;
     });
     let firstCallCount = 0;
-    const onIntent = vi.fn(async () => {
+    const handler = vi.fn(async () => {
       firstCallCount++;
       if (firstCallCount === 1) {
         await firstDone;
       }
     });
-
-    const runtime = await createNCRuntime({ durableStore, onIntent });
+    runtime.setIntentHandler(handler);
 
     const event: IntentEvent = {
       action_name: "submit_form",
@@ -1121,10 +1151,10 @@ describe("createNCRuntime", () => {
     const firstPromise = runtime.emitIntent(event);
 
     // Fire the second intent — should be rejected synchronously
-    // without calling onIntent again.
+    // (returns without calling the handler again).
     await runtime.emitIntent(event);
 
-    expect(onIntent).toHaveBeenCalledTimes(1);
+    expect(handler).toHaveBeenCalledTimes(1);
 
     // Release the first.
     resolveFirst();
@@ -1133,18 +1163,32 @@ describe("createNCRuntime", () => {
     runtime.destroy();
   });
 
-  it("destroy disposes the underlying adapter and becomes inert", async () => {
-    const storagePath = await makeTempStoragePath();
-    const ctx = new ManagerContext(storagePath);
-    const durableStore = await createObservableDataModelFromGraph(ctx.storage, {
-      projection: defaultNCProjection,
-    });
-    const onIntent = vi.fn(async () => {});
+  it("setIntentHandler replaces the previously-bound handler", async () => {
+    const durableStore = createObservableDataModel({});
+    const runtime = await createNCRuntime({ durableStore });
+    const first = vi.fn(async () => {});
+    const second = vi.fn(async () => {});
+    runtime.setIntentHandler(first);
+    runtime.setIntentHandler(second);
 
-    const runtime = await createNCRuntime({ durableStore, onIntent });
+    const event: IntentEvent = {
+      action_name: "x",
+      action_params: {},
+      staging_snapshot: {},
+      timestamp: Date.now(),
+    };
+    await runtime.emitIntent(event);
+
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledTimes(1);
+
     runtime.destroy();
+  });
 
-    // A second destroy is a no-op (idempotent).
+  it("destroy is idempotent", async () => {
+    const durableStore = createObservableDataModel({});
+    const runtime = await createNCRuntime({ durableStore });
+    runtime.destroy();
     expect(() => runtime.destroy()).not.toThrow();
   });
 });
@@ -1168,10 +1212,17 @@ import {
 import type { NCIntentHandler, NCRuntime } from "../types";
 
 /**
- * Options for createNCRuntime. The caller supplies a memoryjs-backed
- * ObservableDataModel (built separately via
- * createObservableDataModelFromGraph) and an onIntent handler that
- * does the actual LLM dispatch.
+ * Options for createNCRuntime. The caller supplies an
+ * ObservableDataModel (typically built from memoryjs via
+ * createObservableDataModelFromGraph, or from core's in-memory
+ * createObservableDataModel for tests).
+ *
+ * The intent handler is NOT part of the options — it is installed
+ * later via runtime.setIntentHandler. This matches the React
+ * lifecycle: the runtime is created synchronously at app start, but
+ * the setTree reference the handler captures only exists after the
+ * React app mounts and useState runs. NCApp (Task 10) handles this
+ * wiring internally.
  *
  * The runtime owns the staging buffer — it creates a fresh one per
  * call. The durable store is caller-owned because memoryjs adapters
@@ -1181,15 +1232,19 @@ import type { NCIntentHandler, NCRuntime } from "../types";
  */
 export interface CreateNCRuntimeOptions {
   durableStore: ObservableDataModel;
-  onIntent: NCIntentHandler;
 }
+
+const NO_HANDLER_WARNING =
+  "[NC runtime] emitIntent called before setIntentHandler; ignoring. " +
+  "Make sure NCApp has mounted and called setIntentHandler in its useEffect " +
+  "before any action can fire.";
 
 /**
  * Create an NC runtime handle. Creates a fresh StagingBuffer via
- * @json-ui/core's createStagingBuffer factory, wires the caller's
- * onIntent handler through a backpressure gate (NC Invariant 10 —
- * new intents are rejected while one is in flight), and returns
- * the handle.
+ * @json-ui/core's createStagingBuffer factory, holds a mutable slot
+ * for the intent handler (wired later via setIntentHandler), and
+ * gates every emit through a backpressure flag (NC Invariant 10 —
+ * new intents are rejected while one is in flight).
  *
  * The factory is async to leave room for future initialization
  * steps (e.g., hydrating a persisted staging buffer, handshaking
@@ -1200,12 +1255,17 @@ export async function createNCRuntime(
   options: CreateNCRuntimeOptions,
 ): Promise<NCRuntime> {
   const stagingBuffer = createStagingBuffer();
+  let intentHandler: NCIntentHandler | null = null;
   let intentInFlight = false;
   let destroyed = false;
 
   const emitIntent = async (event: IntentEvent): Promise<void> => {
     if (destroyed) {
       console.warn("[NC runtime] emitIntent called after destroy; ignoring.");
+      return;
+    }
+    if (intentHandler === null) {
+      console.warn(NO_HANDLER_WARNING);
       return;
     }
     if (intentInFlight) {
@@ -1218,25 +1278,43 @@ export async function createNCRuntime(
       );
       return;
     }
+    // Capture the current handler before awaiting. If setIntentHandler
+    // is called again during the handler's execution, the in-flight
+    // call still runs against its original handler — swaps take effect
+    // on the next emit.
+    const currentHandler = intentHandler;
     intentInFlight = true;
     try {
-      await options.onIntent(event);
+      await currentHandler(event);
     } finally {
       intentInFlight = false;
     }
   };
 
+  const setIntentHandler = (handler: NCIntentHandler): void => {
+    if (destroyed) {
+      console.warn(
+        "[NC runtime] setIntentHandler called after destroy; ignoring.",
+      );
+      return;
+    }
+    intentHandler = handler;
+  };
+
   const destroy = (): void => {
     if (destroyed) return;
     destroyed = true;
+    intentHandler = null;
     // The durableStore is caller-owned; we don't dispose it here.
-    // Caller disposes via `adapter.dispose()` on the memoryjs side.
+    // If it's a memoryjs adapter, the caller disposes it via
+    // adapter.dispose() after runtime.destroy().
   };
 
   return {
     stagingBuffer,
     durableStore: options.durableStore,
     emitIntent,
+    setIntentHandler,
     destroy,
   };
 }
@@ -1448,30 +1526,19 @@ import { NCRenderer } from "./nc-renderer";
 import { createNCRuntime } from "../runtime";
 import { ncStarterCatalog, NC_CATALOG_VERSION } from "../catalog";
 
-async function mountWithRuntime(
-  tree: UITree,
-  onIntent: (event: IntentEvent) => void,
-) {
+// Build an NC runtime with the given intent observer already wired via
+// setIntentHandler, so tests can assert onIntent reception without
+// repeating the two-step construction pattern in every test body.
+async function makeRuntime(onIntent: (event: IntentEvent) => void) {
   const durableStore = createObservableDataModel({});
-  const runtime = await createNCRuntime({
-    durableStore,
-    onIntent: async (e) => onIntent(e),
-  });
-  return { runtime };
+  const runtime = await createNCRuntime({ durableStore });
+  runtime.setIntentHandler(async (event) => onIntent(event));
+  return runtime;
 }
 
 describe("NCRenderer", () => {
   it("renders a simple Text tree from the NC starter catalog", async () => {
-    const { runtime } = await mountWithRuntime(
-      {
-        root: "r",
-        elements: {
-          r: { key: "r", type: "Text", props: { content: "hello" } },
-        },
-      },
-      () => {},
-    );
-
+    const runtime = await makeRuntime(() => {});
     render(
       <NCRenderer
         tree={{
@@ -1498,7 +1565,7 @@ describe("NCRenderer", () => {
         b: { key: "b", type: "TextField", props: { id: "name", label: "Name" } },
       },
     };
-    const { runtime } = await mountWithRuntime(initialTree, () => {});
+    const runtime = await makeRuntime(() => {});
     runtime.stagingBuffer.set("email", "a@b.c");
     runtime.stagingBuffer.set("name", "Alice");
     runtime.stagingBuffer.set("orphan", "drop me");
@@ -1558,7 +1625,7 @@ describe("NCRenderer", () => {
       },
     };
     const onIntent = vi.fn();
-    const { runtime } = await mountWithRuntime(tree, onIntent);
+    const runtime = await makeRuntime(onIntent);
     runtime.stagingBuffer.set("email", "alice@example.com");
 
     render(
@@ -1590,7 +1657,7 @@ describe("NCRenderer", () => {
         a: { key: "a", type: "TextField", props: { id: "email", label: "E" } },
       },
     };
-    const { runtime } = await mountWithRuntime(initialTree, () => {});
+    const runtime = await makeRuntime(() => {});
     runtime.stagingBuffer.set("email", "keep-me");
 
     const { rerender } = render(
@@ -1651,6 +1718,7 @@ import {
 import {
   collectFieldIds,
   type Catalog,
+  type IntentEvent,
   type UITree,
 } from "@json-ui/core";
 import {
@@ -1664,26 +1732,19 @@ import type { NCRuntime, NCCatalogVersion } from "../types";
 
 /**
  * Maps NC-authored React components to the ComponentRegistry shape
- * @json-ui/react expects. Every entry is a thin function wrapper so
- * we capture the correct `element` + `children` shape regardless of
- * future ComponentRegistry signature changes.
+ * @json-ui/react expects. NC components already accept `{element,
+ * children}` as a subset of ComponentRenderProps, so the assignment is
+ * structural and no wrapper function is needed — TypeScript's
+ * `ComponentType<P>` is contravariant in P, and UIElement is structurally
+ * compatible with the NC components' prop shape.
  */
 function buildDefaultRegistry(): ComponentRegistry {
-  const wrap = (
-    Component: React.ComponentType<{
-      element: { key: string; type: string; props: Record<string, unknown> };
-      children?: React.ReactNode;
-    }>,
-  ): ComponentRenderer =>
-    ({ element, children }) => (
-      <Component element={element}>{children}</Component>
-    );
   return {
-    Container: wrap(NCContainer),
-    Text: wrap(NCText),
-    TextField: wrap(NCTextField),
-    Checkbox: wrap(NCCheckbox),
-    Button: wrap(NCButton),
+    Container: NCContainer as ComponentRenderer,
+    Text: NCText as ComponentRenderer,
+    TextField: NCTextField as ComponentRenderer,
+    Checkbox: NCCheckbox as ComponentRenderer,
+    Button: NCButton as ComponentRenderer,
   };
 }
 
@@ -1748,7 +1809,7 @@ export function NCRenderer({
   }, [tree, catalog, runtime.stagingBuffer]);
 
   const onIntent = React.useCallback(
-    (event: import("@json-ui/core").IntentEvent) => {
+    (event: IntentEvent) => {
       void runtime.emitIntent(event);
     },
     [runtime],
@@ -1762,7 +1823,14 @@ export function NCRenderer({
       onIntent={onIntent}
       catalogVersion={catalogVersion}
     >
-      <Renderer tree={tree} />
+      {/*
+        Renderer requires `registry` as a prop even though JSONUIProvider
+        accepts it — JSONUIProvider's registry prop is currently vestigial
+        (it doesn't wire it into the render tree). Pass the same registry
+        to both so NC stays forward-compatible if JSONUIProvider starts
+        consuming its registry prop in the future.
+      */}
+      <Renderer tree={tree} registry={registry} />
     </JSONUIProvider>
   );
 }
@@ -1948,55 +2016,37 @@ git commit -m "feat(renderer): add useCommittedTree atomic-mode useUIStream wrap
 
 ---
 
-## Task 10: Orchestrator loop (React mounting layer)
+## Task 10: NCApp — React mounting layer
 
-**Model:** Opus — wires runtime + handler + renderer into the top-level driver, makes decisions about ordering, state machine transitions, and error recovery.
+**Model:** Opus — the NCApp component bridges the React lifecycle (useState, useEffect) with NC's runtime handler slot. The design decision is how to get a stable `setTree` reference into the intent handler without restructuring the runtime as a React hook.
 
-**Boundary note:** This task creates files under `src/app/`, NOT `src/orchestrator/`. NC Invariant 7 forbids the orchestrator module from importing anything React-related. `loop.tsx` imports `NCRenderer` (React) and so belongs in the App layer. Task 12 adds a meta-test that enforces the boundary structurally.
+**Boundary note:** This task creates files under `src/app/`, NOT `src/orchestrator/`. NC Invariant 7 forbids the orchestrator module from importing anything React-related. `nc-app.tsx` imports `NCRenderer` (React) and so belongs in the App layer. Task 12 adds a meta-test that enforces the boundary structurally.
+
+**Pattern:** NCApp owns a `useState<UITree>` for the current tree. On mount (useEffect), it calls `runtime.setIntentHandler(props.buildIntentHandler(setTree))`, passing its own setState as the `onTreeCommit` sink for the stub handler (or whatever handler factory the caller supplies). When a catalog action fires, NCRenderer forwards the IntentEvent through `runtime.emitIntent`, which calls the handler, which calls `setTree(nextTree)`, which re-renders NCApp with the new tree.
 
 **Files:**
-- Create: `src/app/loop.tsx`
+- Create: `src/app/nc-app.tsx`
 - Create: `src/app/index.ts`
-- Create: `src/app/loop.test.tsx`
+- Create: `src/app/nc-app.test.tsx`
 
 - [ ] **Step 1: Write the failing test**
 
-Create `src/app/loop.test.tsx`:
+Create `src/app/nc-app.test.tsx`:
 
 ```typescript
 import { describe, it, expect, vi } from "vitest";
 import React from "react";
 import { render, screen, fireEvent, act } from "@testing-library/react";
-import type { UITree, IntentEvent } from "@json-ui/core";
-import { createObservableDataModel } from "@json-ui/core";
-import { runOrchestrator } from "./loop";
+import { createObservableDataModel, type UITree, type IntentEvent } from "@json-ui/core";
+import { NCApp } from "./nc-app";
 import { createNCRuntime } from "../runtime";
 import { ncStarterCatalog, NC_CATALOG_VERSION } from "../catalog";
 import { createStubIntentHandler } from "../orchestrator";
 
-describe("runOrchestrator", () => {
-  it("mounts NCRenderer and drives tree transitions on intent events", async () => {
-    let treeCommits = 0;
-    const handler = createStubIntentHandler({
-      nextTree: (event: IntentEvent) => ({
-        root: "r",
-        elements: {
-          r: {
-            key: "r",
-            type: "Text",
-            props: { content: `after ${event.action_name}` },
-          },
-        },
-      }),
-      onTreeCommit: async () => {
-        treeCommits++;
-      },
-    });
+describe("NCApp", () => {
+  it("mounts NCRenderer, wires the intent handler, and drives tree transitions", async () => {
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({
-      durableStore,
-      onIntent: handler,
-    });
+    const runtime = await createNCRuntime({ durableStore });
 
     const initialTree: UITree = {
       root: "start",
@@ -2015,25 +2065,102 @@ describe("runOrchestrator", () => {
       },
     };
 
-    const { element, setTree } = runOrchestrator({
-      runtime,
-      catalog: ncStarterCatalog,
-      catalogVersion: NC_CATALOG_VERSION,
-      initialTree,
-      onNextTree: (nextTree: UITree) => setTree(nextTree),
-    });
+    const nextTree: UITree = {
+      root: "done",
+      elements: {
+        done: {
+          key: "done",
+          type: "Text",
+          props: { content: "after submit_form" },
+        },
+      },
+    };
 
-    render(element);
+    const treeCommits: UITree[] = [];
+
+    render(
+      <NCApp
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+        initialTree={initialTree}
+        buildIntentHandler={(setTree) =>
+          createStubIntentHandler({
+            nextTree: () => nextTree,
+            onTreeCommit: (tree) => {
+              treeCommits.push(tree);
+              setTree(tree);
+            },
+          })
+        }
+      />,
+    );
+
+    // Initial tree renders the Go button.
     expect(screen.getByRole("button", { name: "Go" })).toBeDefined();
 
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Go" }));
-      // Let the intent handler resolve.
       await new Promise((r) => setTimeout(r, 0));
     });
 
-    // Intent handler fired exactly once with the stub's next tree.
-    expect(treeCommits).toBe(1);
+    // Intent handler fired exactly once and the tree transitioned.
+    expect(treeCommits).toHaveLength(1);
+    expect(treeCommits[0]!.root).toBe("done");
+    expect(screen.getByText("after submit_form")).toBeDefined();
+    runtime.destroy();
+  });
+
+  it("swaps the intent handler when buildIntentHandler identity changes", async () => {
+    const durableStore = createObservableDataModel({});
+    const runtime = await createNCRuntime({ durableStore });
+
+    const tree: UITree = {
+      root: "btn",
+      elements: {
+        btn: {
+          key: "btn",
+          type: "Button",
+          props: { label: "Fire", action: { name: "submit_form" } },
+        },
+      },
+    };
+
+    const first = vi.fn(async () => {});
+    const second = vi.fn(async () => {});
+
+    const { rerender } = render(
+      <NCApp
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+        initialTree={tree}
+        buildIntentHandler={() => first}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Fire" }));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(first).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <NCApp
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+        initialTree={tree}
+        buildIntentHandler={() => second}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Fire" }));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(second).toHaveBeenCalledTimes(1);
+
     runtime.destroy();
   });
 });
@@ -2041,12 +2168,12 @@ describe("runOrchestrator", () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/app/loop.test.tsx`
-Expected: FAIL with "Cannot find module './loop'".
+Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/app/nc-app.test.tsx`
+Expected: FAIL with "Cannot find module './nc-app'".
 
-- [ ] **Step 3: Create `src/app/loop.tsx`**
+- [ ] **Step 3: Create `src/app/nc-app.tsx`**
 
-Create `src/app/loop.tsx`:
+Create `src/app/nc-app.tsx`:
 
 ```typescript
 "use client";
@@ -2054,80 +2181,69 @@ Create `src/app/loop.tsx`:
 import React from "react";
 import type { Catalog, UITree } from "@json-ui/core";
 import { NCRenderer } from "../renderer";
-import type { NCRuntime, NCCatalogVersion } from "../types";
+import type {
+  NCRuntime,
+  NCCatalogVersion,
+  NCIntentHandler,
+} from "../types";
 
-export interface RunOrchestratorOptions {
+export interface NCAppProps {
   runtime: NCRuntime;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   catalog: Catalog<any, any, any>;
   catalogVersion: NCCatalogVersion;
   initialTree: UITree;
   /**
-   * Callback the orchestrator uses to re-render when the intent
-   * handler produces a new tree. In the integration test this is
-   * wired to `setTree` on a React state hook owned by the caller;
-   * in production the NC app wires it to whatever state store drives
-   * the current tree.
+   * Factory that takes the NCApp's internal `setTree` reference and
+   * returns the NCIntentHandler the runtime should use. The handler
+   * is responsible for calling `setTree(nextTree)` on every committed
+   * tree transition — typically by passing setTree as the
+   * `onTreeCommit` callback to `createStubIntentHandler` (or the real
+   * LLM-backed handler once that exists).
+   *
+   * NCApp calls this factory in a useEffect with the current setTree,
+   * then installs the result via `runtime.setIntentHandler`. When
+   * `buildIntentHandler`'s identity changes across renders, NCApp
+   * re-installs the new handler so the runtime always dispatches to
+   * the latest one.
    */
-  onNextTree: (tree: UITree) => void;
-}
-
-export interface RunOrchestratorResult {
-  /** React element to mount. */
-  element: React.ReactElement;
-  /** Callback to update the rendered tree. */
-  setTree: (tree: UITree) => void;
+  buildIntentHandler: (setTree: (tree: UITree) => void) => NCIntentHandler;
 }
 
 /**
- * Top-level orchestrator driver. Holds the current tree in a state
- * hook, renders NCRenderer, and exposes a setTree callback for the
- * intent handler to drive transitions. The intent handler itself is
- * registered at runtime-construction time (createNCRuntime), so the
- * orchestrator does not need to know about LLM details.
+ * The top-level React mounting point for an NC app. Owns the current
+ * UITree in a React state hook, installs the intent handler against
+ * the runtime on mount, and renders NCRenderer.
  *
- * The return shape is unusual: we expose both the React element AND
- * a setTree function. The caller mounts the element and calls setTree
- * when the intent handler resolves. In a fully integrated app, the
- * caller would own a state hook driving setTree; the integration test
- * uses this same shape with a local state closure.
+ * NCApp is intentionally small — it exists so the caller does not
+ * have to repeat the useState + useEffect + setIntentHandler dance
+ * in every integration. For callers that need to own the tree state
+ * themselves (e.g., because the tree comes from a useUIStream hook
+ * running elsewhere), mount NCRenderer directly and call
+ * runtime.setIntentHandler manually.
  */
-export function runOrchestrator(
-  options: RunOrchestratorOptions,
-): RunOrchestratorResult {
-  const TreeHolder = () => {
-    const [tree, setTreeState] = React.useState<UITree>(options.initialTree);
-    // Publish setTree upward so the caller can drive transitions.
-    React.useEffect(() => {
-      publishSetTree(setTreeState);
-    }, []);
-    return (
-      <NCRenderer
-        tree={tree}
-        runtime={options.runtime}
-        catalog={options.catalog}
-        catalogVersion={options.catalogVersion}
-      />
-    );
-  };
+export function NCApp({
+  runtime,
+  catalog,
+  catalogVersion,
+  initialTree,
+  buildIntentHandler,
+}: NCAppProps) {
+  const [tree, setTree] = React.useState<UITree>(initialTree);
 
-  let setTreeRef: ((tree: UITree) => void) | null = null;
-  const publishSetTree = (fn: (tree: UITree) => void) => {
-    setTreeRef = fn;
-  };
-  const setTree = (tree: UITree): void => {
-    if (setTreeRef !== null) {
-      setTreeRef(tree);
-      // Also call the consumer's onNextTree in case they want to track
-      // the transition for analytics/telemetry.
-      options.onNextTree(tree);
-    }
-  };
+  React.useEffect(() => {
+    const handler = buildIntentHandler(setTree);
+    runtime.setIntentHandler(handler);
+  }, [runtime, buildIntentHandler]);
 
-  return {
-    element: <TreeHolder />,
-    setTree,
-  };
+  return (
+    <NCRenderer
+      tree={tree}
+      runtime={runtime}
+      catalog={catalog}
+      catalogVersion={catalogVersion}
+    />
+  );
 }
 ```
 
@@ -2136,24 +2252,20 @@ export function runOrchestrator(
 Create `src/app/index.ts`:
 
 ```typescript
-export {
-  runOrchestrator,
-  type RunOrchestratorOptions,
-  type RunOrchestratorResult,
-} from "./loop";
+export { NCApp, type NCAppProps } from "./nc-app";
 ```
 
 - [ ] **Step 5: Run tests**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/app/loop.test.tsx`
-Expected: PASS (1 test).
+Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/app/nc-app.test.tsx`
+Expected: PASS (2 tests).
 
 - [ ] **Step 6: Commit**
 
 ```bash
 cd "C:/Users/danie/Dropbox/Github/neural-computer"
-git add src/app/loop.tsx src/app/index.ts src/app/loop.test.tsx
-git commit -m "feat(app): add runOrchestrator top-level React mounting driver"
+git add src/app/nc-app.tsx src/app/index.ts src/app/nc-app.test.tsx
+git commit -m "feat(app): add NCApp React mounting component"
 ```
 
 ---
@@ -2185,10 +2297,8 @@ describe("NC Path C end-to-end integration", () => {
   it("type → submit → intent cycle with staging snapshot", async () => {
     const onIntent = vi.fn();
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({
-      durableStore,
-      onIntent: async (e) => onIntent(e),
-    });
+    const runtime = await createNCRuntime({ durableStore });
+    runtime.setIntentHandler(async (e) => onIntent(e));
 
     const tree: UITree = {
       root: "form",
@@ -2262,10 +2372,8 @@ describe("NC Path C end-to-end integration", () => {
 
   it("reconciliation on tree commit preserves matching IDs and drops orphans", async () => {
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({
-      durableStore,
-      onIntent: async () => {},
-    });
+    const runtime = await createNCRuntime({ durableStore });
+    runtime.setIntentHandler(async () => {});
 
     const first: UITree = {
       root: "form",
@@ -2348,7 +2456,8 @@ describe("NC Path C end-to-end integration", () => {
     });
 
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({ durableStore, onIntent });
+    const runtime = await createNCRuntime({ durableStore });
+    runtime.setIntentHandler(onIntent);
 
     const tree: UITree = {
       root: "root",
@@ -2409,7 +2518,7 @@ git commit -m "test: add NC Path C end-to-end integration test"
 
 **Model:** Sonnet
 
-NC Invariant 7 requires that the orchestrator module not import from the React side. Task 10 already respects this by putting `loop.tsx` under `src/app/`, not `src/orchestrator/`. This task adds a permanent regression guard: a vitest meta-test that reads every file under `src/orchestrator/` and asserts no forbidden import is present. Any future refactor that accidentally pulls React into the orchestrator will fail this test in CI.
+NC Invariant 7 requires that the orchestrator module not import from the React side. Task 10 already respects this by putting `nc-app.tsx` under `src/app/`, not `src/orchestrator/`. This task adds a permanent regression guard: a vitest meta-test that reads every file under `src/orchestrator/` and asserts no forbidden import is present. Any future refactor that accidentally pulls React into the orchestrator will fail this test in CI.
 
 Enforcement is via vitest (not ESLint plugin) because it gives the same guarantee with zero extra dependencies and runs in the standard test suite.
 
@@ -2478,7 +2587,7 @@ describe("NC Invariant 7: orchestrator buffer isolation", () => {
 - [ ] **Step 2: Run the test**
 
 Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/orchestrator/buffer-isolation.test.ts`
-Expected: PASS (1 test). Task 10 put `loop.tsx` under `src/app/`, so `src/orchestrator/` contains only `handle-intent.ts` + `index.ts`, neither of which imports React.
+Expected: PASS (1 test). Task 10 put `nc-app.tsx` under `src/app/`, so `src/orchestrator/` contains only `handle-intent.ts` + `index.ts`, neither of which imports React.
 
 - [ ] **Step 3: Commit**
 
@@ -2551,12 +2660,8 @@ export {
   type CreateStubIntentHandlerOptions,
 } from "./orchestrator";
 
-// App (top-level driver that mounts the renderer)
-export {
-  runOrchestrator,
-  type RunOrchestratorOptions,
-  type RunOrchestratorResult,
-} from "./app";
+// App (top-level React mounting component)
+export { NCApp, type NCAppProps } from "./app";
 ```
 
 - [ ] **Step 2: Update README.md with a quickstart**
@@ -2573,45 +2678,60 @@ handler will replace it in a follow-up spec.
 
 ## Quickstart
 
-```typescript
+```tsx
 import { ManagerContext, createObservableDataModelFromGraph } from "@danielsimonjr/memoryjs";
+import { createRoot } from "react-dom/client";
+import React from "react";
 import {
+  NCApp,
   createNCRuntime,
   createStubIntentHandler,
   defaultNCProjection,
   ncStarterCatalog,
   NC_CATALOG_VERSION,
-  runOrchestrator,
 } from "neural-computer";
+import type { UITree } from "@json-ui/core";
 
 const ctx = new ManagerContext("./nc.jsonl");
 const durableStore = await createObservableDataModelFromGraph(ctx.storage, {
   projection: defaultNCProjection,
 });
+const runtime = await createNCRuntime({ durableStore });
 
-const handler = createStubIntentHandler({
-  nextTree: (event) => ({
-    root: "r",
-    elements: {
-      r: { key: "r", type: "Text", props: { content: `got ${event.action_name}` } },
-    },
-  }),
-  onTreeCommit: async (tree) => {
-    setNextTree(tree);
+const initialTree: UITree = {
+  root: "r",
+  elements: {
+    r: { key: "r", type: "Text", props: { content: "hello" } },
   },
-});
+};
 
-const runtime = await createNCRuntime({ durableStore, onIntent: handler });
+function App() {
+  return (
+    <NCApp
+      runtime={runtime}
+      catalog={ncStarterCatalog}
+      catalogVersion={NC_CATALOG_VERSION}
+      initialTree={initialTree}
+      buildIntentHandler={(setTree) =>
+        createStubIntentHandler({
+          nextTree: (event) => ({
+            root: "r",
+            elements: {
+              r: {
+                key: "r",
+                type: "Text",
+                props: { content: `got ${event.action_name}` },
+              },
+            },
+          }),
+          onTreeCommit: setTree,
+        })
+      }
+    />
+  );
+}
 
-const { element } = runOrchestrator({
-  runtime,
-  catalog: ncStarterCatalog,
-  catalogVersion: NC_CATALOG_VERSION,
-  initialTree: { root: "r", elements: { r: { key: "r", type: "Text", props: { content: "hello" } } } },
-  onNextTree: (tree) => setNextTree(tree),
-});
-
-// Mount `element` in your React tree.
+createRoot(document.getElementById("app")!).render(<App />);
 ```
 ```
 
@@ -2628,9 +2748,12 @@ Expected: `dist/` contains `index.js`, `index.mjs`, `index.d.ts`, `index.d.mts`,
 
 - [ ] **Step 4: Verify the built barrel exports the full public surface**
 
-Run: `node -e "const nc = require('./dist/index.cjs'); console.log(Object.keys(nc).sort().join('\n'));"`
+NC's `package.json` has `"type": "module"`, so a bare `node -e "require(...)"` won't work — Node treats the inline code as ESM. Use the CJS input-type override:
+
+Run: `node --input-type=commonjs -e "const nc = require('./dist/index.cjs'); console.log(Object.keys(nc).sort().join('\n'));"`
 Expected output includes at minimum:
 ```
+NCApp
 NCButton
 NCCheckbox
 NCContainer
@@ -2642,7 +2765,6 @@ createNCRuntime
 createStubIntentHandler
 defaultNCProjection
 ncStarterCatalog
-runOrchestrator
 useCommittedTree
 ```
 
@@ -2690,7 +2812,7 @@ git push origin main
 - `NCRendererProps.tree` is `UITree`, `runtime` is `NCRuntime`, `catalog` is `Catalog<any,any,any>`, `catalogVersion` is `NCCatalogVersion` — consistent across Tasks 8, 10, 11
 - `createStubIntentHandler` returns `NCIntentHandler` in Task 7, passed to `createNCRuntime.onIntent` in Tasks 6, 10, 11
 
-**Scope check:** Task 12 discovered a boundary violation (loop.tsx imports NCRenderer which pulls in React) and refactors by moving the top-level driver into `src/app/`. This keeps `src/orchestrator/` pure (no React imports) and enforces Invariant 7 structurally. The refactor is captured as an explicit sub-step of Task 12 rather than hidden as a "fix along the way."
+**Scope check:** Task 10 places `NCApp` under `src/app/` from the start (not `src/orchestrator/`) because it imports `NCRenderer` which pulls in React. `src/orchestrator/` stays pure and only contains intent-dispatch logic. Task 12 adds a meta-test that enforces this boundary structurally so future refactors cannot accidentally cross it.
 
 ---
 
