@@ -63,12 +63,28 @@ export function NCCheckbox({ element }: NCComponentProps) {
 export function NCButton({ element }: NCComponentProps) {
   const props = element.props as {
     label: string;
-    action?: { name: string };
+    action?: {
+      name: string;
+      // Params MUST be forwarded to execute — the catalog schema
+      // declares them in `nc-catalog.ts`, and NC spec Invariants 6
+      // and 11 both require them to reach the orchestrator intact.
+      // A prior version of this file narrowed `action` to just
+      // `{name}` and silently dropped the params, which the
+      // April-15 Opus review caught before v1 ship.
+      params?: Record<string, unknown>;
+    };
   };
   const { execute } = useActions();
   const onClick = React.useCallback(() => {
     if (props.action) {
-      void execute({ name: props.action.name });
+      // Forward both name AND params. The ActionProvider downstream
+      // runs resolveActionWithStaging over the params, so DynamicValue
+      // literals like `{path: "email"}` resolve against the shared
+      // staging buffer before reaching the IntentEvent (Invariant 11).
+      void execute({
+        name: props.action.name,
+        params: props.action.params,
+      });
     }
   }, [execute, props.action]);
   return (

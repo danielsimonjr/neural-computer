@@ -161,6 +161,66 @@ describe("NCRenderer", () => {
     runtime.destroy();
   });
 
+  it("NC Invariant 3: reconcile preserves a field across prop changes on the same id", async () => {
+    // Rule 3 in the NC spec: the buffer is keyed on the element's
+    // `id` prop. If the LLM re-emits the SAME field id with different
+    // OTHER props (e.g. adding an `error` prop to display validation
+    // feedback), the user's typed value must stay in the buffer. This
+    // is the reject-with-validation-error path the spec calls out as
+    // the most important preservation case.
+    const initialTree: UITree = {
+      root: "r",
+      elements: {
+        r: {
+          key: "r",
+          type: "TextField",
+          props: { id: "email", label: "Email" },
+        },
+      },
+    };
+    const runtime = await makeRuntime(() => {});
+    const { rerender } = render(
+      <NCRenderer
+        tree={initialTree}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+
+    // User types a value.
+    runtime.stagingBuffer.set("email", "dan@example.com");
+
+    // LLM re-emits the SAME field with an error prop added.
+    const treeWithError: UITree = {
+      root: "r",
+      elements: {
+        r: {
+          key: "r",
+          type: "TextField",
+          props: {
+            id: "email",
+            label: "Email",
+            error: "Please enter a valid email",
+          },
+        },
+      },
+    };
+    rerender(
+      <NCRenderer
+        tree={treeWithError}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+
+    // The user's typed value survived the reconcile pass because the
+    // `id` is unchanged — only props around it changed.
+    expect(runtime.stagingBuffer.get("email")).toBe("dan@example.com");
+    runtime.destroy();
+  });
+
   it("skips reconcile when the tree fails catalog validation (NC Invariant 9 + 8)", async () => {
     const initialTree: UITree = {
       root: "root",

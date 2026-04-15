@@ -104,7 +104,16 @@ export function NCRenderer({
 
   const onIntent = React.useCallback(
     (event: IntentEvent) => {
-      void runtime.emitIntent(event);
+      // Fire-and-forget into the runtime's backpressure gate. Wrapping
+      // in a .catch logs any handler exception — without this, a
+      // throwing intent handler surfaces as a UI that appears to do
+      // nothing, because `void` swallows the rejected promise. The
+      // `intentInFlight` flag in createNCRuntime's `finally` clears
+      // regardless, so the runtime recovers either way; this just
+      // gives a diagnostic trail.
+      runtime.emitIntent(event).catch((err) => {
+        console.error("[NC] Intent handler threw:", err);
+      });
     },
     [runtime],
   );

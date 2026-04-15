@@ -159,6 +159,149 @@ describe("NC Path C end-to-end integration", () => {
     runtime.destroy();
   });
 
+  it("NC Invariant 6: action_params and staging_snapshot stay separate on key collision", async () => {
+    // A button whose action declares `email: "fixed@example.com"` as a
+    // LITERAL param while the user has typed a different value into a
+    // `TextField id="email"` field must produce an IntentEvent where
+    // BOTH the literal action param AND the user-typed staging value
+    // reach the orchestrator unmerged. The library enforces this
+    // structurally (ActionProvider builds IntentEvent with separate
+    // fields), but NC's integration test should verify the contract
+    // end-to-end so a future refactor that merges them is caught.
+    const onIntent = vi.fn();
+    const durableStore = createObservableDataModel({});
+    const runtime = await createNCRuntime({ durableStore });
+    runtime.setIntentHandler(async (e) => onIntent(e));
+
+    const tree: UITree = {
+      root: "form",
+      elements: {
+        form: {
+          key: "form",
+          type: "Container",
+          props: {},
+          children: ["email", "submit"],
+        },
+        email: {
+          key: "email",
+          type: "TextField",
+          props: { id: "email", label: "Email" },
+        },
+        submit: {
+          key: "submit",
+          type: "Button",
+          props: {
+            label: "Send",
+            action: {
+              name: "submit_form",
+              // Literal param that COLLIDES with the staging field id.
+              params: { email: "literal@example.com" },
+            },
+          },
+        },
+      },
+    };
+
+    render(
+      <NCRenderer
+        tree={tree}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+
+    // User types a DIFFERENT value for email.
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "user-typed@example.com" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Send" }));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(onIntent).toHaveBeenCalledTimes(1);
+    const event = onIntent.mock.calls[0]![0] as IntentEvent;
+    // The action's literal email wins action_params.
+    expect(event.action_params).toEqual({ email: "literal@example.com" });
+    // The user's typed email wins staging_snapshot.
+    expect(event.staging_snapshot).toEqual({ email: "user-typed@example.com" });
+    // Both are preserved, unmerged. The orchestrator decides which to use.
+
+    runtime.destroy();
+  });
+
+  it("NC Invariant 11: DynamicValue {path} params resolve against staging at NC layer", async () => {
+    // A button whose action declares `to: { path: "email" }` must
+    // resolve the DynamicValue against the staging buffer's "email"
+    // field (not the data model) because the path is a single segment
+    // with no slashes. @json-ui/core's resolveActionWithStaging owns
+    // the rule, but NC's integration test should cover the full React
+    // flow end-to-end so the wiring from NCButton → ActionProvider →
+    // resolveActionWithStaging → IntentEvent stays intact.
+    const onIntent = vi.fn();
+    const durableStore = createObservableDataModel({});
+    const runtime = await createNCRuntime({ durableStore });
+    runtime.setIntentHandler(async (e) => onIntent(e));
+
+    const tree: UITree = {
+      root: "form",
+      elements: {
+        form: {
+          key: "form",
+          type: "Container",
+          props: {},
+          children: ["email", "send"],
+        },
+        email: {
+          key: "email",
+          type: "TextField",
+          props: { id: "email", label: "Email" },
+        },
+        send: {
+          key: "send",
+          type: "Button",
+          props: {
+            label: "Send welcome",
+            action: {
+              name: "submit_form",
+              // DynamicValue literal — should resolve against staging.
+              params: { to: { path: "email" } },
+            },
+          },
+        },
+      },
+    };
+
+    render(
+      <NCRenderer
+        tree={tree}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "dan@example.com" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Send welcome" }));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(onIntent).toHaveBeenCalledTimes(1);
+    const event = onIntent.mock.calls[0]![0] as IntentEvent;
+    // { path: "email" } resolved to the staging value "dan@example.com".
+    expect(event.action_params).toEqual({ to: "dan@example.com" });
+    // Staging snapshot still carries the full buffer state.
+    expect(event.staging_snapshot).toEqual({ email: "dan@example.com" });
+
+    runtime.destroy();
+  });
+
   it("backpressure rejects a second intent while the first is in flight", async () => {
     let releaseFirst: () => void = () => {};
     const firstDone = new Promise<void>((r) => {
