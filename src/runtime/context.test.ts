@@ -127,6 +127,49 @@ describe("createNCRuntime", () => {
     runtime.destroy();
   });
 
+  it("reading the staging snapshot is non-destructive (NC Invariant 4)", async () => {
+    // NC Invariant 4: the act of reading a staging snapshot (which the
+    // React layer does every render via useStagingField, and which
+    // ActionProvider does when building an IntentEvent) MUST NOT mutate
+    // or clear the buffer. The only paths that drop staging entries are
+    // reconcile (Invariant 9) and explicit delete. Test this by writing
+    // a value, reading it through runtime.stagingBuffer.snapshot multiple
+    // times plus routing an intent, and verifying the value is still
+    // present afterwards.
+    const durableStore = createObservableDataModel({});
+    const runtime = await createNCRuntime({ durableStore });
+    runtime.stagingBuffer.set("email", "a@b.c");
+    runtime.stagingBuffer.set("agree", true);
+
+    const before = runtime.stagingBuffer.snapshot();
+    expect(before).toEqual({ email: "a@b.c", agree: true });
+
+    // Route an intent — ActionProvider normally reads the snapshot
+    // when building the event. We simulate the same by reading it
+    // again and handing it to the handler.
+    runtime.setIntentHandler(async (event) => {
+      expect(event.staging_snapshot).toEqual({ email: "a@b.c", agree: true });
+    });
+    await runtime.emitIntent({
+      action_name: "submit_form",
+      action_params: {},
+      staging_snapshot: runtime.stagingBuffer.snapshot(),
+      timestamp: Date.now(),
+    });
+
+    // Read a few more times.
+    runtime.stagingBuffer.snapshot();
+    runtime.stagingBuffer.snapshot();
+
+    // Buffer still holds the original values.
+    expect(runtime.stagingBuffer.snapshot()).toEqual({
+      email: "a@b.c",
+      agree: true,
+    });
+
+    runtime.destroy();
+  });
+
   it("destroy is idempotent", async () => {
     const durableStore = createObservableDataModel({});
     const runtime = await createNCRuntime({ durableStore });

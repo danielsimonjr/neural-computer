@@ -18,6 +18,13 @@ export default defineConfig({
   resolve: {
     alias: {
       react: `${nodeModules}/react`,
+      // tsconfig "jsx": "react-jsx" makes every compiled .tsx import from
+      // react/jsx-runtime. Without pinning the subpath, @json-ui/react's
+      // symlinked source can still resolve to its own React instance via
+      // JSON-UI's node_modules, reintroducing the two-React-instances bug
+      // that the `react` alias above was added to fix.
+      "react/jsx-runtime": `${nodeModules}/react/jsx-runtime.js`,
+      "react/jsx-dev-runtime": `${nodeModules}/react/jsx-dev-runtime.js`,
       "react-dom": `${nodeModules}/react-dom`,
       "react-dom/client": `${nodeModules}/react-dom/client.js`,
     },

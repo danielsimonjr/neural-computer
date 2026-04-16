@@ -28,6 +28,16 @@ export interface NCAppProps {
    * `buildIntentHandler`'s identity changes across renders, NCApp
    * re-installs the new handler so the runtime always dispatches to
    * the latest one.
+   *
+   * STABILITY REQUIREMENT: callers SHOULD memoize this with useCallback
+   * (or hoist it to module scope). An inline arrow `buildIntentHandler={
+   * (setTree) => createStubIntentHandler({...})}` has a new identity on
+   * every parent render, which causes NCApp to re-run the install
+   * useEffect and rebuild the handler every commit. Not a correctness
+   * bug (the old handler is cleanly replaced), but wasteful — and
+   * react-strict-mode's double-invocation amplifies the churn during
+   * development. The integration tests pin the factory at module scope
+   * so they don't hit this path.
    */
   buildIntentHandler: (setTree: (tree: UITree) => void) => NCIntentHandler;
 }

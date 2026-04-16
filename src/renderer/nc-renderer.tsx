@@ -85,7 +85,22 @@ export function NCRenderer({
   // by catalog.validateTree — a tree that fails validation (Zod or
   // field-ID uniqueness) is skipped, leaving the buffer untouched.
   // This is the library-side enforcement of NC Invariants 8 and 9.
-  React.useEffect(() => {
+  //
+  // IMPORTANT: walks `result.data` (the Zod-parsed/stripped tree),
+  // NOT the raw `tree` prop. Zod v4's default mode strips unknown
+  // keys; a Container element with a stray `id: "foo"` prop passes
+  // validateTree because the extra key is stripped in result.data,
+  // but walking the raw tree would still pick up "foo" and wrongly
+  // preserve a phantom staging entry. Caught by the post-ship Opus
+  // review — fixed by reconciling over result.data.
+  //
+  // useLayoutEffect (not useEffect) so the reconcile runs
+  // synchronously after DOM mutations but BEFORE paint. This closes
+  // the one-frame window where an orphan field's unmounted React
+  // component leaves its staging value visible to any reader of the
+  // buffer. The reconcile is a pure in-memory operation, so the
+  // layout-effect timing has no perf cost.
+  React.useLayoutEffect(() => {
     const result = catalog.validateTree(tree);
     if (!result.success) {
       console.warn(
@@ -95,7 +110,8 @@ export function NCRenderer({
       return;
     }
     try {
-      const liveIds = collectFieldIds(tree);
+      // Walk the validated/stripped tree, not the raw one.
+      const liveIds = collectFieldIds(result.data!);
       runtime.stagingBuffer.reconcile(liveIds);
     } catch (err) {
       console.warn("[NC] Reconcile threw; buffer untouched:", err);

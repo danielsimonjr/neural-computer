@@ -221,6 +221,57 @@ describe("NCRenderer", () => {
     runtime.destroy();
   });
 
+  it("reconciles over the Zod-validated tree, not the raw one (strip regression)", async () => {
+    // Zod v4 object schemas strip unknown keys by default. If NCRenderer
+    // walked `tree.props` instead of the validated `result.data.props`,
+    // a Container element carrying a stray `id: "phantom"` prop would
+    // pass validateTree (the key is stripped from result.data) while
+    // collectFieldIds(rawTree) would still pick it up and mark "phantom"
+    // as a live staging field — keeping an orphan entry alive forever.
+    //
+    // This test sets a staging entry under "phantom", renders a tree
+    // whose Container carries that stray id, and asserts the reconcile
+    // pass DROPS "phantom" (because result.data has no such id after
+    // Zod strip). If NCRenderer regresses to reconciling over the raw
+    // tree, this test fails — the phantom entry would survive.
+    const runtime = await makeRuntime(() => {});
+    runtime.stagingBuffer.set("email", "a@b.c");
+    runtime.stagingBuffer.set("phantom", "should be dropped");
+
+    // Container's catalog schema has no `id` field. Zod strips it.
+    // Cast through unknown so the stray prop compiles under the strict
+    // element-props types.
+    const treeWithStrayId = {
+      root: "root",
+      elements: {
+        root: {
+          key: "root",
+          type: "Container",
+          props: { id: "phantom" },
+          children: ["a"],
+        },
+        a: {
+          key: "a",
+          type: "TextField",
+          props: { id: "email", label: "Email" },
+        },
+      },
+    } as unknown as UITree;
+
+    render(
+      <NCRenderer
+        tree={treeWithStrayId}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+
+    expect(runtime.stagingBuffer.has("email")).toBe(true);
+    expect(runtime.stagingBuffer.has("phantom")).toBe(false);
+    runtime.destroy();
+  });
+
   it("skips reconcile when the tree fails catalog validation (NC Invariant 9 + 8)", async () => {
     const initialTree: UITree = {
       root: "root",

@@ -81,9 +81,18 @@ export function NCButton({ element }: NCComponentProps) {
       // runs resolveActionWithStaging over the params, so DynamicValue
       // literals like `{path: "email"}` resolve against the shared
       // staging buffer before reaching the IntentEvent (Invariant 11).
-      void execute({
+      //
+      // execute() returns Promise<void> and can reject when the
+      // ActionProvider's onIntent throws (or when resolveActionWithStaging
+      // itself throws on an unresolved DynamicValue). A bare `void`
+      // silently swallows the rejection and surfaces as a click that
+      // appears to do nothing — same failure mode the April-15 review
+      // caught in NCRenderer.onIntent. Attach a .catch here too.
+      execute({
         name: props.action.name,
         params: props.action.params,
+      }).catch((err) => {
+        console.error("[NC] NCButton execute threw:", err);
       });
     }
   }, [execute, props.action]);

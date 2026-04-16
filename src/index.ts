@@ -1,7 +1,10 @@
 // Neural Computer — public entry point.
 //
-// The NC runtime composes @json-ui/react, @json-ui/headless, and
-// @danielsimonjr/memoryjs into an LLM-driven application runtime.
+// The NC runtime composes @json-ui/react and @danielsimonjr/memoryjs
+// into an LLM-driven application runtime. @json-ui/headless dual-backend
+// integration is planned but not in v1 — the primitives (shared
+// stagingBuffer and durableStore references on NCRuntime) are shaped
+// for it, but no v1 code mounts a headless session.
 // See docs/specs/ and docs/plans/ for the architecture.
 
 // Catalog

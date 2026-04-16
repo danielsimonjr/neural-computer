@@ -44,11 +44,14 @@ export interface NCRuntime {
   /** Memoryjs-backed (or in-memory) ObservableDataModel for durable state. */
   durableStore: ObservableDataModel;
   /**
-   * Emit an IntentEvent through NC's backpressure gate. Rejects the
-   * event synchronously (and logs) if another intent is already in
-   * flight. Returns when the currently-bound handler has finished.
-   * If no handler has been bound via setIntentHandler, logs a warning
-   * and returns immediately without processing.
+   * Emit an IntentEvent through NC's backpressure gate. The returned
+   * promise always resolves (never rejects): if another intent is
+   * already in flight, the event is dropped with a warning (NC
+   * Invariant 10). If no handler has been bound via setIntentHandler,
+   * also dropped with a warning. Otherwise resolves when the bound
+   * handler finishes. Handler rejections propagate out through this
+   * promise — NCRenderer's onIntent attaches a .catch so they surface
+   * as diagnostics instead of unhandled rejections.
    */
   emitIntent: (event: IntentEvent) => Promise<void>;
   /**

@@ -36,6 +36,32 @@ describe("createStubIntentHandler", () => {
     ).toBe("got submit_form");
   });
 
+  it("propagates a throwing nextTree so callers see the rejection", async () => {
+    // If the real LLM-backed handler throws (e.g., Anthropic SDK
+    // rejects, or the catalog validates the response and finds it
+    // invalid), the runtime's emitIntent must observe that rejection.
+    // NCRenderer.onIntent and NCButton both attach .catch handlers
+    // that depend on this propagation — swallowing it here would
+    // defeat those diagnostics.
+    const onTreeCommit = vi.fn();
+    const handler = createStubIntentHandler({
+      nextTree: () => {
+        throw new Error("LLM said no");
+      },
+      onTreeCommit,
+    });
+
+    await expect(
+      handler({
+        action_name: "submit_form",
+        action_params: {},
+        staging_snapshot: {},
+        timestamp: Date.now(),
+      }),
+    ).rejects.toThrow("LLM said no");
+    expect(onTreeCommit).not.toHaveBeenCalled();
+  });
+
   it("is async — caller can await the full handler cycle", async () => {
     const handler = createStubIntentHandler({
       nextTree: () => ({
