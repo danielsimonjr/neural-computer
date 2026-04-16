@@ -2,7 +2,7 @@
 
 An LLM-driven runtime inspired by Zhuge et al., *Neural Computers* (arXiv:2604.04625, April 2026). The runtime treats the LLM as a background intent engine sitting between a constrained JSON UI layer and a Python REPL, with durable state held in a knowledge graph.
 
-**Status:** v1 implementation shipped (2026-04-15). The React-side Path C integration is live: 44 tests passing across 11 files, typecheck clean, build clean, public barrel exposes 13 runtime symbols. Real Anthropic-backed intent handler, `@json-ui/headless` dual-backend session, and Python REPL subprocess dispatch are deferred to follow-up specs. See [`CHANGELOG.md`](./CHANGELOG.md) for the full v1 breakdown and [`docs/plans/2026-04-15-neural-computer-v2-plan.md`](./docs/plans/2026-04-15-neural-computer-v2-plan.md) for the task-by-task plan.
+**Status:** v1 implementation shipped (2026-04-15). The React-side Path C integration is live: 47 tests passing across 11 files, typecheck clean, build clean, public barrel exposes 13 runtime symbols. Real Anthropic-backed intent handler, `@json-ui/headless` dual-backend session, and Python REPL subprocess dispatch are deferred to follow-up specs. See [`CHANGELOG.md`](./CHANGELOG.md) for the full v1 breakdown and [`docs/plans/2026-04-15-neural-computer-v2-plan.md`](./docs/plans/2026-04-15-neural-computer-v2-plan.md) for the task-by-task plan.
 
 ## Architecture
 

@@ -137,7 +137,10 @@ neural-computer/
 │   └── catalog/
 │       └── input-fields.ts         # catalog schemas with required id field
 └── docs/
-    └── 2026-04-11-ephemeral-ui-state-design.md   # this file
+    ├── specs/
+    │   └── 2026-04-11-ephemeral-ui-state-design.md   # this file
+    └── plans/
+        └── 2026-04-11-ephemeral-ui-state-plan.md
 ```
 
 ### NC catalog convention

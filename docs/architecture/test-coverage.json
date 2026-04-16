@@ -1,0 +1,140 @@
+{
+  "metadata": {
+    "generatedAt": "2026-04-16T02:30:56.605Z",
+    "totalSourceFiles": 17,
+    "totalTestFiles": 11,
+    "testedCount": 13,
+    "untestedCount": 4,
+    "coveragePercent": "76.5"
+  },
+  "untestedFiles": [
+    "src/app/index.ts",
+    "src/index.ts",
+    "src/memory/index.ts",
+    "src/types/index.ts"
+  ],
+  "testedFiles": [
+    "src/app/nc-app.tsx",
+    "src/catalog/index.ts",
+    "src/catalog/nc-catalog.ts",
+    "src/memory/projection.ts",
+    "src/orchestrator/handle-intent.ts",
+    "src/orchestrator/index.ts",
+    "src/renderer/index.ts",
+    "src/renderer/input-components.tsx",
+    "src/renderer/nc-renderer.tsx",
+    "src/renderer/use-committed-tree.ts",
+    "src/runtime/context.ts",
+    "src/runtime/index.ts",
+    "src/types/nc-types.ts"
+  ],
+  "coverageMap": {
+    "src/app/index.ts": [],
+    "src/app/nc-app.tsx": [
+      "src/app/nc-app.test.tsx"
+    ],
+    "src/catalog/index.ts": [
+      "src/app/nc-app.test.tsx",
+      "src/integration.test.tsx",
+      "src/renderer/nc-renderer.test.tsx"
+    ],
+    "src/catalog/nc-catalog.ts": [
+      "src/app/nc-app.test.tsx",
+      "src/catalog/nc-catalog.test.ts",
+      "src/integration.test.tsx",
+      "src/renderer/nc-renderer.test.tsx"
+    ],
+    "src/index.ts": [],
+    "src/memory/index.ts": [],
+    "src/memory/projection.ts": [
+      "src/memory/projection.test.ts"
+    ],
+    "src/orchestrator/handle-intent.ts": [
+      "src/app/nc-app.test.tsx",
+      "src/orchestrator/handle-intent.test.ts"
+    ],
+    "src/orchestrator/index.ts": [
+      "src/app/nc-app.test.tsx"
+    ],
+    "src/renderer/index.ts": [
+      "src/integration.test.tsx"
+    ],
+    "src/renderer/input-components.tsx": [
+      "src/integration.test.tsx",
+      "src/renderer/input-components.test.tsx"
+    ],
+    "src/renderer/nc-renderer.tsx": [
+      "src/integration.test.tsx",
+      "src/renderer/nc-renderer.test.tsx"
+    ],
+    "src/renderer/use-committed-tree.ts": [
+      "src/integration.test.tsx",
+      "src/renderer/use-committed-tree.test.tsx"
+    ],
+    "src/runtime/context.ts": [
+      "src/app/nc-app.test.tsx",
+      "src/integration.test.tsx",
+      "src/renderer/nc-renderer.test.tsx",
+      "src/runtime/context.test.ts"
+    ],
+    "src/runtime/index.ts": [
+      "src/app/nc-app.test.tsx",
+      "src/integration.test.tsx",
+      "src/renderer/nc-renderer.test.tsx"
+    ],
+    "src/types/index.ts": [],
+    "src/types/nc-types.ts": [
+      "src/types/nc-types.test.ts"
+    ]
+  },
+  "testToSourceMap": {
+    "src/app/nc-app.test.tsx": [
+      "src/app/nc-app.tsx",
+      "src/runtime/index.ts",
+      "src/runtime/context.ts",
+      "src/catalog/index.ts",
+      "src/catalog/nc-catalog.ts",
+      "src/orchestrator/index.ts",
+      "src/orchestrator/handle-intent.ts"
+    ],
+    "src/catalog/nc-catalog.test.ts": [
+      "src/catalog/nc-catalog.ts"
+    ],
+    "src/integration.test.tsx": [
+      "src/runtime/index.ts",
+      "src/runtime/context.ts",
+      "src/catalog/index.ts",
+      "src/catalog/nc-catalog.ts",
+      "src/renderer/index.ts",
+      "src/renderer/input-components.tsx",
+      "src/renderer/nc-renderer.tsx",
+      "src/renderer/use-committed-tree.ts"
+    ],
+    "src/memory/projection.test.ts": [
+      "src/memory/projection.ts"
+    ],
+    "src/orchestrator/buffer-isolation.test.ts": [],
+    "src/orchestrator/handle-intent.test.ts": [
+      "src/orchestrator/handle-intent.ts"
+    ],
+    "src/renderer/input-components.test.tsx": [
+      "src/renderer/input-components.tsx"
+    ],
+    "src/renderer/nc-renderer.test.tsx": [
+      "src/renderer/nc-renderer.tsx",
+      "src/runtime/index.ts",
+      "src/runtime/context.ts",
+      "src/catalog/index.ts",
+      "src/catalog/nc-catalog.ts"
+    ],
+    "src/renderer/use-committed-tree.test.tsx": [
+      "src/renderer/use-committed-tree.ts"
+    ],
+    "src/runtime/context.test.ts": [
+      "src/runtime/context.ts"
+    ],
+    "src/types/nc-types.test.ts": [
+      "src/types/nc-types.ts"
+    ]
+  }
+}

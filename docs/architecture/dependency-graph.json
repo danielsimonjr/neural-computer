@@ -1,0 +1,726 @@
+{
+  "metadata": {
+    "name": "neural-computer",
+    "version": "0.1.0",
+    "lastUpdated": "2026-04-16",
+    "totalFiles": 17,
+    "totalModules": 8,
+    "totalExports": 55
+  },
+  "entryPoints": [
+    {
+      "file": "src/index.ts",
+      "type": "main",
+      "description": "Neural Computer — public entry point."
+    }
+  ],
+  "modules": {
+    "app": {
+      "src/app/index.ts": {
+        "description": "index module",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./nc-app",
+            "imports": [
+              "NCApp",
+              "type NCAppProps"
+            ],
+            "reExport": true
+          }
+        ],
+        "exports": [
+          "NCApp",
+          "type NCAppProps"
+        ],
+        "reExported": [
+          "NCApp",
+          "type NCAppProps"
+        ]
+      },
+      "src/app/nc-app.tsx": {
+        "description": "Factory that takes the NCApp's internal `setTree` reference and",
+        "externalDependencies": [
+          {
+            "package": "react",
+            "imports": [
+              "React"
+            ]
+          },
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "Catalog",
+              "UITree"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "../renderer",
+            "imports": [
+              "NCRenderer"
+            ]
+          },
+          {
+            "file": "../types",
+            "imports": [
+              "NCRuntime",
+              "NCCatalogVersion",
+              "NCIntentHandler"
+            ],
+            "typeOnly": true
+          }
+        ],
+        "exports": [
+          "NCApp"
+        ],
+        "interfaces": [
+          "NCAppProps"
+        ],
+        "functions": [
+          "NCApp"
+        ]
+      }
+    },
+    "catalog": {
+      "src/catalog/index.ts": {
+        "description": "index module",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./nc-catalog",
+            "imports": [
+              "ncStarterCatalog",
+              "NC_CATALOG_VERSION"
+            ],
+            "reExport": true
+          }
+        ],
+        "exports": [
+          "ncStarterCatalog",
+          "NC_CATALOG_VERSION"
+        ],
+        "reExported": [
+          "ncStarterCatalog",
+          "NC_CATALOG_VERSION"
+        ]
+      },
+      "src/catalog/nc-catalog.ts": {
+        "description": "Version string threaded through every emitted IntentEvent.catalog_version",
+        "externalDependencies": [
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "createCatalog"
+            ]
+          },
+          {
+            "package": "zod",
+            "imports": [
+              "z"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "../types",
+            "imports": [
+              "NCCatalogVersion"
+            ],
+            "typeOnly": true
+          }
+        ],
+        "exports": [
+          "NC_CATALOG_VERSION",
+          "ncStarterCatalog"
+        ],
+        "constants": [
+          "NC_CATALOG_VERSION",
+          "ncStarterCatalog"
+        ]
+      }
+    },
+    "entry": {
+      "src/index.ts": {
+        "description": "Neural Computer — public entry point.",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./catalog",
+            "imports": [
+              "ncStarterCatalog",
+              "NC_CATALOG_VERSION"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./runtime",
+            "imports": [
+              "createNCRuntime",
+              "type CreateNCRuntimeOptions"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./memory",
+            "imports": [
+              "defaultNCProjection",
+              "type NCProjectedData",
+              "type NCProjectedEntity"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./renderer",
+            "imports": [
+              "NCRenderer",
+              "NCContainer",
+              "NCText",
+              "NCTextField",
+              "NCCheckbox",
+              "NCButton",
+              "useCommittedTree",
+              "type NCRendererProps",
+              "type NCComponentProps",
+              "type UseCommittedTreeOptions"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./orchestrator",
+            "imports": [
+              "createStubIntentHandler",
+              "type CreateStubIntentHandlerOptions"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./app",
+            "imports": [
+              "NCApp",
+              "type NCAppProps"
+            ],
+            "reExport": true
+          }
+        ],
+        "exports": [
+          "ncStarterCatalog",
+          "NC_CATALOG_VERSION",
+          "createNCRuntime",
+          "type CreateNCRuntimeOptions",
+          "defaultNCProjection",
+          "type NCProjectedData",
+          "type NCProjectedEntity",
+          "NCRenderer",
+          "NCContainer",
+          "NCText",
+          "NCTextField",
+          "NCCheckbox",
+          "NCButton",
+          "useCommittedTree",
+          "type NCRendererProps",
+          "type NCComponentProps",
+          "type UseCommittedTreeOptions",
+          "createStubIntentHandler",
+          "type CreateStubIntentHandlerOptions",
+          "NCApp",
+          "type NCAppProps"
+        ],
+        "reExported": [
+          "ncStarterCatalog",
+          "NC_CATALOG_VERSION",
+          "createNCRuntime",
+          "type CreateNCRuntimeOptions",
+          "defaultNCProjection",
+          "type NCProjectedData",
+          "type NCProjectedEntity",
+          "NCRenderer",
+          "NCContainer",
+          "NCText",
+          "NCTextField",
+          "NCCheckbox",
+          "NCButton",
+          "useCommittedTree",
+          "type NCRendererProps",
+          "type NCComponentProps",
+          "type UseCommittedTreeOptions",
+          "createStubIntentHandler",
+          "type CreateStubIntentHandlerOptions",
+          "NCApp",
+          "type NCAppProps"
+        ]
+      }
+    },
+    "memory": {
+      "src/memory/index.ts": {
+        "description": "index module",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./projection",
+            "imports": [
+              "defaultNCProjection",
+              "type NCProjectedData",
+              "type NCProjectedEntity"
+            ],
+            "reExport": true
+          }
+        ],
+        "exports": [
+          "defaultNCProjection",
+          "type NCProjectedData",
+          "type NCProjectedEntity"
+        ],
+        "reExported": [
+          "defaultNCProjection",
+          "type NCProjectedData",
+          "type NCProjectedEntity"
+        ]
+      },
+      "src/memory/projection.ts": {
+        "description": "The flat view NC exposes to @json-ui/react's DataProvider via the",
+        "externalDependencies": [
+          {
+            "package": "@danielsimonjr/memoryjs",
+            "imports": [
+              "Entity",
+              "Relation",
+              "GraphProjection",
+              "JSONValue"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "exports": [
+          "defaultNCProjection"
+        ],
+        "interfaces": [
+          "NCProjectedData",
+          "NCProjectedEntity"
+        ],
+        "constants": [
+          "defaultNCProjection"
+        ]
+      }
+    },
+    "orchestrator": {
+      "src/orchestrator/handle-intent.ts": {
+        "description": "Options for the stub intent handler. The stub is deterministic —",
+        "externalDependencies": [
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "IntentEvent",
+              "UITree"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "../types",
+            "imports": [
+              "NCIntentHandler"
+            ],
+            "typeOnly": true
+          }
+        ],
+        "exports": [
+          "createStubIntentHandler"
+        ],
+        "interfaces": [
+          "CreateStubIntentHandlerOptions"
+        ],
+        "functions": [
+          "createStubIntentHandler"
+        ]
+      },
+      "src/orchestrator/index.ts": {
+        "description": "index module",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./handle-intent",
+            "imports": [
+              "createStubIntentHandler",
+              "type CreateStubIntentHandlerOptions"
+            ],
+            "reExport": true
+          }
+        ],
+        "exports": [
+          "createStubIntentHandler",
+          "type CreateStubIntentHandlerOptions"
+        ],
+        "reExported": [
+          "createStubIntentHandler",
+          "type CreateStubIntentHandlerOptions"
+        ]
+      }
+    },
+    "renderer": {
+      "src/renderer/index.ts": {
+        "description": "index module",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./input-components",
+            "imports": [
+              "NCContainer",
+              "NCText",
+              "NCTextField",
+              "NCCheckbox",
+              "NCButton",
+              "type NCComponentProps"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./nc-renderer",
+            "imports": [
+              "NCRenderer",
+              "type NCRendererProps"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./use-committed-tree",
+            "imports": [
+              "useCommittedTree",
+              "type UseCommittedTreeOptions"
+            ],
+            "reExport": true
+          }
+        ],
+        "exports": [
+          "NCContainer",
+          "NCText",
+          "NCTextField",
+          "NCCheckbox",
+          "NCButton",
+          "type NCComponentProps",
+          "NCRenderer",
+          "type NCRendererProps",
+          "useCommittedTree",
+          "type UseCommittedTreeOptions"
+        ],
+        "reExported": [
+          "NCContainer",
+          "NCText",
+          "NCTextField",
+          "NCCheckbox",
+          "NCButton",
+          "type NCComponentProps",
+          "NCRenderer",
+          "type NCRendererProps",
+          "useCommittedTree",
+          "type UseCommittedTreeOptions"
+        ]
+      },
+      "src/renderer/input-components.tsx": {
+        "description": "Props shape used by all NC-authored React components. Matches the",
+        "externalDependencies": [
+          {
+            "package": "react",
+            "imports": [
+              "React"
+            ]
+          },
+          {
+            "package": "@json-ui/react",
+            "imports": [
+              "useStagingField",
+              "useActions"
+            ]
+          },
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "UIElement"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "exports": [
+          "NCContainer",
+          "NCText",
+          "NCTextField",
+          "NCCheckbox",
+          "NCButton"
+        ],
+        "interfaces": [
+          "NCComponentProps"
+        ],
+        "functions": [
+          "NCContainer",
+          "NCText",
+          "NCTextField",
+          "NCCheckbox",
+          "NCButton"
+        ]
+      },
+      "src/renderer/nc-renderer.tsx": {
+        "description": "Maps NC-authored React components to the ComponentRegistry shape",
+        "externalDependencies": [
+          {
+            "package": "react",
+            "imports": [
+              "React"
+            ]
+          },
+          {
+            "package": "@json-ui/react",
+            "imports": [
+              "JSONUIProvider",
+              "Renderer",
+              "ComponentRegistry",
+              "ComponentRenderer"
+            ]
+          },
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "collectFieldIds",
+              "Catalog",
+              "IntentEvent",
+              "UITree"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./input-components",
+            "imports": [
+              "NCContainer",
+              "NCText",
+              "NCTextField",
+              "NCCheckbox",
+              "NCButton"
+            ]
+          },
+          {
+            "file": "../types",
+            "imports": [
+              "NCRuntime",
+              "NCCatalogVersion"
+            ],
+            "typeOnly": true
+          }
+        ],
+        "exports": [
+          "NCRenderer"
+        ],
+        "interfaces": [
+          "NCRendererProps"
+        ],
+        "functions": [
+          "NCRenderer"
+        ]
+      },
+      "src/renderer/use-committed-tree.ts": {
+        "description": "Thin wrapper around @json-ui/react's useUIStream that pre-selects",
+        "externalDependencies": [
+          {
+            "package": "@json-ui/react",
+            "imports": [
+              "useUIStream",
+              "UseUIStreamOptions"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "exports": [
+          "useCommittedTree"
+        ],
+        "functions": [
+          "useCommittedTree"
+        ]
+      }
+    },
+    "runtime": {
+      "src/runtime/context.ts": {
+        "description": "Options for createNCRuntime. The caller supplies an",
+        "externalDependencies": [
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "createStagingBuffer",
+              "IntentEvent",
+              "ObservableDataModel"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "../types",
+            "imports": [
+              "NCIntentHandler",
+              "NCRuntime"
+            ],
+            "typeOnly": true
+          }
+        ],
+        "exports": [
+          "createNCRuntime"
+        ],
+        "interfaces": [
+          "CreateNCRuntimeOptions"
+        ],
+        "functions": [
+          "createNCRuntime"
+        ]
+      },
+      "src/runtime/index.ts": {
+        "description": "index module",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./context",
+            "imports": [
+              "createNCRuntime",
+              "type CreateNCRuntimeOptions"
+            ],
+            "reExport": true
+          }
+        ],
+        "exports": [
+          "createNCRuntime",
+          "type CreateNCRuntimeOptions"
+        ],
+        "reExported": [
+          "createNCRuntime",
+          "type CreateNCRuntimeOptions"
+        ]
+      }
+    },
+    "types": {
+      "src/types/index.ts": {
+        "description": "index module",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "exports": []
+      },
+      "src/types/nc-types.ts": {
+        "description": "An NC intent handler receives a fully-formed IntentEvent from the",
+        "externalDependencies": [
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "IntentEvent",
+              "StagingBuffer",
+              "ObservableDataModel"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "exports": [],
+        "interfaces": [
+          "NCRuntime"
+        ]
+      }
+    }
+  },
+  "dependencyGraph": {
+    "circularDependencies": {
+      "runtime": [],
+      "typeOnly": [],
+      "total": 0,
+      "runtimeCount": 0,
+      "typeOnlyCount": 0
+    },
+    "layers": [
+      {
+        "name": "App",
+        "files": [
+          "src/app/index.ts",
+          "src/app/nc-app.tsx"
+        ]
+      },
+      {
+        "name": "Catalog",
+        "files": [
+          "src/catalog/index.ts",
+          "src/catalog/nc-catalog.ts"
+        ]
+      },
+      {
+        "name": "Entry",
+        "files": [
+          "src/index.ts"
+        ]
+      },
+      {
+        "name": "Memory",
+        "files": [
+          "src/memory/index.ts",
+          "src/memory/projection.ts"
+        ]
+      },
+      {
+        "name": "Orchestrator",
+        "files": [
+          "src/orchestrator/handle-intent.ts",
+          "src/orchestrator/index.ts"
+        ]
+      },
+      {
+        "name": "Renderer",
+        "files": [
+          "src/renderer/index.ts",
+          "src/renderer/input-components.tsx",
+          "src/renderer/nc-renderer.tsx",
+          "src/renderer/use-committed-tree.ts"
+        ]
+      },
+      {
+        "name": "Runtime",
+        "files": [
+          "src/runtime/context.ts",
+          "src/runtime/index.ts"
+        ]
+      },
+      {
+        "name": "Types",
+        "files": [
+          "src/types/index.ts",
+          "src/types/nc-types.ts"
+        ]
+      }
+    ]
+  },
+  "statistics": {
+    "totalTypeScriptFiles": 17,
+    "totalModules": 8,
+    "totalLinesOfCode": 844,
+    "totalExports": 55,
+    "totalClasses": 0,
+    "totalInterfaces": 8,
+    "totalFunctions": 10,
+    "totalTypeGuards": 0,
+    "totalEnums": 0,
+    "totalConstants": 3,
+    "totalReExports": 42,
+    "totalTypeOnlyImports": 5,
+    "runtimeCircularDeps": 0,
+    "typeOnlyCircularDeps": 0,
+    "unusedFilesCount": 1,
+    "unusedExportsCount": 8
+  }
+}

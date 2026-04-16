@@ -10,7 +10,11 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ### Added
 
-- **v1 scaffold implementing `docs/plans/2026-04-15-neural-computer-v2-plan.md`** — 13 tasks covering the full React-side Path C integration. Ships 44 tests across 11 test files; typecheck + build clean; public barrel exposes 13 runtime symbols.
+- **Architecture documentation (`docs/architecture/`)** — 9 files covering the full NC v1 surface: OVERVIEW.md (high-level summary, architecture diagram, stats, quickstart), ARCHITECTURE.md (system layers, design decisions, six state surfaces, failure modes), COMPONENTS.md (per-file reference for all 17 source files), DATAFLOW.md (type-click-intent-commit-render loop with diagrams), API.md (all 24 public exports with signatures and options), INVARIANTS.md (all 11 spec invariants with test locations). Plus three auto-generated files: DEPENDENCY_GRAPH.md (file-level imports/exports/Mermaid diagram), TEST_COVERAGE.md (13/17 source files tested, 4 untested are barrel re-exports), unused-analysis.md.
+
+- **Codebase inventory tool (`tools/create-dependency-graph/`)** — cloned from `memoryjs/tools/create-dependency-graph` with `.tsx` file support (source/test discovery, `resolvePath` with `.tsx` + `index.ts` fallback, `stripTsExt` helper). Generates DEPENDENCY_GRAPH.md, dependency-graph.json/yaml, dependency-summary.compact.json, TEST_COVERAGE.md, test-coverage.json, and unused-analysis.md. Run via `npm run docs:deps`.
+
+- **v1 scaffold implementing `docs/plans/2026-04-15-neural-computer-v2-plan.md`** — 13 tasks covering the full React-side Path C integration. Ships 47 tests across 11 test files; typecheck + build clean; public barrel exposes 13 runtime symbols (24 total with types).
 
 - **Catalog (`src/catalog/`)** — `ncStarterCatalog` built via `@json-ui/core`'s `createCatalog`. Declares five components (`Container`, `Text`, `TextField`, `Checkbox`, `Button`) and two actions (`submit_form`, `cancel`). Every input component carries a required `id: z.string()` prop for staging-buffer keying. `Button.action` is optional but when present accepts `{name, params?}` so LLM-emitted action declarations reach the orchestrator intact. `NC_CATALOG_VERSION = "nc-starter-0.1"` is a branded string threaded through every emitted `IntentEvent.catalog_version`.
 

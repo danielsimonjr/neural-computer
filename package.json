@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write \"**/*.{ts,tsx,json,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "docs:deps": "npx tsx tools/create-dependency-graph/create-dependency-graph.ts --include-tests"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
