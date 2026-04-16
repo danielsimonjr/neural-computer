@@ -32,14 +32,14 @@ Neural Computer is a TypeScript runtime providing:
 
 ### Key Statistics (v1)
 
-| Metric | Value |
-|--------|-------|
-| Source Files | 17 TypeScript files |
-| Lines of Code | ~830 |
-| Public Exports | 24 (13 values + 11 types) |
-| Tests | 47 across 11 files |
-| Circular Dependencies | 0 |
-| Spec Invariants | 11, all tested |
+| Metric                | Value                     |
+| --------------------- | ------------------------- |
+| Source Files          | 17 TypeScript files       |
+| Lines of Code         | ~830                      |
+| Public Exports        | 24 (13 values + 11 types) |
+| Tests                 | 47 across 11 files        |
+| Circular Dependencies | 0                         |
+| Spec Invariants       | 11, all tested            |
 
 ---
 
@@ -107,17 +107,17 @@ After `catalog.validateTree(tree)`, all downstream code walks `result.data` (the
 │                                                          │
 │  ┌────────────────────────────────────────────────────┐  │
 │  │  Memory: defaultNCProjection                       │  │
-│  │  memoryjs entities → ObservableDataModel            │  │
+│  │  memoryjs entities → ObservableDataModel           │  │
 │  └────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────┘
                          │
-          ┌──────────────┴──────────────┐
-          │                             │
+          ┌──────────────┴─────────────┐
+          │                            │
 ┌─────────┴──────────┐   ┌─────────────┴─────────────┐
-│  @json-ui/core     │   │  @danielsimonjr/memoryjs   │
-│  @json-ui/react    │   │  (knowledge graph)          │
-│  (renderer)        │   │                             │
-└────────────────────┘   └───────────────────────────────┘
+│  @json-ui/core     │   │  @danielsimonjr/memoryjs  │
+│  @json-ui/react    │   │  (knowledge graph)        │
+│  (renderer)        │   │                           │
+└────────────────────┘   └───────────────────────────┘
 ```
 
 ---
@@ -164,13 +164,13 @@ The orchestrator module does NOT import React, `@json-ui/react`, or anything fro
 
 `ncStarterCatalog` declares 5 components and 2 actions via `@json-ui/core`'s `createCatalog`:
 
-| Component | Props | Role |
-|-----------|-------|------|
-| `Container` | `{}` | Layout wrapper with children |
-| `Text` | `{ content: string }` | Display text |
-| `TextField` | `{ id, label, placeholder?, error? }` | Text input bound to staging |
-| `Checkbox` | `{ id, label }` | Boolean input bound to staging |
-| `Button` | `{ label, action?: { name, params? } }` | Fires catalog actions |
+| Component   | Props                                   | Role                           |
+| ----------- | --------------------------------------- | ------------------------------ |
+| `Container` | `{}`                                    | Layout wrapper with children   |
+| `Text`      | `{ content: string }`                   | Display text                   |
+| `TextField` | `{ id, label, placeholder?, error? }`   | Text input bound to staging    |
+| `Checkbox`  | `{ id, label }`                         | Boolean input bound to staging |
+| `Button`    | `{ label, action?: { name, params? } }` | Fires catalog actions          |
 
 Every input component carries `id: z.string()` for staging-buffer keying. `NC_CATALOG_VERSION = "nc-starter-0.1"` is threaded through every emitted `IntentEvent`.
 
@@ -184,14 +184,14 @@ Every input component carries `id: z.string()` for staging-buffer keying. `NC_CA
 
 The NC spec names six state surfaces explicitly. Each has a declared owner and a declared read discipline.
 
-| Surface | Owner | Orchestrator Access | Persistence |
-|---------|-------|---------------------|-------------|
-| **Durable state** | memoryjs | Read/write freely | Across sessions |
-| **Current UI tree** | LLM (re-emitted each cycle) | None (pure derivation) | None |
-| **Staging buffer** | NCRenderer wrapper | Read-only, on intent flush only | In-memory, dies on unmount |
-| **In-flight intent flag** | createNCRuntime | Implicit (backpressure gate) | In-memory |
-| **Catalog version** | Config constant | Read-only, on IntentEvent | Constant per session |
-| **LLM session state** | Anthropic SDK | Invisible to NC | Within session |
+| Surface                   | Owner                       | Orchestrator Access             | Persistence                |
+| ------------------------- | --------------------------- | ------------------------------- | -------------------------- |
+| **Durable state**         | memoryjs                    | Read/write freely               | Across sessions            |
+| **Current UI tree**       | LLM (re-emitted each cycle) | None (pure derivation)          | None                       |
+| **Staging buffer**        | NCRenderer wrapper          | Read-only, on intent flush only | In-memory, dies on unmount |
+| **In-flight intent flag** | createNCRuntime             | Implicit (backpressure gate)    | In-memory                  |
+| **Catalog version**       | Config constant             | Read-only, on IntentEvent       | Constant per session       |
+| **LLM session state**     | Anthropic SDK               | Invisible to NC                 | Within session             |
 
 The sixth surface (LLM session state) is the Anthropic SDK's prompt-cache and tool-use state between calls. It is durable within a session but invisible to the rest of the system. NC treats it as an implementation detail of the orchestrator — its existence is acknowledged rather than managed.
 
@@ -230,13 +230,13 @@ Derived from the spec (`docs/specs/2026-04-11-ephemeral-ui-state-design.md`):
 
 ## Failure Modes
 
-| Risk | Handling |
-|------|----------|
-| LLM emits malformed tree | `catalog.validateTree` returns `success: false`; reconcile is skipped, buffer untouched |
-| Streaming response times out | `useCommittedTree` (atomic mode) suppresses partial trees; reconcile never runs on incomplete data |
-| NCRenderer unmounts | Buffer dies. Deliberate non-goal — persistent drafts are a separate spec |
-| Handler throws | `emitIntent` propagates the rejection; NCRenderer's `.catch` logs it; `intentInFlight` clears in `finally` |
-| Duplicate field IDs | `validateUniqueFieldIds` (inside `catalog.validateTree`) returns `fieldIdError`; reconcile skipped |
+| Risk                         | Handling                                                                                                   |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| LLM emits malformed tree     | `catalog.validateTree` returns `success: false`; reconcile is skipped, buffer untouched                    |
+| Streaming response times out | `useCommittedTree` (atomic mode) suppresses partial trees; reconcile never runs on incomplete data         |
+| NCRenderer unmounts          | Buffer dies. Deliberate non-goal — persistent drafts are a separate spec                                   |
+| Handler throws               | `emitIntent` propagates the rejection; NCRenderer's `.catch` logs it; `intentInFlight` clears in `finally` |
+| Duplicate field IDs          | `validateUniqueFieldIds` (inside `catalog.validateTree`) returns `fieldIdError`; reconcile skipped         |
 
 ---
 
@@ -259,6 +259,7 @@ Path C calls for a headless renderer (`@json-ui/headless`) running alongside the
 - `collectFieldIds` lives in `@json-ui/core` (not in headless or react) so both paths can reach it
 
 What is NOT in v1:
+
 - No headless session is mounted
 - No dual-backend tree comparison
 - No LLM Observer layer consuming the headless output
