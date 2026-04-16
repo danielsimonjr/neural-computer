@@ -126,14 +126,18 @@ export interface NCObserver {
 }
 ```
 
-Update `NCRuntime` to include the observer field:
+Update `NCRuntime` to include the observer field. NOTE: `observer` lands as **optional** at Task 1 and is **flipped to required in Task 5** once `createNCRuntime` actually constructs one. Shipping it required at Task 1 would require a throwaway noop stub in `context.ts` just to keep the repo compiling through Tasks 2–4 — the optional-now, required-later approach keeps each task strictly within its listed files and avoids the intermediate stub.
 
 ```typescript
 export interface NCRuntime {
   stagingBuffer: StagingBuffer;
   durableStore: ObservableDataModel;
-  /** LLM observer: shadows every React tree commit with a headless render. */
-  observer: NCObserver;
+  /**
+   * LLM observer: shadows every React tree commit with a headless render.
+   * Optional at Task 1; promoted to required in Task 5 once createNCRuntime
+   * constructs one from the required `catalog` option.
+   */
+  observer?: NCObserver;
   emitIntent: (event: IntentEvent) => Promise<void>;
   setIntentHandler: (handler: NCIntentHandler) => void;
   destroy: () => void;
@@ -144,13 +148,13 @@ export interface NCRuntime {
 
 Run: `npm run typecheck && npx vitest run src/types/nc-types.test.ts`
 
-Expected: typecheck clean, test passes.
+Expected: typecheck clean (the existing `createNCRuntime` return object is still valid because `observer` is optional), new NCObserver structural-stub test passes.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add src/types/nc-types.ts src/types/nc-types.test.ts
-git commit -m "feat(types): add NCObserver interface + observer field on NCRuntime"
+git commit -m "feat(types): add NCObserver interface + optional observer field on NCRuntime"
 ```
 
 ---
@@ -710,6 +714,7 @@ git commit -m "feat(observer): add barrel export"
 **Files:**
 - Modify: `src/runtime/context.ts`
 - Modify: `src/runtime/context.test.ts` (update all 7 existing tests)
+- Modify: `src/types/nc-types.ts` (flip `observer?` to required `observer`)
 
 - [ ] **Step 1: Read the current runtime source**
 
@@ -823,6 +828,17 @@ Update the returned runtime object to include the observer:
     destroy,
   };
 ```
+
+- [ ] **Step 4b: Flip `observer?` to required on `NCRuntime`**
+
+In `src/types/nc-types.ts`, change the `observer?: NCObserver` field added at Task 1 from optional to required. Update the JSDoc to remove the "Optional at Task 1" phrasing now that the promise is made good:
+
+```typescript
+/** LLM observer: shadows every React tree commit with a headless render. */
+observer: NCObserver;
+```
+
+This flip lives in the same commit as the context.ts changes and the call-site updates so the repo stays typecheck-clean across the boundary. Task 4b is the balancing entry that closes the optional-to-required plan amendment introduced at Task 1.
 
 - [ ] **Step 5: Update ALL existing `createNCRuntime({ durableStore })` call sites across the codebase**
 
