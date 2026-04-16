@@ -10,7 +10,7 @@
 
 **Spec:** [`docs/specs/2026-04-16-headless-dual-backend-design.md`](../specs/2026-04-16-headless-dual-backend-design.md)
 
-**Test count:** 47 → ~57 (10 new `it()` blocks). Typecheck clean, build clean across ESM + CJS + dts required at every task boundary.
+**Test count:** 47 → ~66 (19 new `it()` blocks: 1 type-stub + 7 registry + 7 factory + 1 runtime + 2 renderer + 1 integration). Typecheck clean, build clean across ESM + CJS + dts required at every task boundary.
 
 ---
 
@@ -395,8 +395,9 @@ import {
   createObservableDataModel,
   type UITree,
 } from "@json-ui/core";
-import type { HeadlessComponent, HeadlessRegistry } from "@json-ui/headless";
+import type { HeadlessRegistry } from "@json-ui/headless";
 import { createNCObserver } from "./nc-observer";
+import { ncHeadlessRegistry } from "./nc-headless-components";
 import { ncStarterCatalog } from "../catalog";
 
 function makeDeps() {
@@ -459,52 +460,80 @@ describe("createNCObserver", () => {
     observer.destroy();
   });
 
-  it("destroy() is idempotent; render() is a no-op after destroy", () => {
+  it("destroy() is idempotent; render() is a no-op after destroy and preserves last good cache", () => {
+    // Seed the cache with a successful render first, so we can distinguish
+    // "render was a no-op after destroy" from "render never ran at all".
+    // Without this seed, getLastRender() would return null both before any
+    // render and after a failed post-destroy render — a tautology.
     const observer = createNCObserver(makeDeps());
+    observer.render(singleTextFieldTree);
+    const cached = observer.getLastRender();
+    expect(cached).not.toBeNull();
+    expect(observer.getLastRenderPassId()).toBe(1);
+
     observer.destroy();
     expect(() => observer.destroy()).not.toThrow();
+
+    // render() after destroy is a no-op: cache and counters do not change.
     observer.render(singleTextFieldTree);
-    expect(observer.getLastRender()).toBeNull();
-    expect(observer.getLastRenderPassId()).toBe(0);
+    expect(observer.getLastRender()).toBe(cached);
+    expect(observer.getLastRenderPassId()).toBe(1);
+    expect(observer.getConsecutiveFailures()).toBe(0);
   });
 
   it("Invariant 13: throwing registry component logs warning, keeps cache, advances failure count", () => {
-    // Build a runtime-owned observer that uses a custom registry containing
-    // one throwing component. Can't reuse createNCObserver (which uses the
-    // built-in registry) — this test constructs its own headless renderer
-    // via a modified factory. Simpler approach: monkey-patch by importing
-    // the raw createHeadlessRenderer and wrapping it.
+    // @json-ui/headless's walker (walker.ts:67-79) does NOT throw on unknown
+    // component types — it emits a fallback `{type: "Unknown"}` node. So we
+    // CANNOT exercise the Invariant 13 catch path by passing a tree with an
+    // unknown element type. Instead, we inject a registry whose component
+    // FUNCTION throws — the walker's component-error path (walker.ts:80-89)
+    // DOES bubble component-function exceptions, which the observer catches.
     //
-    // But per the spec, the observer has to use ncHeadlessRegistry. To test
-    // the failure path without modifying the observer, emit a tree whose
-    // root element is NOT in ncHeadlessRegistry (e.g. type "Unknown"). The
-    // walker throws UnknownComponentError, which createNCObserver catches.
-    const observer = createNCObserver(makeDeps());
+    // We use the `registry` override on CreateNCObserverOptions (added to
+    // enable exactly this test) to install a throwing Container component
+    // alongside the real components from ncHeadlessRegistry.
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    // First, do a successful render to seed the cache.
-    observer.render(singleTextFieldTree);
+    const throwingRegistry: HeadlessRegistry = {
+      ...ncHeadlessRegistry,
+      Container: () => {
+        throw new Error("deliberate test explosion");
+      },
+    };
+
+    const deps = makeDeps();
+    const observer = createNCObserver({ ...deps, registry: throwingRegistry });
+
+    // Seed the cache with a Text tree (Container component is unused here,
+    // so this render succeeds).
+    const seedTree: UITree = {
+      root: "t",
+      elements: { t: { key: "t", type: "Text", props: { content: "seed" } } },
+    };
+    observer.render(seedTree);
     const good = observer.getLastRender();
     expect(good).not.toBeNull();
     expect(observer.getLastRenderPassId()).toBe(1);
 
-    // Now render a tree with an unknown type. catalog.validateTree would
-    // reject this at NCRenderer level, but the observer itself doesn't
-    // re-validate — it will throw inside walkTree. The observer catches.
+    // Now render a tree that uses Container — which throws from the registry.
     const badTree: UITree = {
-      root: "x",
-      elements: { x: { key: "x", type: "NotAComponent", props: {} } },
+      root: "r",
+      elements: {
+        r: { key: "r", type: "Container", props: {}, children: [] },
+      },
     };
     observer.render(badTree);
     observer.render(badTree);
 
+    // After two failed renders: passId stalled, failures advanced, cache
+    // preserved, warnings emitted.
     expect(observer.getConsecutiveFailures()).toBe(2);
-    expect(observer.getLastRenderPassId()).toBe(1); // unchanged
-    expect(observer.getLastRender()).toBe(good);    // prior good tree preserved
+    expect(observer.getLastRenderPassId()).toBe(1);
+    expect(observer.getLastRender()).toBe(good);
     expect(warnSpy).toHaveBeenCalledTimes(2);
 
-    // Successful render resets the failure counter.
-    observer.render(singleTextFieldTree);
+    // A successful render resets the failure counter and advances passId.
+    observer.render(seedTree);
     expect(observer.getConsecutiveFailures()).toBe(0);
     expect(observer.getLastRenderPassId()).toBe(2);
 
@@ -537,12 +566,14 @@ import {
   createHeadlessRenderer,
   JsonStringSerializer,
   createHtmlSerializer,
+  type HeadlessRegistry,
   type NormalizedNode,
 } from "@json-ui/headless";
 import type {
   Catalog,
   ObservableDataModel,
   StagingBuffer,
+  UITree,
 } from "@json-ui/core";
 import { ncHeadlessRegistry } from "./nc-headless-components";
 import type { NCObserver } from "../types";
@@ -556,6 +587,13 @@ export interface CreateNCObserverOptions {
   staging: StagingBuffer;
   data: ObservableDataModel;
   catalogVersion?: string;
+  /**
+   * Optional registry override. Defaults to ncHeadlessRegistry. Exposed so
+   * tests can inject a throwing component to exercise Invariant 13's
+   * "observer catches the exception and preserves last good cache" path.
+   * Production callers should use the default.
+   */
+  registry?: HeadlessRegistry;
 }
 
 // Fallback-only HTML serializer for diagnostic output. `emitters: {}` means
@@ -569,7 +607,7 @@ export function createNCObserver(
 ): NCObserver {
   const renderer = createHeadlessRenderer({
     catalog: options.catalog,
-    registry: ncHeadlessRegistry,
+    registry: options.registry ?? ncHeadlessRegistry,
     staging: options.staging,
     data: options.data,
     catalogVersion: options.catalogVersion,
@@ -581,7 +619,7 @@ export function createNCObserver(
   let destroyed = false;
 
   return {
-    render(tree) {
+    render(tree: UITree) {
       if (destroyed) return;
       try {
         lastRender = renderer.render(tree);
@@ -786,16 +824,40 @@ Update the returned runtime object to include the observer:
   };
 ```
 
-- [ ] **Step 5: Update the 7 existing tests to pass the new required options**
+- [ ] **Step 5: Update ALL existing `createNCRuntime({ durableStore })` call sites across the codebase**
 
-In `src/runtime/context.test.ts`, every `createNCRuntime({ durableStore })` call must become `createNCRuntime({ durableStore, catalog: ncStarterCatalog, catalogVersion: NC_CATALOG_VERSION })`. Count of call sites: 7 (one per existing test block).
+Because `catalog` becomes required after this task, every existing caller must be updated in the same commit as the runtime change — otherwise typecheck fails between Task 5 and Task 6. Grep first to confirm the exact list:
 
-Example before:
+Run: `grep -rn "createNCRuntime({" src/`
+
+Expected output (15 sites as of 2026-04-16):
+
+```
+src/app/nc-app.test.tsx:13
+src/app/nc-app.test.tsx:80
+src/integration.test.tsx:17
+src/integration.test.tsx:92
+src/integration.test.tsx:173
+src/integration.test.tsx:245
+src/integration.test.tsx:319
+src/renderer/nc-renderer.test.tsx:18
+src/runtime/context.test.ts:13
+src/runtime/context.test.ts:26
+src/runtime/context.test.ts:47
+src/runtime/context.test.ts:69
+src/runtime/context.test.ts:110
+src/runtime/context.test.ts:140
+src/runtime/context.test.ts:175
+```
+
+For each of those 15 sites, change:
+
 ```typescript
 const runtime = await createNCRuntime({ durableStore });
 ```
 
-After:
+to:
+
 ```typescript
 const runtime = await createNCRuntime({
   durableStore,
@@ -804,11 +866,22 @@ const runtime = await createNCRuntime({
 });
 ```
 
+Add the import `import { ncStarterCatalog, NC_CATALOG_VERSION } from "../catalog";` (or `from "./catalog";` in `src/runtime/context.test.ts`) to each of the 5 affected test files if not already present:
+- `src/app/nc-app.test.tsx` — likely already imports these (used in NCApp props)
+- `src/integration.test.tsx` — already imports (used in NCRenderer props)
+- `src/renderer/nc-renderer.test.tsx` — already imports
+- `src/runtime/context.test.ts` — likely does NOT yet import — add
+- `src/app/nc-app.test.tsx:13` and `:80` — verify and add if missing
+
+For `src/renderer/nc-renderer.test.tsx`, the call is inside the `makeRuntime` helper at line 18. Updating it there updates all tests in that file transitively.
+
+For `src/integration.test.tsx` and `src/runtime/context.test.ts`, all 12 sites are standalone calls (no helper) — update each one.
+
 - [ ] **Step 6: Run tests + typecheck**
 
-Run: `npm run typecheck && npx vitest run src/runtime/context.test.ts`
+Run: `npm run typecheck && npm test`
 
-Expected: typecheck clean, all 8 tests pass (7 updated + 1 new).
+Expected: typecheck clean, all existing 47 tests pass, plus 1 new observer-wiring test = 48 total passing after this task.
 
 - [ ] **Step 7: Commit**
 
@@ -911,20 +984,7 @@ it("does NOT update observer when tree fails catalog validation (Invariant 9 ext
 });
 ```
 
-Also update `makeRuntime` helper (top of the file) to pass the new required options:
-
-```typescript
-async function makeRuntime(onIntent: (event: IntentEvent) => void) {
-  const durableStore = createObservableDataModel({});
-  const runtime = await createNCRuntime({
-    durableStore,
-    catalog: ncStarterCatalog,
-    catalogVersion: NC_CATALOG_VERSION,
-  });
-  runtime.setIntentHandler(async (event) => onIntent(event));
-  return runtime;
-}
-```
+Note: `makeRuntime` helper at the top of this file was already updated in Task 5 (along with the other 14 `createNCRuntime` call sites). Nothing else to change here.
 
 - [ ] **Step 3: Run tests to verify they fail**
 
@@ -981,9 +1041,17 @@ git commit -m "feat(renderer): call runtime.observer.render after every tree com
 **Files:**
 - Modify: `src/integration.test.tsx`
 
-- [ ] **Step 1: Update existing `createNCRuntime` calls in integration.test.tsx**
+- [ ] **Step 1: Confirm integration.test.tsx call sites are already updated (from Task 5)**
 
-Find every call to `createNCRuntime({ durableStore })` (expect 5 total) and add the new options:
+Task 5 updated all 15 `createNCRuntime({ durableStore })` call sites across the codebase, including 5 in `src/integration.test.tsx` at lines 17, 92, 173, 245, 319. Confirm by running:
+
+```bash
+grep -n "createNCRuntime({ durableStore }" src/integration.test.tsx
+```
+
+Expected: empty output (all sites updated in Task 5).
+
+If any sites remain unupdated, update them now to match:
 
 ```typescript
 const runtime = await createNCRuntime({
@@ -1083,14 +1151,38 @@ git commit -m "test(integration): add Path C observer end-to-end test"
 
 ---
 
-## Task 8: Public barrel + README + AGENTS.md
+## Task 8: Public barrel + README + AGENTS.md + architecture docs
 
 **Files:**
 - Modify: `src/index.ts`
+- Modify: `src/types/index.ts` (confirm or add `NCObserver` re-export)
 - Modify: `README.md`
 - Modify: `AGENTS.md`
+- Modify: `docs/architecture/API.md`
+- Modify: `docs/architecture/ARCHITECTURE.md`
+- Modify: `docs/architecture/OVERVIEW.md` (export count)
+- Modify: `docs/architecture/INVARIANTS.md` (add Invariants 12, 13)
 
-- [ ] **Step 1: Update `src/index.ts`**
+- [ ] **Step 1a: Update `src/types/index.ts` to re-export `NCObserver`**
+
+Read the current file:
+
+```bash
+cat src/types/index.ts
+```
+
+The current file exports only `NCIntentHandler`, `NCCatalogVersion`, `NCRuntime`. Add `NCObserver` to the export list:
+
+```typescript
+export type {
+  NCIntentHandler,
+  NCCatalogVersion,
+  NCRuntime,
+  NCObserver,
+} from "./nc-types";
+```
+
+- [ ] **Step 1b: Update `src/index.ts` public barrel**
 
 Add at the end of the existing exports:
 
@@ -1103,11 +1195,7 @@ export {
 } from "./observer";
 ```
 
-The `NCObserver` type is already reachable via the existing `./types` re-export — verify by reading `src/types/index.ts`. If not already re-exported there, add:
-
-```typescript
-export type { NCObserver } from "./nc-types";
-```
+`NCObserver` is now reachable via the existing `./types` re-export (after Step 1a). Verify: `import { type NCObserver } from "neural-computer"` should typecheck externally.
 
 - [ ] **Step 2: Update README.md quickstart**
 
@@ -1127,7 +1215,7 @@ const runtime = await createNCRuntime({
 });
 ```
 
-Update the "Status" line to reflect the new test count (will be ~57 after this plan ships; leave as-is until final test count is verified).
+Update the "Status" line to reflect the new test count (will be ~66 after this plan ships; leave as-is until final test count is verified).
 
 - [ ] **Step 3: Update AGENTS.md**
 
@@ -1137,11 +1225,87 @@ Under "Critical Conventions (that have caused bugs)", add a new bullet:
 - **`createNCRuntime` requires `catalog` and optionally `catalogVersion`.** Since Path C (Plan `2026-04-16-headless-dual-backend`), the runtime owns an LLM observer whose headless renderer binds the catalog at construction. The same `ncStarterCatalog` + `NC_CATALOG_VERSION` that `NCRenderer` and `NCApp` use must be threaded into `createNCRuntime`. Callers using `NCApp` can pass them directly; callers using `NCRenderer` manually must do this wiring themselves.
 ```
 
+- [ ] **Step 3b: Update `docs/architecture/API.md`**
+
+Locate the `createNCRuntime` section (around line 118-134). Replace the existing `CreateNCRuntimeOptions` interface block with:
+
+```typescript
+interface CreateNCRuntimeOptions {
+  durableStore: ObservableDataModel;
+  catalog: Catalog<any, any, any>;
+  catalogVersion?: NCCatalogVersion;
+}
+```
+
+Add a new top-level section `### NCObserver` documenting the 6 methods (`render`, `getLastRender`, `getLastRenderPassId`, `getConsecutiveFailures`, `serialize`, `destroy`) with signatures and behavioral notes. Mirror the `NCRuntime` section style.
+
+Also add `createNCObserver`, `ncHeadlessRegistry`, `NCObserver`, `CreateNCObserverOptions` to the import block at the top of API.md.
+
+- [ ] **Step 3c: Update `docs/architecture/ARCHITECTURE.md`**
+
+At line 148, replace:
+
+```
+`createNCRuntime({ durableStore })` returns an `NCRuntime` with:
+```
+
+with:
+
+```
+`createNCRuntime({ durableStore, catalog, catalogVersion? })` returns an `NCRuntime` with:
+```
+
+Add a new bullet to the returned-fields list:
+- `observer` — LLM observer (new as of Path C)
+
+Update the Layer 3 block diagram (around line 93-96) to mention the observer alongside the backpressure gate.
+
+- [ ] **Step 3d: Update `docs/architecture/OVERVIEW.md`**
+
+Bump the export count in the stats table (around line 98 and again in the overview):
+
+Before:
+```
+| Public Exports        | 24 (13 values + 11 types) |
+```
+
+After:
+```
+| Public Exports        | 28 (15 values + 13 types) |
+```
+
+Update the directory tree comment:
+```
+├── src/ (19 TypeScript files, ~930 lines, 28 public exports)
+```
+
+(17 + 2 new = 19 files; ~830 + ~100 observer = ~930 lines.)
+
+- [ ] **Step 3e: Update `docs/architecture/INVARIANTS.md`**
+
+Append two new sections to the end of the numbered invariants (before the "Coverage Summary" table):
+
+```markdown
+## Invariant 12: Observer Shadows React Renders
+
+> After a successful React tree commit, `runtime.observer.getLastRender()` returns a `NormalizedNode` tree derived from the same validated tree that drove the React render.
+
+**Tests**: `src/observer/nc-observer.test.ts` (passId advancement), `src/renderer/nc-renderer.test.tsx` (observer populated after render)
+
+## Invariant 13: Observer Failure Is Best-Effort, But Detectable
+
+> A headless render exception does not propagate to React, does not corrupt the staging buffer, and does not clear the previous cached render. The observer exposes `getLastRenderPassId()` (monotonic; advances only on success) and `getConsecutiveFailures()` (resets on success) so callers can detect runaway staleness.
+
+**Tests**: `src/observer/nc-observer.test.ts` (throwing registry + counter verification)
+```
+
+Also update the Coverage Summary table to add rows for 12 and 13.
+
 - [ ] **Step 4: Run full typecheck + test suite**
 
 Run: `npm run typecheck && npm test`
 
-Expected: typecheck clean, all ~57 tests pass.
+Expected: typecheck clean, all ~66 tests pass.
 
 - [ ] **Step 5: Run build**
 
@@ -1219,7 +1383,7 @@ git commit -m "docs(changelog): Path C observer implementation notes"
 
 - [ ] **Step 1: Update project_state.md**
 
-Update the line counts, test counts (47 → ~57), and mention Path C as shipped. Add invariants 12, 13 to the invariant coverage table.
+Update the line counts, test counts (47 → ~66), and mention Path C as shipped. Add invariants 12, 13 to the invariant coverage table.
 
 - [ ] **Step 2: Create a feedback memory for the headless API gotcha**
 
@@ -1272,11 +1436,54 @@ Expected: push succeeds (direct-to-main model per AGENTS.md git conventions).
 
 ---
 
+---
+
+## Task 11: Harden Invariant 7 — forbid orchestrator from importing observer
+
+**Files:**
+- Modify: `src/orchestrator/buffer-isolation.test.ts`
+
+**Rationale:** The existing meta-test forbids orchestrator files from importing React, react-dom, @json-ui/react, @json-ui/headless, and the renderer/app modules. The observer is orchestrator-consumable through `runtime.observer` (a handle on the runtime object), but direct `import from "../observer"` would be a new backdoor. Add it to the forbidden list.
+
+- [ ] **Step 1: Update `src/orchestrator/buffer-isolation.test.ts` FORBIDDEN_IMPORTS**
+
+Add two entries to the regex list (after the `@json-ui/headless` entry):
+
+```typescript
+  /from\s+["']\.\.\/observer["']/,
+  /from\s+["']\.\.\/observer\//,
+```
+
+Updated comment block above the constant to mention `../observer`:
+
+```typescript
+// NC Invariant 7: the orchestrator module must not import from
+// @json-ui/react, @json-ui/headless, react, react-dom, src/renderer/,
+// src/app/, or src/observer/. The orchestrator reads runtime.observer
+// via the NCRuntime handle passed to its handler, but must not couple
+// to the observer module directly.
+```
+
+- [ ] **Step 2: Run the meta-test + full suite**
+
+Run: `npm test`
+
+Expected: all ~66 tests pass (the meta-test verifies no current orchestrator file violates the expanded pattern).
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/orchestrator/buffer-isolation.test.ts
+git commit -m "test(orchestrator): forbid direct observer imports (Invariant 7 hardening)"
+```
+
+---
+
 ## Done Criteria
 
-- [ ] All 9 tasks committed
+- [ ] All 11 tasks committed
 - [ ] `npm run typecheck` clean
-- [ ] `npm test` passes (~57 tests, 11+ files)
+- [ ] `npm test` passes (~66 tests, 13+ files)
 - [ ] `npm run build` clean (ESM + CJS + dts)
 - [ ] `runtime.observer` field present on `NCRuntime` interface
 - [ ] `runtime.observer.getLastRender()` returns a NormalizedNode after any React render
