@@ -15,7 +15,11 @@ import { ncStarterCatalog, NC_CATALOG_VERSION } from "../catalog";
 // repeating the two-step construction pattern in every test body.
 async function makeRuntime(onIntent: (event: IntentEvent) => void) {
   const durableStore = createObservableDataModel({});
-  const runtime = await createNCRuntime({ durableStore });
+  const runtime = await createNCRuntime({
+    durableStore,
+    catalog: ncStarterCatalog,
+    catalogVersion: NC_CATALOG_VERSION,
+  });
   runtime.setIntentHandler(async (event) => onIntent(event));
   return runtime;
 }

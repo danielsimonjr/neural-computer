@@ -91,12 +91,8 @@ export interface NCRuntime {
   stagingBuffer: StagingBuffer;
   /** Memoryjs-backed (or in-memory) ObservableDataModel for durable state. */
   durableStore: ObservableDataModel;
-  /**
-   * LLM observer: shadows every React tree commit with a headless render.
-   * Optional at Task 1; promoted to required in Task 5 once createNCRuntime
-   * constructs one from the required `catalog` option.
-   */
-  observer?: NCObserver;
+  /** LLM observer: shadows every React tree commit with a headless render. */
+  observer: NCObserver;
   /**
    * Emit an IntentEvent through NC's backpressure gate. The returned
    * promise always resolves (never rejects): if another intent is

@@ -14,7 +14,11 @@ describe("NC Path C end-to-end integration", () => {
   it("type → submit → intent cycle with staging snapshot", async () => {
     const onIntent = vi.fn();
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({ durableStore });
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
     runtime.setIntentHandler(async (e) => onIntent(e));
 
     const tree: UITree = {
@@ -89,7 +93,11 @@ describe("NC Path C end-to-end integration", () => {
 
   it("reconciliation on tree commit preserves matching IDs and drops orphans", async () => {
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({ durableStore });
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
     runtime.setIntentHandler(async () => {});
 
     const first: UITree = {
@@ -170,7 +178,11 @@ describe("NC Path C end-to-end integration", () => {
     // end-to-end so a future refactor that merges them is caught.
     const onIntent = vi.fn();
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({ durableStore });
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
     runtime.setIntentHandler(async (e) => onIntent(e));
 
     const tree: UITree = {
@@ -242,7 +254,11 @@ describe("NC Path C end-to-end integration", () => {
     // resolveActionWithStaging → IntentEvent stays intact.
     const onIntent = vi.fn();
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({ durableStore });
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
     runtime.setIntentHandler(async (e) => onIntent(e));
 
     const tree: UITree = {
@@ -316,7 +332,11 @@ describe("NC Path C end-to-end integration", () => {
     });
 
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({ durableStore });
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
     runtime.setIntentHandler(onIntent);
 
     const tree: UITree = {

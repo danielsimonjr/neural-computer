@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { createObservableDataModel, type IntentEvent } from "@json-ui/core";
 import { createNCRuntime } from "./context";
+import { ncStarterCatalog, NC_CATALOG_VERSION } from "../catalog";
 
 // Uses core's in-memory createObservableDataModel rather than the memoryjs
 // adapter because this test verifies the NC runtime wrapper, not memoryjs
@@ -10,7 +11,11 @@ import { createNCRuntime } from "./context";
 describe("createNCRuntime", () => {
   it("returns a runtime with all required handles", async () => {
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({ durableStore });
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
 
     expect(runtime.stagingBuffer).toBeDefined();
     expect(runtime.durableStore).toBe(durableStore);
@@ -23,7 +28,11 @@ describe("createNCRuntime", () => {
 
   it("emitIntent forwards events to the currently-bound handler", async () => {
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({ durableStore });
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
     const handler = vi.fn(async () => {});
     runtime.setIntentHandler(handler);
 
@@ -44,7 +53,11 @@ describe("createNCRuntime", () => {
 
   it("warns (does not throw) when emitIntent is called before setIntentHandler", async () => {
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({ durableStore });
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const event: IntentEvent = {
@@ -66,7 +79,11 @@ describe("createNCRuntime", () => {
 
   it("rejects new intents while one is in flight (NC Invariant 10)", async () => {
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({ durableStore });
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
 
     // Hold the handler on a deferred promise so we can interleave calls.
     let resolveFirst: () => void = () => {};
@@ -107,7 +124,11 @@ describe("createNCRuntime", () => {
 
   it("setIntentHandler replaces the previously-bound handler", async () => {
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({ durableStore });
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
     const first = vi.fn(async () => {});
     const second = vi.fn(async () => {});
     runtime.setIntentHandler(first);
@@ -137,7 +158,11 @@ describe("createNCRuntime", () => {
     // times plus routing an intent, and verifying the value is still
     // present afterwards.
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({ durableStore });
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
     runtime.stagingBuffer.set("email", "a@b.c");
     runtime.stagingBuffer.set("agree", true);
 
@@ -172,8 +197,31 @@ describe("createNCRuntime", () => {
 
   it("destroy is idempotent", async () => {
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({ durableStore });
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
     runtime.destroy();
     expect(() => runtime.destroy()).not.toThrow();
+  });
+
+  it("constructs runtime.observer from the catalog option (Path C wiring)", async () => {
+    const durableStore = createObservableDataModel({});
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
+
+    expect(runtime.observer).toBeDefined();
+    expect(typeof runtime.observer.render).toBe("function");
+    expect(typeof runtime.observer.getLastRender).toBe("function");
+    expect(runtime.observer.getLastRender()).toBeNull();
+
+    runtime.destroy();
+
+    // After destroy, observer.render should be a no-op (tested in
+    // observer unit tests; here we just verify destroy didn't throw).
   });
 });

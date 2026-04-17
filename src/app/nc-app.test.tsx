@@ -10,7 +10,11 @@ import { createStubIntentHandler } from "../orchestrator";
 describe("NCApp", () => {
   it("mounts NCRenderer, wires the intent handler, and drives tree transitions", async () => {
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({ durableStore });
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
 
     const initialTree: UITree = {
       root: "start",
@@ -77,7 +81,11 @@ describe("NCApp", () => {
 
   it("swaps the intent handler when buildIntentHandler identity changes", async () => {
     const durableStore = createObservableDataModel({});
-    const runtime = await createNCRuntime({ durableStore });
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
 
     const tree: UITree = {
       root: "btn",

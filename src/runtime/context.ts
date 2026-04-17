@@ -2,8 +2,10 @@ import {
   createStagingBuffer,
   type IntentEvent,
   type ObservableDataModel,
+  type Catalog,
 } from "@json-ui/core";
-import type { NCIntentHandler, NCRuntime } from "../types";
+import { createNCObserver } from "../observer";
+import type { NCCatalogVersion, NCIntentHandler, NCRuntime } from "../types";
 
 /**
  * Options for createNCRuntime. The caller supplies an
@@ -25,7 +27,18 @@ import type { NCIntentHandler, NCRuntime } from "../types";
  * without tearing down the underlying graph).
  */
 export interface CreateNCRuntimeOptions {
+  /** Caller-owned ObservableDataModel (from memoryjs or core). */
   durableStore: ObservableDataModel;
+  /**
+   * Catalog used by the LLM observer's headless renderer. Must be the SAME
+   * catalog NCRenderer uses to validate trees, so the observer renders the
+   * same post-Zod-strip tree that reconcile walks. @json-ui/headless binds
+   * the catalog at factory construction (renderer.ts:27), not per-render.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  catalog: Catalog<any, any, any>;
+  /** Optional version string threaded through every emitted IntentEvent. */
+  catalogVersion?: NCCatalogVersion;
 }
 
 const NO_HANDLER_WARNING =
@@ -49,6 +62,12 @@ export async function createNCRuntime(
   options: CreateNCRuntimeOptions,
 ): Promise<NCRuntime> {
   const stagingBuffer = createStagingBuffer();
+  const observer = createNCObserver({
+    catalog: options.catalog,
+    staging: stagingBuffer,
+    data: options.durableStore,
+    catalogVersion: options.catalogVersion,
+  });
   let intentHandler: NCIntentHandler | null = null;
   let intentInFlight = false;
   let destroyed = false;
@@ -99,6 +118,7 @@ export async function createNCRuntime(
     if (destroyed) return;
     destroyed = true;
     intentHandler = null;
+    observer.destroy();
     // The durableStore is caller-owned; we don't dispose it here.
     // If it's a memoryjs adapter, the caller disposes it via
     // adapter.dispose() after runtime.destroy().
@@ -107,6 +127,7 @@ export async function createNCRuntime(
   return {
     stagingBuffer,
     durableStore: options.durableStore,
+    observer,
     emitIntent,
     setIntentHandler,
     destroy,
