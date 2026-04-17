@@ -10,6 +10,14 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ### Added
 
+- **Path C: LLM observer (`src/observer/`, 2026-04-16)** — new module wrapping `@json-ui/headless` to produce a normalized JSON view of every committed UI tree. `NCRuntime` gains a `runtime.observer` field exposing `render(tree)`, `getLastRender()`, `getLastRenderPassId()`, `getConsecutiveFailures()`, `serialize("json-string" | "html")`, and `destroy()`. The observer is constructed by `createNCRuntime` from the new required `catalog` option, driven by `NCRenderer.useLayoutEffect` (one new call after reconcile), and disposed by `runtime.destroy()`. Orchestrator reads the observer when composing observations for the LLM. Five NC headless components (`Container`, `Text`, `TextField`, `Checkbox`, `Button`) mirror the React input registry; input components emit a `currentValue` in `NormalizedNode.props` only when the staging buffer has a value for the id.
+
+  New invariants:
+  - **Invariant 12 — Observer shadows React renders.** After a successful tree commit, `getLastRender()` returns the normalized version of that same tree.
+  - **Invariant 13 — Observer failure is best-effort but detectable.** Registry throws log via `console.warn`, the cached render stays at the last good value, `getConsecutiveFailures()` advances, and `getLastRenderPassId()` does not. Callers detect runaway staleness by pairing the two counters.
+
+  Per spec line 367, the observer reflects the last *tree* commit, not the last keystroke — up-to-the-click field values travel on `IntentEvent.staging_snapshot`, not through the observer cache. The end-to-end integration test asserts both paths in parallel.
+
 - **Path C design spec + implementation plan (docs only, 2026-04-16)** — `docs/specs/2026-04-16-headless-dual-backend-design.md` and `docs/plans/2026-04-16-headless-dual-backend-plan.md`. Specifies the LLM observer: a runtime-owned headless renderer (`@json-ui/headless`) that shadows every React tree commit and exposes a structured `NormalizedNode` view for the orchestrator. 11-task plan (TDD, bite-sized, ~66 tests after implementation). Both the spec and the plan were reviewed by an Opus + Sonnet agent team with the RLM skill and verified via HonestClaude. Review caught and fixed: 5 JSON-UI API mismatches in the spec sketches (positional HeadlessComponent signature, required `catalog` in `HeadlessRendererOptions`, single-arg `render`, identity `JsonSerializer`, required `emitters` on HTML serializer), missing call sites in the plan (`nc-app.test.tsx` lines 13 + 80), stale architecture doc references, a broken Invariant 13 test (walker emits fallback `Unknown` node for unknown types but DOES bubble component-function throws — test now uses a throwing component registry via a new optional `registry` override on `CreateNCObserverOptions`), and a test-count miscounting (10 → 19 new `it()` blocks). Implementation is the next task.
 
 - **Architecture documentation (`docs/architecture/`)** — 9 files covering the full NC v1 surface: OVERVIEW.md (high-level summary, architecture diagram, stats, quickstart), ARCHITECTURE.md (system layers, design decisions, six state surfaces, failure modes), COMPONENTS.md (per-file reference for all 17 source files), DATAFLOW.md (type-click-intent-commit-render loop with diagrams), API.md (all 24 public exports with signatures and options), INVARIANTS.md (all 11 spec invariants with test locations). Plus three auto-generated files: DEPENDENCY_GRAPH.md (file-level imports/exports/Mermaid diagram), TEST_COVERAGE.md (13/17 source files tested, 4 untested are barrel re-exports), unused-analysis.md.
@@ -41,6 +49,26 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 - **End-to-end integration test (`src/integration.test.tsx`)** — covers the full Path C React flow: (1) type → submit → `IntentEvent` with full staging snapshot + `catalog_version` threaded through, (2) reconciliation preserves matching IDs and drops orphans across tree transitions, (3) `action_params` and `staging_snapshot` stay separate on key collision (NC Invariant 6), (4) `DynamicValue {path: "email"}` params resolve against staging at the NC layer (NC Invariant 11), (5) backpressure rejects a second click while the first intent is in flight (NC Invariant 10).
 
 - **Scaffold config (`vitest.config.ts`, `tsup.config.ts`, `.eslintrc.cjs`)** — vitest jsdom env with `passWithNoTests: true` and a `resolve.alias` pinning `react`/`react-dom` to NC's own `node_modules` (because `@json-ui/react` installs as a symlink via `file:` deps and JSON-UI's own `node_modules/react` was shadowing NC's in Node's module resolution walk). tsup builds ESM + CJS + `.d.ts` with sourcemaps. ESLint config is a minimal root.
+
+### Changed
+
+- **`createNCRuntime` signature (minor breaking, 2026-04-16)** — now requires `catalog` and accepts an optional `catalogVersion`. Required because the runtime-owned LLM observer's headless renderer binds the catalog at construction (see `@json-ui/headless`'s `HeadlessRendererOptions.catalog` requirement; the renderer does not accept a per-call catalog).
+
+  Migration:
+
+  ```typescript
+  // Before
+  await createNCRuntime({ durableStore });
+
+  // After
+  await createNCRuntime({
+    durableStore,
+    catalog: ncStarterCatalog,
+    catalogVersion: NC_CATALOG_VERSION,
+  });
+  ```
+
+  Callers using `NCApp` are unaffected if `NCApp` wires the runtime internally. Direct `createNCRuntime` callers (custom integrations that construct the runtime before mounting `NCApp` or `NCRenderer`) must update. All 15 internal call sites updated in the same commit as the signature change.
 
 ### Fixed
 
