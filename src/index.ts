@@ -1,11 +1,12 @@
 // Neural Computer — public entry point.
 //
-// The NC runtime composes @json-ui/react and @danielsimonjr/memoryjs
-// into an LLM-driven application runtime. @json-ui/headless dual-backend
-// integration is planned but not in v1 — the primitives (shared
-// stagingBuffer and durableStore references on NCRuntime) are shaped
-// for it, but no v1 code mounts a headless session.
-// See docs/specs/ and docs/plans/ for the architecture.
+// The NC runtime composes @json-ui/react, @json-ui/headless, and
+// @danielsimonjr/memoryjs into an LLM-driven application runtime.
+// Path C (headless dual-backend) is wired in: createNCRuntime owns an
+// NCObserver that shadows every successful React tree commit with a
+// @json-ui/headless render over the same shared stagingBuffer and
+// durableStore references. See docs/specs/ and docs/plans/ for the
+// architecture.
 
 // Catalog
 export { ncStarterCatalog, NC_CATALOG_VERSION } from "./catalog";
@@ -14,6 +15,7 @@ export { ncStarterCatalog, NC_CATALOG_VERSION } from "./catalog";
 export type {
   NCIntentHandler,
   NCCatalogVersion,
+  NCObserver,
   NCRuntime,
 } from "./types";
 
@@ -52,3 +54,10 @@ export {
 
 // App (top-level React mounting component)
 export { NCApp, type NCAppProps } from "./app";
+
+// Observer (LLM observer for Path C)
+export {
+  createNCObserver,
+  ncHeadlessRegistry,
+  type CreateNCObserverOptions,
+} from "./observer";

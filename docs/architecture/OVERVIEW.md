@@ -19,7 +19,7 @@ NC does not implement the paper's learned-video-model substrate. It takes the pa
 | **Backpressure Gate** | Rejects concurrent intents while one is in flight (NC Invariant 10) |
 | **Knowledge Graph State** | Durable state via memoryjs with projection into the React data model |
 | **DynamicValue Resolution** | Action params resolve against staging before reaching the orchestrator |
-| **11 Testable Invariants** | Spec-level guarantees verified by 47 tests across 11 files |
+| **13 Testable Invariants** | Spec-level guarantees verified by 66 tests across 13 files |
 
 ## Quick Architecture Overview
 
@@ -95,11 +95,11 @@ interface UIElement {
 
 ```
 neural-computer/
-├── src/ (17 TypeScript files, ~830 lines, 24 public exports)
-│   ├── index.ts              # public barrel — 13 runtime exports
+├── src/ (20 TypeScript files, ~1090 lines, 28 public exports)
+│   ├── index.ts              # public barrel — 15 runtime exports
 │   │
 │   ├── types/ (2 files)      # Core type definitions
-│   │   ├── nc-types.ts               # NCRuntime, NCIntentHandler, NCCatalogVersion
+│   │   ├── nc-types.ts               # NCRuntime, NCIntentHandler, NCCatalogVersion, NCObserver
 │   │   └── index.ts                  # Barrel export
 │   │
 │   ├── catalog/ (2 files)    # Component + action catalog
@@ -107,7 +107,7 @@ neural-computer/
 │   │   └── index.ts                  # Barrel export
 │   │
 │   ├── runtime/ (2 files)    # Runtime factory
-│   │   ├── context.ts                # createNCRuntime (backpressure + handler slot)
+│   │   ├── context.ts                # createNCRuntime (backpressure + handler slot + observer)
 │   │   └── index.ts                  # Barrel export
 │   │
 │   ├── orchestrator/ (2 files) # Intent handling — no React
@@ -115,7 +115,7 @@ neural-computer/
 │   │   └── index.ts                  # Barrel export
 │   │
 │   ├── renderer/ (4 files)   # React surface
-│   │   ├── nc-renderer.tsx           # NCRenderer (validate + reconcile + onIntent)
+│   │   ├── nc-renderer.tsx           # NCRenderer (validate + reconcile + onIntent + observer.render)
 │   │   ├── input-components.tsx      # NCContainer, NCText, NCTextField, NCCheckbox, NCButton
 │   │   ├── use-committed-tree.ts     # useCommittedTree (atomic commit mode)
 │   │   └── index.ts                  # Barrel export
@@ -126,6 +126,11 @@ neural-computer/
 │   │
 │   ├── memory/ (2 files)     # memoryjs projection
 │   │   ├── projection.ts            # defaultNCProjection
+│   │   └── index.ts                  # Barrel export
+│   │
+│   ├── observer/ (3 files)   # LLM observer (Path C)
+│   │   ├── nc-observer.ts            # createNCObserver (headless shadow renderer)
+│   │   ├── nc-headless-components.ts # ncHeadlessRegistry (Path C headless components)
 │   │   └── index.ts                  # Barrel export
 │   │
 │   └── integration.test.tsx  # End-to-end Path C test
@@ -157,12 +162,12 @@ neural-computer/
 
 | Metric | Value |
 |--------|-------|
-| Source Files | 17 TypeScript files (.ts + .tsx) |
-| Lines of Code | ~844 |
-| Public Exports | 13 value + 11 type = 24 from `src/index.ts` |
-| Tests | 47 across 11 test files |
-| Interfaces | 8 |
-| Functions | 10 |
+| Source Files | 20 TypeScript files (.ts + .tsx) |
+| Lines of Code | ~1091 |
+| Public Exports | 15 value + 13 type = 28 from `src/index.ts` |
+| Tests | 66 across 13 test files |
+| Interfaces | 9 |
+| Functions | 11 |
 | Circular Dependencies | 0 |
 
 ## Getting Started
@@ -189,11 +194,11 @@ import {
 
 ## Related Documentation
 
-- **[Architecture Details](./ARCHITECTURE.md)** — system layers, design decisions, the 11 invariants
+- **[Architecture Details](./ARCHITECTURE.md)** — system layers, design decisions, the 13 invariants
 - **[Component Reference](./COMPONENTS.md)** — per-file documentation
 - **[Data Flow](./DATAFLOW.md)** — type-click-intent-commit-render loop
 - **[API Reference](./API.md)** — public barrel surface with signatures
-- **[Invariants Reference](./INVARIANTS.md)** — all 11 NC spec invariants
+- **[Invariants Reference](./INVARIANTS.md)** — all 13 NC spec invariants
 - **[Dependency Graph](./DEPENDENCY_GRAPH.md)** — auto-generated file-level dependency map
 - **[Test Coverage](./TEST_COVERAGE.md)** — auto-generated test coverage analysis
 

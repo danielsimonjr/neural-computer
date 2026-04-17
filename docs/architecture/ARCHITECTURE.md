@@ -34,12 +34,12 @@ Neural Computer is a TypeScript runtime providing:
 
 | Metric                | Value                     |
 | --------------------- | ------------------------- |
-| Source Files          | 17 TypeScript files       |
-| Lines of Code         | ~830                      |
-| Public Exports        | 24 (13 values + 11 types) |
-| Tests                 | 47 across 11 files        |
+| Source Files          | 20 TypeScript files       |
+| Lines of Code         | ~1090                     |
+| Public Exports        | 28 (15 values + 13 types) |
+| Tests                 | 66 across 13 files        |
 | Circular Dependencies | 0                         |
-| Spec Invariants       | 11, all tested            |
+| Spec Invariants       | 13, all tested            |
 
 ---
 
@@ -93,6 +93,7 @@ After `catalog.validateTree(tree)`, all downstream code walks `result.data` (the
 │  ┌────────────────────────┴───────────────────────────┐  │
 │  │  Layer 3: Runtime (createNCRuntime)                │  │
 │  │  StagingBuffer + durableStore + backpressure gate  │  │
+│  │  + LLM observer (@json-ui/headless shadow render)  │  │
 │  └────────────────────────┬───────────────────────────┘  │
 │                           │                              │
 │  ┌────────────────────────┴───────────────────────────┐  │
@@ -145,12 +146,14 @@ Input components (`NCTextField`, `NCCheckbox`, `NCButton`) bind to the shared `S
 
 ### Layer 3: Runtime (`src/runtime/`)
 
-`createNCRuntime({ durableStore })` returns an `NCRuntime` with:
+`createNCRuntime({ durableStore, catalog, catalogVersion? })` returns an `NCRuntime` with:
 
 - A fresh `StagingBuffer` (created via `@json-ui/core`'s `createStagingBuffer`)
+- A shared reference to the caller-owned `durableStore`
+- An `observer` — LLM observer (new as of Path C) that shadows every successful tree commit with a headless render; exposes `getLastRender()`, `getLastRenderPassId()`, `getConsecutiveFailures()`, `serialize()`, `destroy()`
 - A mutable intent-handler slot (installed later via `setIntentHandler`)
 - A backpressure gate (`intentInFlight` boolean, enforcing Invariant 10)
-- A `destroy()` method for cleanup
+- A `destroy()` method for cleanup (also calls `observer.destroy()`)
 
 The handler is captured via `const currentHandler = intentHandler` BEFORE the `await`, so mid-flight handler swaps do not corrupt the running call.
 
@@ -242,29 +245,26 @@ Derived from the spec (`docs/specs/2026-04-11-ephemeral-ui-state-design.md`):
 
 ## Testing Strategy
 
-- **Unit tests**: Per-module coverage for types, catalog, runtime, orchestrator, renderer, app, memory (9/17 source files have direct test files; the 8 untested files are barrel re-exports with zero logic)
+- **Unit tests**: Per-module coverage for types, catalog, runtime, orchestrator, renderer, app, memory, observer (11/20 source files have direct test files; the 9 untested files are barrel re-exports with zero logic)
 - **Meta-test**: `buffer-isolation.test.ts` walks orchestrator source files and asserts no forbidden imports
 - **Integration test**: `integration.test.tsx` covers the full Path C React flow end-to-end (type → submit → intent → reconcile)
 - **Regression test**: Zod strip regression in `nc-renderer.test.tsx` uses `as unknown as UITree` to test phantom prop behavior
-- **Invariant coverage**: All 11 spec invariants have at least one dedicated test (see [INVARIANTS.md](./INVARIANTS.md))
+- **Invariant coverage**: All 13 spec invariants have at least one dedicated test (see [INVARIANTS.md](./INVARIANTS.md))
 
 ---
 
-## Path C Readiness
+## Path C: LLM Observer
 
-Path C calls for a headless renderer (`@json-ui/headless`) running alongside the React renderer on the same shared stores. The v1 primitives are shaped for this:
+Path C (shipped via plan `2026-04-16-headless-dual-backend`) runs `@json-ui/headless` alongside the React renderer on the same shared stores. `createNCRuntime` owns an `NCObserver` whose headless renderer is bound to the same catalog `NCRenderer` validates against; after every successful React tree commit, `NCRenderer` calls `runtime.observer.render(tree)` to shadow the render.
 
-- `NCRuntime.stagingBuffer` and `NCRuntime.durableStore` are shared references that a headless session can consume
-- The `FORBIDDEN_IMPORTS` list in `buffer-isolation.test.ts` already includes `@json-ui/headless` — ensuring the orchestrator stays renderer-agnostic when headless lands
-- `collectFieldIds` lives in `@json-ui/core` (not in headless or react) so both paths can reach it
+Key properties:
 
-What is NOT in v1:
+- `NCRuntime.stagingBuffer` and `NCRuntime.durableStore` are shared references — the observer's headless session consumes the same state the React side does
+- The `FORBIDDEN_IMPORTS` list in `buffer-isolation.test.ts` includes `@json-ui/headless` — the orchestrator consumes the observer's `NormalizedNode` output via `runtime.observer.serialize()` without importing the headless renderer directly
+- `collectFieldIds` lives in `@json-ui/core` (not in headless or react) so both paths share the same reconciliation semantics
+- Invariants 12 and 13 (see [INVARIANTS.md](./INVARIANTS.md)) specify the observer's correctness contract
 
-- No headless session is mounted
-- No dual-backend tree comparison
-- No LLM Observer layer consuming the headless output
-
-These are separate specs.
+Still deferred to future specs: real Anthropic-backed intent handler, Python REPL dispatch, persistent staging buffer, catalog versioning / migration.
 
 ---
 

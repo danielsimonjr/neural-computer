@@ -36,6 +36,7 @@ All design decisions live in `docs/`. Read the relevant spec before implementing
 - **`createNCRuntime` owns the intent handler slot via `setIntentHandler`**, NOT via a constructor option. The React lifecycle needs deferred handler binding because the `setTree` reference captured by the handler only exists after React's `useState` runs in `NCApp`'s mount. `emitIntent` captures the handler BEFORE `await` so mid-flight swaps don't corrupt the running call.
 - **`NCApp.buildIntentHandler` should be stable across renders.** Inline arrow functions create a new identity every render, which re-installs the handler in every commit. Not a bug (just wasteful), but memoize with `useCallback` in production code.
 - **`useCommittedTree` MUST be used instead of `useUIStream` directly** for any flow that drives `NCRenderer.tree`. The atomic commit mode is non-negotiable for NC Invariant 9 (reconcile only on successful tree commits).
+- **`createNCRuntime` requires `catalog` and optionally `catalogVersion`.** Since Path C (Plan `2026-04-16-headless-dual-backend`), the runtime owns an LLM observer whose headless renderer binds the catalog at construction. The same `ncStarterCatalog` + `NC_CATALOG_VERSION` that `NCRenderer` and `NCApp` use must be threaded into `createNCRuntime`. Callers using `NCApp` can pass them directly; callers using `NCRenderer` manually must do this wiring themselves.
 
 ## What Not to Do
 

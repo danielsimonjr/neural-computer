@@ -6,7 +6,7 @@
 
 ---
 
-The NC spec defines 11 testable invariants. Each maps to one or more tests in the v1 implementation. These are the correctness guarantees the runtime must maintain; any code change that violates one is a bug.
+The NC spec defines 13 testable invariants. Each maps to one or more tests in the v1 implementation. These are the correctness guarantees the runtime must maintain; any code change that violates one is a bug.
 
 ---
 
@@ -120,6 +120,26 @@ Reconciliation runs only on successful tree commits, not on partial streams. `us
 
 ---
 
+## Invariant 12: Observer Shadows React Renders
+
+> After a successful React tree commit, `runtime.observer.getLastRender()` returns a `NormalizedNode` tree derived from the same validated tree that drove the React render.
+
+**Why:** The LLM orchestrator composes observations from `runtime.observer.serialize()` without importing React. Without this invariant, the observer could drift out of sync with the UI the user actually sees.
+
+**Tests:** `src/observer/nc-observer.test.ts` (passId advancement); `src/renderer/nc-renderer.test.tsx` ("populates runtime.observer.getLastRender() after a React commit"); `src/integration.test.tsx` (Path C end-to-end).
+
+---
+
+## Invariant 13: Observer Failure Is Best-Effort, But Detectable
+
+> A headless render exception does not propagate to React, does not corrupt the staging buffer, and does not clear the previous cached render. The observer exposes `getLastRenderPassId()` (monotonic; advances only on success) and `getConsecutiveFailures()` (resets on success) so callers can detect runaway staleness.
+
+**Why:** The observer is best-effort — a malformed tree or a broken registry component shouldn't take down the React UI. But silent failure is a debugging nightmare, so the observer exposes counter-based observability for callers that care.
+
+**Tests:** `src/observer/nc-observer.test.ts` ("Invariant 13: throwing registry component logs warning, keeps cache, advances failure count").
+
+---
+
 ## Coverage Summary
 
 | # | Invariant | Status | Test Location(s) |
@@ -135,5 +155,7 @@ Reconciliation runs only on successful tree commits, not on partial streams. `us
 | 9 | Partial-tree safety | Covered | `use-committed-tree.test.tsx`, `nc-renderer.test.tsx` |
 | 10 | Backpressure rejection | Covered | `context.test.ts`, `integration.test.tsx` |
 | 11 | DynamicValue pre-resolution | Covered | `integration.test.tsx` |
+| 12 | Observer shadows React renders | Covered | `nc-observer.test.ts`, `nc-renderer.test.tsx`, `integration.test.tsx` |
+| 13 | Observer failure best-effort / detectable | Covered | `nc-observer.test.ts` |
 
-All 11 invariants have test coverage as of v1 (47 tests, 11 files).
+All 13 invariants have test coverage as of Path C (66 tests, 13 files).

@@ -5,7 +5,7 @@
 
 ---
 
-The public API is exposed via `src/index.ts`. The barrel exports 13 value symbols and 11 type symbols (24 total). All are documented below with their signatures, options, and return types.
+The public API is exposed via `src/index.ts`. The barrel exports 15 value symbols and 13 type symbols (28 total). All are documented below with their signatures, options, and return types.
 
 ```typescript
 import {
@@ -17,6 +17,7 @@ import {
   type NCIntentHandler,
   type NCCatalogVersion,
   type NCRuntime,
+  type NCObserver,
 
   // Runtime
   createNCRuntime,
@@ -46,6 +47,11 @@ import {
   // App (top-level React mounting)
   NCApp,
   type NCAppProps,
+
+  // Observer (LLM observer for Path C)
+  createNCObserver,
+  ncHeadlessRegistry,
+  type CreateNCObserverOptions,
 } from "neural-computer";
 ```
 
@@ -130,12 +136,44 @@ Creates an NC runtime handle with a fresh `StagingBuffer`, a mutable intent-hand
 ```typescript
 interface CreateNCRuntimeOptions {
   durableStore: ObservableDataModel;
+  catalog: Catalog<any, any, any>;
+  catalogVersion?: NCCatalogVersion;
 }
 ```
 
 The `durableStore` is caller-owned. For production use, build it from memoryjs via `createObservableDataModelFromGraph(ctx.storage, { projection: defaultNCProjection })`. For tests, use `@json-ui/core`'s `createObservableDataModel({})`.
 
+The `catalog` is required because the runtime owns an `NCObserver` whose headless renderer binds the catalog at construction. It MUST match the catalog passed to `NCRenderer`, otherwise the observer renders a different post-Zod-strip tree than React does.
+
 The factory is async to leave room for future initialization steps (persisted buffer hydration, remote handshake). The current implementation returns synchronously-available data.
+
+### NCObserver
+
+The runtime-owned LLM observer. Shadows every successful React tree commit by running `@json-ui/headless` on the same tree + shared stores, caching the `NormalizedNode` output for the orchestrator to read when composing an LLM observation. Owned by `NCRuntime`; never null.
+
+**Interface:**
+
+```typescript
+interface NCObserver {
+  render: (tree: UITree) => void;
+  getLastRender: () => NormalizedNode | null;
+  getLastRenderPassId: () => number;
+  getConsecutiveFailures: () => number;
+  serialize: (format: "json-string" | "html") => string | null;
+  destroy: () => void;
+}
+```
+
+**Methods:**
+
+- `render(tree)` — called by NCRenderer after every successful tree commit. Runs the headless renderer synchronously; caches the result on success, leaves the previous cache intact on failure.
+- `getLastRender()` — returns the cached NormalizedNode from the most recent successful render, or null before any render has completed.
+- `getLastRenderPassId()` — monotonic counter advanced only on successful renders. Zero before the first render. Pairs with `getConsecutiveFailures` so callers can detect runaway staleness.
+- `getConsecutiveFailures()` — number of consecutive render() calls that have thrown since the last successful render. Resets to 0 on each successful render.
+- `serialize(format)` — serialize the last render via `@json-ui/headless` built-in serializers. `"json-string"` for LLM prompts; `"html"` for fallback-only diagnostic preview. Returns null if no render has completed.
+- `destroy()` — release resources. Idempotent. Called by `runtime.destroy()`.
+
+**Behavioral contract:** Per NC Invariant 13, a render failure does not propagate to React, does not corrupt the staging buffer, and does not clear the previous cached render. Per spec line 367, the observer reflects the last *tree* commit, not the last keystroke — intent events carry up-to-the-click `staging_snapshot` separately.
 
 ---
 
