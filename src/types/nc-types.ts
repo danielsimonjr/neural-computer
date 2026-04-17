@@ -76,8 +76,9 @@ export interface NCObserver {
  * intent-dispatch entry point. Created once per process via
  * createNCRuntime and passed down to NCRenderer and the orchestrator
  * loop. The staging buffer and durable store are shared references
- * between the React renderer, the LLM Observer (headless renderer,
- * planned), and the orchestrator's memoryjs transactions.
+ * between the React renderer, the LLM observer (a runtime-owned
+ * @json-ui/headless session; see runtime.observer), and the
+ * orchestrator's memoryjs transactions.
  *
  * The intent handler is bound LAZILY via setIntentHandler, not at
  * construction time. This matches React's useEffect lifecycle: the

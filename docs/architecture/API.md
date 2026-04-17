@@ -103,6 +103,7 @@ Nominal brand that prevents accidental string assignments.
 interface NCRuntime {
   stagingBuffer: StagingBuffer;
   durableStore: ObservableDataModel;
+  observer: NCObserver;
   emitIntent: (event: IntentEvent) => Promise<void>;
   setIntentHandler: (handler: NCIntentHandler) => void;
   destroy: () => void;
