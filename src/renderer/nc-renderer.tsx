@@ -113,10 +113,16 @@ export function NCRenderer({
       // Walk the validated/stripped tree, not the raw one.
       const liveIds = collectFieldIds(result.data!);
       runtime.stagingBuffer.reconcile(liveIds);
+      // Path C: shadow every successful React tree commit with a headless
+      // render so the LLM orchestrator can observe the committed tree
+      // (including resolved staging values) without importing React.
+      // Observer catches its own exceptions — React is unaffected if
+      // the headless render fails. See docs/specs/2026-04-16-headless-dual-backend-design.md.
+      runtime.observer.render(result.data!);
     } catch (err) {
       console.warn("[NC] Reconcile threw; buffer untouched:", err);
     }
-  }, [tree, catalog, runtime.stagingBuffer]);
+  }, [tree, catalog, runtime.stagingBuffer, runtime.observer]);
 
   const onIntent = React.useCallback(
     (event: IntentEvent) => {

@@ -276,6 +276,80 @@ describe("NCRenderer", () => {
     runtime.destroy();
   });
 
+  it("populates runtime.observer.getLastRender() after a React commit (Invariant 12)", async () => {
+    const runtime = await makeRuntime(() => {});
+    render(
+      <NCRenderer
+        tree={{
+          root: "r",
+          elements: {
+            r: { key: "r", type: "Text", props: { content: "hello" } },
+          },
+        }}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+    const normalized = runtime.observer.getLastRender();
+    expect(normalized).not.toBeNull();
+    expect(normalized!.key).toBe("r");
+    expect(normalized!.type).toBe("Text");
+    expect(runtime.observer.getLastRenderPassId()).toBe(1);
+    runtime.destroy();
+  });
+
+  it("does NOT update observer when tree fails catalog validation (Invariant 9 extended)", async () => {
+    const runtime = await makeRuntime(() => {});
+
+    // Seed the observer with a valid tree.
+    const goodTree: UITree = {
+      root: "r",
+      elements: {
+        r: { key: "r", type: "Text", props: { content: "hello" } },
+      },
+    };
+    const { rerender } = render(
+      <NCRenderer
+        tree={goodTree}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+    const goodCache = runtime.observer.getLastRender();
+    const goodPassId = runtime.observer.getLastRenderPassId();
+    expect(goodCache).not.toBeNull();
+
+    // Render a tree with duplicate field IDs — validateTree fails.
+    const badTree: UITree = {
+      root: "root",
+      elements: {
+        root: {
+          key: "root",
+          type: "Container",
+          props: {},
+          children: ["a", "b"],
+        },
+        a: { key: "a", type: "TextField", props: { id: "dup", label: "A" } },
+        b: { key: "b", type: "TextField", props: { id: "dup", label: "B" } },
+      },
+    };
+    rerender(
+      <NCRenderer
+        tree={badTree}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+
+    // Cache and passId unchanged.
+    expect(runtime.observer.getLastRender()).toBe(goodCache);
+    expect(runtime.observer.getLastRenderPassId()).toBe(goodPassId);
+    runtime.destroy();
+  });
+
   it("skips reconcile when the tree fails catalog validation (NC Invariant 9 + 8)", async () => {
     const initialTree: UITree = {
       root: "root",
