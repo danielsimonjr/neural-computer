@@ -4,12 +4,12 @@ import { join } from "path";
 
 // NC Invariant 7: the orchestrator module must not import from
 // @json-ui/react, @json-ui/headless, react, react-dom, or
-// src/renderer/ / src/app/. The orchestrator only sees IntentEvent
-// objects from @json-ui/core and never touches the rendering layer
-// directly. @json-ui/headless is included even though v1 doesn't
-// depend on it — the primitives are shaped for a future dual-backend
-// integration, and this test is the structural guarantee that the
-// orchestrator stays renderer-agnostic when that lands.
+// src/renderer/ / src/app/ / src/observer/. The orchestrator only sees
+// IntentEvent objects from @json-ui/core and never touches the
+// rendering layer directly. It reads runtime.observer via the NCRuntime
+// handle passed to its handler, but must NOT couple to the observer
+// module directly — that backdoor would let orchestrator code call
+// createNCObserver or bypass runtime.observer's disposal semantics.
 const FORBIDDEN_IMPORTS: ReadonlyArray<RegExp> = [
   /from\s+["']@json-ui\/react["']/,
   /from\s+["']@json-ui\/headless["']/,
@@ -19,6 +19,8 @@ const FORBIDDEN_IMPORTS: ReadonlyArray<RegExp> = [
   /from\s+["']\.\.\/renderer\//,
   /from\s+["']\.\.\/app["']/,
   /from\s+["']\.\.\/app\//,
+  /from\s+["']\.\.\/observer["']/,
+  /from\s+["']\.\.\/observer\//,
 ];
 
 async function collectTsFiles(dir: string): Promise<string[]> {
