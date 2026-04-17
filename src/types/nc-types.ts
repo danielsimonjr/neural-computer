@@ -2,7 +2,9 @@ import type {
   IntentEvent,
   StagingBuffer,
   ObservableDataModel,
+  UITree,
 } from "@json-ui/core";
+import type { NormalizedNode } from "@json-ui/headless";
 
 /**
  * An NC intent handler receives a fully-formed IntentEvent from the
@@ -24,6 +26,52 @@ export type NCIntentHandler = (event: IntentEvent) => Promise<void>;
 export type NCCatalogVersion = string & { readonly __brand: "NCCatalogVersion" };
 
 /**
+ * The NC LLM observer. Shadows every successful React tree commit by
+ * running @json-ui/headless on the same tree + shared stores, caching
+ * the NormalizedNode output for the orchestrator to read when composing
+ * an LLM observation. Owned by NCRuntime; never null.
+ */
+export interface NCObserver {
+  /**
+   * Called by NCRenderer after every successful tree commit. Runs the
+   * headless renderer synchronously; caches the result on success,
+   * leaves the previous cache intact on failure. Catalog is NOT passed
+   * per-render — it was bound at observer construction via createNCObserver.
+   */
+  render: (tree: UITree) => void;
+
+  /**
+   * Returns the normalized tree from the most recent successful render,
+   * or null if no render has completed yet.
+   */
+  getLastRender: () => NormalizedNode | null;
+
+  /**
+   * Monotonic counter advanced only on successful renders. Zero before
+   * the first render. Pairs with getConsecutiveFailures so callers can
+   * detect runaway staleness (pass ID stalled + failures increasing).
+   */
+  getLastRenderPassId: () => number;
+
+  /**
+   * Number of consecutive render() calls that have thrown since the
+   * last successful render. Resets to 0 on each successful render.
+   */
+  getConsecutiveFailures: () => number;
+
+  /**
+   * Serialize the last render via @json-ui/headless built-in serializers.
+   * "json-string" → JSON.stringify(lastRender) for LLM prompts.
+   * "html"        → fallback-only diagnostic HTML (debug preview, not UI).
+   * Callers wanting the structured NormalizedNode should use getLastRender().
+   */
+  serialize: (format: "json-string" | "html") => string | null;
+
+  /** Release resources. Idempotent. Called by runtime.destroy(). */
+  destroy: () => void;
+}
+
+/**
  * The NC runtime — a handle to the shared state references and the
  * intent-dispatch entry point. Created once per process via
  * createNCRuntime and passed down to NCRenderer and the orchestrator
@@ -43,6 +91,12 @@ export interface NCRuntime {
   stagingBuffer: StagingBuffer;
   /** Memoryjs-backed (or in-memory) ObservableDataModel for durable state. */
   durableStore: ObservableDataModel;
+  /**
+   * LLM observer: shadows every React tree commit with a headless render.
+   * Optional at Task 1; promoted to required in Task 5 once createNCRuntime
+   * constructs one from the required `catalog` option.
+   */
+  observer?: NCObserver;
   /**
    * Emit an IntentEvent through NC's backpressure gate. The returned
    * promise always resolves (never rejects): if another intent is
