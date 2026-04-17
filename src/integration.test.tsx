@@ -318,6 +318,80 @@ describe("NC Path C end-to-end integration", () => {
     runtime.destroy();
   });
 
+  it("LLM observer: type → observer reflects staging → handler reads serialized tree", async () => {
+    const capturedObservations: string[] = [];
+    const durableStore = createObservableDataModel({});
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
+
+    runtime.setIntentHandler(async () => {
+      // Re-render the observer with the current staging snapshot so the
+      // handler sees the most recent field values (e.g. what the user just
+      // typed). The observer's headless renderer freezes staging at the start
+      // of each render() call (JSON-UI Invariant 15), so calling render()
+      // here picks up everything in the staging buffer at intent-fire time.
+      runtime.observer.render(tree);
+      const json = runtime.observer.serialize("json-string");
+      if (json !== null) capturedObservations.push(json);
+    });
+
+    const tree: UITree = {
+      root: "form",
+      elements: {
+        form: {
+          key: "form",
+          type: "Container",
+          props: {},
+          children: ["email", "submit"],
+        },
+        email: {
+          key: "email",
+          type: "TextField",
+          props: { id: "email", label: "Email" },
+        },
+        submit: {
+          key: "submit",
+          type: "Button",
+          props: { label: "Submit", action: { name: "submit_form" } },
+        },
+      },
+    };
+
+    render(
+      <NCRenderer
+        tree={tree}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+
+    // Type a value.
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "alice@example.com" },
+    });
+
+    // Fire the intent. The handler reads the observer.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(capturedObservations).toHaveLength(1);
+    // The serialized JSON contains the form tree with the TextField that has
+    // the current staging value resolved by the headless registry.
+    const obs = capturedObservations[0]!;
+    expect(obs).toContain('"type":"Container"');
+    expect(obs).toContain('"type":"TextField"');
+    expect(obs).toContain('"currentValue":"alice@example.com"');
+    expect(obs).toContain('"type":"Button"');
+
+    runtime.destroy();
+  });
+
   it("backpressure rejects a second intent while the first is in flight", async () => {
     let releaseFirst: () => void = () => {};
     const firstDone = new Promise<void>((r) => {
