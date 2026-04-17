@@ -1079,11 +1079,16 @@ const runtime = await createNCRuntime({
 
 - [ ] **Step 2: Add the end-to-end observer test**
 
+Per spec line 367 ("observer reflects last *tree* commit, not last keystroke. Intent events carry up-to-the-click `staging_snapshot` separately"), the observer does NOT pick up typed values between tree commits. Up-to-the-click field state travels on `IntentEvent.staging_snapshot`, not through the observer cache. The test therefore verifies two things in parallel:
+
+1. The IntentEvent the handler receives carries the typed value on `staging_snapshot.email` — this is the spec's canonical path for up-to-the-click data.
+2. The observer cache reflects the tree-commit view (captured on the initial render with an empty staging buffer) — this confirms the spec's tree-commit-only guarantee rather than contradicting it.
+
 Add at the end of the describe block:
 
 ```typescript
-it("LLM observer: type → observer reflects staging → handler reads serialized tree", async () => {
-  const capturedObservations: string[] = [];
+it("LLM observer: tree commit seeds observer; staging_snapshot carries up-to-the-click state (Invariant 12)", async () => {
+  const capturedEvents: IntentEvent[] = [];
   const durableStore = createObservableDataModel({});
   const runtime = await createNCRuntime({
     durableStore,
@@ -1091,10 +1096,12 @@ it("LLM observer: type → observer reflects staging → handler reads serialize
     catalogVersion: NC_CATALOG_VERSION,
   });
 
-  runtime.setIntentHandler(async () => {
-    // The handler reads the observer when composing an observation.
-    const json = runtime.observer.serialize("json-string");
-    if (json !== null) capturedObservations.push(json);
+  // The handler captures the IntentEvent (which carries staging_snapshot
+  // at click time) AND the serialized observer view (which carries the
+  // tree-commit view, per spec line 367). Asserting both in one test
+  // confirms the separation-of-concerns design.
+  runtime.setIntentHandler(async (event) => {
+    capturedEvents.push(event);
   });
 
   const tree: UITree = {
@@ -1128,25 +1135,37 @@ it("LLM observer: type → observer reflects staging → handler reads serialize
     />,
   );
 
-  // Type a value.
+  // Type a value into the email field.
   fireEvent.change(screen.getByLabelText("Email"), {
     target: { value: "alice@example.com" },
   });
 
-  // Fire the intent. The handler reads the observer.
+  // Fire the intent.
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: "Submit" }));
     await new Promise((r) => setTimeout(r, 0));
   });
 
-  expect(capturedObservations).toHaveLength(1);
-  // The serialized JSON contains the form tree with the TextField that has
-  // the current staging value resolved by the headless registry.
-  const obs = capturedObservations[0]!;
-  expect(obs).toContain('"type":"Container"');
-  expect(obs).toContain('"type":"TextField"');
-  expect(obs).toContain('"currentValue":"alice@example.com"');
-  expect(obs).toContain('"type":"Button"');
+  // 1. IntentEvent carries the staging snapshot at click time — this is
+  //    the spec's canonical path for up-to-the-click field values.
+  expect(capturedEvents).toHaveLength(1);
+  expect(capturedEvents[0]!.staging_snapshot).toEqual({
+    email: "alice@example.com",
+  });
+  expect(capturedEvents[0]!.action_name).toBe("submit_form");
+
+  // 2. Observer cache reflects the tree-commit view. Since no new tree
+  //    was committed between the keystroke and the click, the observer
+  //    still holds the initial render (pre-keystroke). The TextField
+  //    in that view has NO `currentValue` key because the staging buffer
+  //    was empty at observer.render time.
+  const obs = runtime.observer.serialize("json-string");
+  expect(obs).not.toBeNull();
+  expect(obs!).toContain('"type":"Container"');
+  expect(obs!).toContain('"type":"TextField"');
+  expect(obs!).not.toContain('"currentValue"');
+  expect(obs!).toContain('"type":"Button"');
+  expect(runtime.observer.getLastRenderPassId()).toBe(1);
 
   runtime.destroy();
 });
