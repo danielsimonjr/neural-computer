@@ -9,7 +9,7 @@ An LLM-driven runtime inspired by Zhuge et al., *Neural Computers* (arXiv:2604.0
 Three components, each imported as a dependency:
 
 - **JSON-UI** (`@json-ui/core`, `@json-ui/react`) — the renderer. The LLM emits catalog-constrained JSON; JSON-UI renders it via a pluggable component registry. Sibling repo at [`../JSON-UI`](../JSON-UI).
-- **memoryjs** (`@danielsimonjr/memoryjs`) — durable state. A TypeScript knowledge graph with transactions, audit, and governance. Sibling repo at [`../memoryjs`](../memoryjs).
+- **MemoryJS** (`@danielsimonjr/memoryjs`) — durable state. A TypeScript knowledge graph with transactions, audit, and governance. Sibling repo at [`../memoryjs`](../memoryjs).
 - **Python REPL** (via the RLM pattern from MIT CSAIL) — the computation arm. Invoked via `child_process.spawn` with a JSON-over-stdin protocol when the LLM decides a dispatch needs real code.
 
 The TypeScript orchestrator threads these together: LLM call → parse response → dispatch (memoryjs transaction, Python job, or new UI tree) → re-render → wait for the next intent event.
