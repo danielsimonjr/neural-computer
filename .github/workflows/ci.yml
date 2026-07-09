@@ -1,0 +1,61 @@
+name: CI
+
+# neural-computer depends on sibling repos via local file: paths
+# (@danielsimonjr/memoryjs -> ../memoryjs, @json-ui/* -> ../JSON-UI/packages/*).
+# Those packages expose their API only through dist/ (exports.types -> ./dist/index.d.ts),
+# so the siblings must be checked out AND built before neural-computer typechecks/tests/builds.
+# All three repos are public, so the default GITHUB_TOKEN can check them out (no secret needed).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out all three repos as siblings under the workspace root so that
+      # ../memoryjs and ../JSON-UI/packages/* resolve from neural-computer/.
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          path: neural-computer
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          repository: danielsimonjr/memoryjs
+          path: memoryjs
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          repository: danielsimonjr/JSON-UI
+          path: JSON-UI
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: neural-computer/package-lock.json
+
+      # Build the siblings first — their dist/ must exist before neural-computer resolves them.
+      - name: Build memoryjs
+        working-directory: memoryjs
+        run: npm ci && npm run build
+
+      - name: Build JSON-UI (npm workspaces -> packages/{core,headless,react}/dist)
+        working-directory: JSON-UI
+        run: npm ci && npm run build
+
+      # Now neural-computer's file: links point at populated dist/ folders.
+      - name: neural-computer typecheck / test / build
+        working-directory: neural-computer
+        run: |
+          npm ci
+          npm run typecheck
+          npm run lint --if-present
+          npm test
+          npm run build
