@@ -45,11 +45,11 @@ jobs:
       # Build the siblings first — their dist/ must exist before neural-computer resolves them.
       - name: Build memoryjs
         working-directory: memoryjs
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile && bun run build
 
       - name: Build JSON-UI (npm workspaces -> packages/{core,headless,react}/dist)
         working-directory: JSON-UI
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile && bun run build
 
       # Now neural-computer's file: links point at populated dist/ folders.
       - name: neural-computer typecheck / test / build
