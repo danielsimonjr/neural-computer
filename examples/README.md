@@ -66,7 +66,7 @@ try {
 }
 ```
 
-LLM intent handler (inject a transport; this fake never uses the network). Swap in `createAnthropicIntentHandler` when `ANTHROPIC_API_KEY` is set.
+LLM intent handler (inject a transport; this fake never uses the network). Swap in `createAnthropicIntentHandler` when `ANTHROPIC_API_KEY` is set. Memoryjs hosts pass `onWrite` into `createObservableDataModelFromGraph` so `durable_write` can await a transaction without React calling `store.set()`.
 
 ```ts
 import {
