@@ -1,64 +1,83 @@
 # Neural Computer
 
-An LLM-driven runtime inspired by Zhuge et al., *Neural Computers* (arXiv:2604.04625, April 2026). The runtime treats the LLM as a background intent engine sitting between a constrained JSON UI layer and a Python REPL, with durable state held in a knowledge graph.
+A catalog-constrained React UI runtime: staging buffer, one-at-a-time intent gate, stub intent handler, and a headless observer cache. Inspired by Zhuge et al., _Neural Computers_ (arXiv:2604.04625). **This package does not yet call an LLM or spawn a Python REPL.**
 
-**Status:** v1 + Path C shipped. 66 tests passing across 13 files, typecheck clean, build clean, public barrel exposes 28 symbols (15 values + 13 types). Real Anthropic-backed intent handler and Python REPL subprocess dispatch are deferred to follow-up specs. See [`CHANGELOG.md`](./CHANGELOG.md) for the release breakdown and [`docs/plans/2026-04-16-headless-dual-backend-plan.md`](./docs/plans/2026-04-16-headless-dual-backend-plan.md) for the Path C task-by-task plan.
+**Status:** v1 + Path C shipped. Private unpublished package (`file:` siblings). React 19 is a **peer dependency**. Use Bun (`bun install`) to match CI. See [`CHANGELOG.md`](./CHANGELOG.md) and [`examples/README.md`](./examples/README.md).
 
 ## Architecture
 
-Three components, each imported as a dependency:
+Shipped dependencies:
 
-- **JSON-UI** (`@json-ui/core`, `@json-ui/react`) — the renderer. The LLM emits catalog-constrained JSON; JSON-UI renders it via a pluggable component registry. Sibling repo at [`../JSON-UI`](../JSON-UI).
-- **MemoryJS** (`@danielsimonjr/memoryjs`) — durable state. A TypeScript knowledge graph with transactions, audit, and governance. Sibling repo at [`../memoryjs`](../memoryjs).
-- **Python REPL** (via the RLM pattern from MIT CSAIL) — the computation arm. Invoked via `child_process.spawn` with a JSON-over-stdin protocol when the LLM decides a dispatch needs real code.
+- **JSON-UI** (`@json-ui/core`, `@json-ui/react`, `@json-ui/headless`) — catalog-constrained renderer plus headless observer. Sibling at [`../JSON-UI`](../JSON-UI).
+- **MemoryJS** (`@danielsimonjr/memoryjs`) — durable knowledge-graph state. Sibling at [`../memoryjs`](../memoryjs).
 
-The TypeScript orchestrator threads these together: LLM call → parse response → dispatch (memoryjs transaction, Python job, or new UI tree) → re-render → wait for the next intent event.
+Not shipped: Anthropic intent handler, Python REPL subprocess.
+
+## Named state surfaces (seven)
+
+1. Durable state (memoryjs)
+2. Current UI tree
+3. Staging buffer
+4. In-flight intent flag (`runtime.isIntentInFlight`)
+5. Catalog version
+6. LLM session state (future handler; not managed here)
+7. Observer cache (`runtime.observer`)
 
 ## Project layout (v1)
 
 ```
 neural-computer/
 ├── src/
-│   ├── index.ts              # public barrel — 15 runtime exports
+│   ├── index.ts              # public barrel (React + core)
+│   ├── core.ts               # neural-computer/core — no React
+│   ├── react.ts              # neural-computer/react — "use client"
 │   ├── types/                # NCRuntime, NCIntentHandler, NCCatalogVersion, NCObserver
-│   ├── catalog/              # ncStarterCatalog + NC_CATALOG_VERSION
-│   ├── runtime/              # createNCRuntime (backpressure + handler slot + observer)
+│   ├── catalog/              # ncStarterCatalog (nc-starter-0.3), field-id, limits
+│   ├── runtime/              # createNCRuntime (sync; backpressure + observer)
 │   ├── orchestrator/         # createStubIntentHandler + buffer-isolation test
-│   ├── renderer/             # NCRenderer, NC input components, useCommittedTree
+│   ├── renderer/             # NCRenderer, inputs, error-boundary, field-id-stability
 │   ├── app/                  # NCApp React mounting component
 │   ├── memory/               # defaultNCProjection for memoryjs adapter
 │   ├── observer/             # createNCObserver + ncHeadlessRegistry (Path C)
-│   └── integration.test.tsx  # end-to-end Path C integration test
-├── docs/                     # Design specs and plans — start here
-├── CHANGELOG.md              # v1 release notes
+│   └── integration/          # Path C end-to-end tests
+├── docs/                     # Design specs, plans, architecture, audits
+├── examples/
+├── CHANGELOG.md
+├── SECURITY.md
 ├── vitest.config.ts          # jsdom env + react dedup alias
-├── tsup.config.ts            # ESM + CJS + dts build
-├── .eslintrc.cjs             # minimal root config
+├── tsup.config.ts            # ESM + CJS + dts; exports map for ., /core, /react
 ├── package.json
-└── tsconfig.json
+└── tsconfig.json             # skipLibCheck is still true
 ```
 
 NOT yet implemented: `compute/` (Python subprocess dispatch via RLM pattern, separate spec).
 
 ## Design specs and plans
 
-- [`docs/specs/2026-04-11-ephemeral-ui-state-design.md`](./docs/specs/2026-04-11-ephemeral-ui-state-design.md) — the staging buffer pattern for in-progress user input. Resolves the "run vs update separation" question the paper leaves open, but via access discipline rather than ontology. Five named state surfaces with declared read/write boundaries. Read this first.
+- [`docs/specs/2026-04-11-ephemeral-ui-state-design.md`](./docs/specs/2026-04-11-ephemeral-ui-state-design.md) — the staging buffer pattern for in-progress user input. The spec originally named five surfaces; the runtime now names seven (in-flight flag and observer cache). Read this first.
 - [`docs/plans/2026-04-15-neural-computer-v2-plan.md`](./docs/plans/2026-04-15-neural-computer-v2-plan.md) — the v1 implementation plan, 13 tasks, shipped 2026-04-15. Supersedes the April-11 plan which was written before `@json-ui/core`, `@json-ui/react`, and `@danielsimonjr/memoryjs` shipped the primitives the April-11 plan hand-rolled.
 
 ## Development
 
 ```bash
-npm install
-npm run typecheck
-npm test
+bun install
+bun run typecheck
+bun test
 ```
 
-Local development requires the sibling `JSON-UI` repo to be checked out at `../JSON-UI`, because `@json-ui/core` and `@json-ui/react` are not yet published to npm. You can link them with `npm link` from the JSON-UI package directories, or add `file:` dependencies to `package.json` temporarily.
+Local development requires sibling checkouts at `../JSON-UI` and `../memoryjs` (`file:` dependencies in `package.json`). Node 20+. React 19 is a **peer dependency**. This package's npm `overrides` do not protect a host application: consumers must dedupe `react` and `react-dom` so NC and `@json-ui/react` share one dispatcher (NC-086). Import `neural-computer/react` from Client Components; import `neural-computer/core` from Node.
+
+`tsconfig.json` still sets `"skipLibCheck": true`.
+
+Starter catalog honesty: Container is minimal flex (`direction` column or row), not a layout system. TextField supports `multiline` (textarea). There is no Select in v1.
 
 ## Quickstart
 
 ```tsx
-import { ManagerContext, createObservableDataModelFromGraph } from "@danielsimonjr/memoryjs";
+import {
+  ManagerContext,
+  createObservableDataModelFromGraph,
+} from "@danielsimonjr/memoryjs";
 import { createRoot } from "react-dom/client";
 import React from "react";
 import {
@@ -75,7 +94,7 @@ const ctx = new ManagerContext("./nc.jsonl");
 const durableStore = await createObservableDataModelFromGraph(ctx.storage, {
   projection: defaultNCProjection,
 });
-const runtime = await createNCRuntime({
+const runtime = createNCRuntime({
   durableStore,
   catalog: ncStarterCatalog,
   catalogVersion: NC_CATALOG_VERSION,
@@ -88,6 +107,23 @@ const initialTree: UITree = {
   },
 };
 
+function buildIntentHandler(setTree: (tree: UITree) => void) {
+  return createStubIntentHandler({
+    catalog: ncStarterCatalog,
+    nextTree: (event) => ({
+      root: "r",
+      elements: {
+        r: {
+          key: "r",
+          type: "Text",
+          props: { content: `got ${event.action_name}` },
+        },
+      },
+    }),
+    onTreeCommit: setTree,
+  });
+}
+
 function App() {
   return (
     <NCApp
@@ -95,21 +131,7 @@ function App() {
       catalog={ncStarterCatalog}
       catalogVersion={NC_CATALOG_VERSION}
       initialTree={initialTree}
-      buildIntentHandler={(setTree) =>
-        createStubIntentHandler({
-          nextTree: (event) => ({
-            root: "r",
-            elements: {
-              r: {
-                key: "r",
-                type: "Text",
-                props: { content: `got ${event.action_name}` },
-              },
-            },
-          }),
-          onTreeCommit: setTree,
-        })
-      }
+      buildIntentHandler={buildIntentHandler}
     />
   );
 }
@@ -128,10 +150,10 @@ v1 shipped 2026-04-15. Path C (headless dual-backend LLM Observer) shipped 2026-
 
 ## Prior art
 
-- Zhuge et al., *Neural Computers*. arXiv:2604.04625. Meta AI / KAUST, April 2026. The update-and-render loop framing.
+- Zhuge et al., _Neural Computers_. arXiv:2604.04625. Meta AI / KAUST, April 2026. The update-and-render loop framing.
 - Vercel Labs, `json-render`. The constrained-catalog approach JSON-UI builds on.
 - Google, `a2ui`. The flat-tree-with-stable-IDs representation.
-- Zhang, Kraska, Khattab (MIT CSAIL), *Recursive Language Models*. The Python REPL dispatch pattern used for the runtime's computation arm.
+- Zhang, Kraska, Khattab (MIT CSAIL), _Recursive Language Models_. The Python REPL dispatch pattern used for the runtime's computation arm.
 
 ## License
 

@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+bun.lock
+package-lock.json
+docs/architecture/dependency-graph.json
+docs/architecture/dependency-graph.yaml
+docs/architecture/dependency-summary.compact.json
+docs/architecture/test-coverage.json
+tools/**/package-lock.json

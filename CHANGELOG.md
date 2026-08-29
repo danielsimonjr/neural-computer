@@ -8,6 +8,42 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Breaking
+
+- **`createNCRuntime` is synchronous.** There was never any I/O; `await createNCRuntime(...)` still works.
+- **`createStubIntentHandler` requires `catalog`** and rejects `nextTree` results that fail `validateTree`.
+- **`NC_CATALOG_VERSION` is `nc-starter-0.3`.** Field ids, action names, string caps, optional `direction` / `multiline` / `inputType` / `visible`, and `Select`.
+- **React is a peerDependency.** Import `neural-computer/react` or the root barrel from Client Components. Use `neural-computer/core` from Node.
+- **`@anthropic-ai/sdk` removed** until an LLM handler spec exists.
+
+### Fixed
+
+Audit `docs/audits/2026-08-29-full-codebase-audit.md` (NC-001–NC-092). Highlights:
+
+- Invalid trees no longer reach JSON-UI's `Renderer` (last-good tree stays on screen). React and the observer both walk Zod-stripped data.
+- Same field id cannot change component type across commits.
+- Backpressure is visible: `isIntentInFlight` / `subscribeIntentFlight`; buttons disable.
+- `emitIntent` contract: drops resolve; handler failures reject; in-flight flag always clears.
+- `cancel` discards the staging buffer after the IntentEvent snapshot is built.
+- `Button.action.name` is `submit_form | cancel`. Observer cache is frozen. Projection uses null-prototype maps and emits relations.
+- CI pins JSON-UI and memoryjs SHAs. `format:check` runs in CI. Zod is pinned to `4.4.3` so `skipLibCheck` can stay `false`.
+- Intent payloads are capped (`NC_STAGING_MAX_FIELDS`, `NC_SNAPSHOT_MAX_BYTES`). Mismatched renderer catalog/version throws. `destroy()` bumps a generation and clears the in-flight flag.
+- Path C integration tests live at `src/integration/path-c.test.tsx`. Vitest `setupFiles` cleans up the Testing Library DOM between tests.
+- Architecture docs (`docs/architecture/`) rewritten to match this tree: seven state surfaces, catalog `nc-starter-0.3`, validation during render, public `isIntentInFlight`, `neural-computer/core` and `/react`. Plan files no longer contain author-machine Dropbox paths.
+
+### Known deferred items
+
+- **Real LLM-backed intent handler** (`createAnthropicIntentHandler`). The stub plus `NC_LLM_ACCEPTANCE_CONTRACT` / `submittedFieldsStillPresent` cover the testable slice of Risk 1.
+- **Python REPL subprocess dispatch** (RLM pattern).
+- **Persistent staging buffer across process restart.**
+- **Catalog migration** for trees emitted against `nc-starter-0.1` / `nc-starter-0.2`.
+
+---
+
+## [0.1.0] - 2026-04-16
+
+Snapshot of v1 + Path C as shipped 2026-04-15/16, **before** the 2026-08-29 audit remediation recorded under [Unreleased]. Bullets below describe that snapshot: `createNCRuntime` was documented as async, catalog version was `nc-starter-0.1`, React lived in `dependencies`, validation ran in `useLayoutEffect`, and several file/test counts are lower than the current tree. Do not treat this section as current behavior.
+
 ### Added
 
 - **Path C: LLM observer (`src/observer/`, 2026-04-16)** — new module wrapping `@json-ui/headless` to produce a normalized JSON view of every committed UI tree. `NCRuntime` gains a `runtime.observer` field exposing `render(tree)`, `getLastRender()`, `getLastRenderPassId()`, `getConsecutiveFailures()`, `serialize("json-string" | "html")`, and `destroy()`. The observer is constructed by `createNCRuntime` from the new required `catalog` option, driven by `NCRenderer.useLayoutEffect` (one new call after reconcile), and disposed by `runtime.destroy()`. Orchestrator reads the observer when composing observations for the LLM. Five NC headless components (`Container`, `Text`, `TextField`, `Checkbox`, `Button`) mirror the React input registry; input components emit a `currentValue` in `NormalizedNode.props` only when the staging buffer has a value for the id.
@@ -16,7 +52,7 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
   - **Invariant 12 — Observer shadows React renders.** After a successful tree commit, `getLastRender()` returns the normalized version of that same tree.
   - **Invariant 13 — Observer failure is best-effort but detectable.** Registry throws log via `console.warn`, the cached render stays at the last good value, `getConsecutiveFailures()` advances, and `getLastRenderPassId()` does not. Callers detect runaway staleness by pairing the two counters.
 
-  Per spec line 367, the observer reflects the last *tree* commit, not the last keystroke — up-to-the-click field values travel on `IntentEvent.staging_snapshot`, not through the observer cache. The end-to-end integration test asserts both paths in parallel.
+  Per spec line 367, the observer reflects the last _tree_ commit, not the last keystroke — up-to-the-click field values travel on `IntentEvent.staging_snapshot`, not through the observer cache. The end-to-end integration test asserts both paths in parallel.
 
 - **Path C design spec + implementation plan (docs only, 2026-04-16)** — `docs/specs/2026-04-16-headless-dual-backend-design.md` and `docs/plans/2026-04-16-headless-dual-backend-plan.md`. Specifies the LLM observer: a runtime-owned headless renderer (`@json-ui/headless`) that shadows every React tree commit and exposes a structured `NormalizedNode` view for the orchestrator. 11-task plan (TDD, bite-sized, ~66 tests after implementation). Both the spec and the plan were reviewed by an Opus + Sonnet agent team with the RLM skill and verified via HonestClaude. Review caught and fixed: 5 JSON-UI API mismatches in the spec sketches (positional HeadlessComponent signature, required `catalog` in `HeadlessRendererOptions`, single-arg `render`, identity `JsonSerializer`, required `emitters` on HTML serializer), missing call sites in the plan (`nc-app.test.tsx` lines 13 + 80), stale architecture doc references, a broken Invariant 13 test (walker emits fallback `Unknown` node for unknown types but DOES bubble component-function throws — test now uses a throwing component registry via a new optional `registry` override on `CreateNCObserverOptions`), and a test-count miscounting (10 → 19 new `it()` blocks). Implementation is the next task.
 
@@ -112,8 +148,6 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 ### Known deferred items
 
 - **Real LLM-backed intent handler.** The v1 ships `createStubIntentHandler` only. A follow-up spec will introduce `createAnthropicIntentHandler` against `@anthropic-ai/sdk`, streaming the response and feeding patches through `useCommittedTree`'s atomic mode.
-- **`@json-ui/headless` dual-backend session.** Path C calls for a headless renderer running alongside the React renderer on the same shared stores. The runtime primitives are shaped for this (`stagingBuffer` and `durableStore` are shared references), but no v1 code mounts a headless session. Separate spec.
 - **Python REPL subprocess dispatch.** The RLM-pattern computation arm from the NC architecture paper. Independent subsystem; separate spec.
 - **Persistent staging buffer across process restart.** Explicit non-goal in the ephemeral-UI-state spec (Risk 3 + Open Question 3).
-- **Backpressure UX.** The runtime rejects and logs but the visual treatment (disabled Submit button, toast, silent) is a UX decision flagged as load-bearing in the design spec. Separate spec.
-- **Catalog versioning / migration.** `NC_CATALOG_VERSION` is a constant. A real versioning flow (old trees still validate gracefully when the catalog bumps) is a follow-up.
+- **Catalog versioning / migration.** `NC_CATALOG_VERSION` is a constant. Trees emitted against `nc-starter-0.1` need a migration if replayed.

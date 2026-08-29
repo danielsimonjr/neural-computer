@@ -17,6 +17,7 @@
 ## Task 1: Extend `NCRuntime` type with observer field
 
 **Files:**
+
 - Modify: `src/types/nc-types.ts`
 - Test: `src/types/nc-types.test.ts` (extend existing)
 
@@ -162,6 +163,7 @@ git commit -m "feat(types): add NCObserver interface + optional observer field o
 ## Task 2: NC headless component registry
 
 **Files:**
+
 - Create: `src/observer/nc-headless-components.ts`
 - Create: `src/observer/nc-headless-components.test.ts`
 
@@ -178,7 +180,8 @@ import { ncHeadlessRegistry } from "./nc-headless-components";
 
 function makeCtx(stagingValues: Record<string, unknown> = {}) {
   const staging = createStagingBuffer();
-  for (const [k, v] of Object.entries(stagingValues)) staging.set(k, v as never);
+  for (const [k, v] of Object.entries(stagingValues))
+    staging.set(k, v as never);
   const data = createObservableDataModel({});
   return createHeadlessContext({ staging, data });
 }
@@ -200,8 +203,20 @@ describe("ncHeadlessRegistry", () => {
       children: ["a", "b"],
     };
     const childNodes = [
-      { type: "Text", key: "a", props: { content: "a" }, children: [], meta: { visible: true } },
-      { type: "Text", key: "b", props: { content: "b" }, children: [], meta: { visible: true } },
+      {
+        type: "Text",
+        key: "a",
+        props: { content: "a" },
+        children: [],
+        meta: { visible: true },
+      },
+      {
+        type: "Text",
+        key: "b",
+        props: { content: "b" },
+        children: [],
+        meta: { visible: true },
+      },
     ];
     const node = ncHeadlessRegistry.Container!(element, makeCtx(), childNodes);
     expect(node.type).toBe("Container");
@@ -211,7 +226,9 @@ describe("ncHeadlessRegistry", () => {
 
   it("Text emits content prop", () => {
     const element: UIElement = {
-      key: "t", type: "Text", props: { content: "hello" },
+      key: "t",
+      type: "Text",
+      props: { content: "hello" },
     };
     const node = ncHeadlessRegistry.Text!(element, makeCtx(), []);
     expect(node.type).toBe("Text");
@@ -220,7 +237,9 @@ describe("ncHeadlessRegistry", () => {
 
   it("TextField includes currentValue when staging has a value", () => {
     const element: UIElement = {
-      key: "f", type: "TextField", props: { id: "email", label: "Email" },
+      key: "f",
+      type: "TextField",
+      props: { id: "email", label: "Email" },
     };
     const node = ncHeadlessRegistry.TextField!(
       element,
@@ -234,7 +253,9 @@ describe("ncHeadlessRegistry", () => {
 
   it("TextField omits currentValue when staging has no value for the id", () => {
     const element: UIElement = {
-      key: "f", type: "TextField", props: { id: "untouched", label: "X" },
+      key: "f",
+      type: "TextField",
+      props: { id: "untouched", label: "X" },
     };
     const node = ncHeadlessRegistry.TextField!(element, makeCtx(), []);
     const props = node.props as { currentValue?: unknown };
@@ -243,7 +264,9 @@ describe("ncHeadlessRegistry", () => {
 
   it("Checkbox includes currentValue when staging has a boolean", () => {
     const element: UIElement = {
-      key: "c", type: "Checkbox", props: { id: "agree", label: "Agree" },
+      key: "c",
+      type: "Checkbox",
+      props: { id: "agree", label: "Agree" },
     };
     const node = ncHeadlessRegistry.Checkbox!(
       element,
@@ -279,10 +302,7 @@ Expected: FAIL — `Cannot find module './nc-headless-components'`.
 - [ ] **Step 3: Create `src/observer/nc-headless-components.ts`**
 
 ```typescript
-import type {
-  HeadlessComponent,
-  HeadlessRegistry,
-} from "@json-ui/headless";
+import type { HeadlessComponent, HeadlessRegistry } from "@json-ui/headless";
 
 /**
  * Five headless components mirroring NC's React input-components surface.
@@ -320,7 +340,9 @@ const NCTextFieldHeadless: HeadlessComponent = (element, ctx) => {
     placeholder?: string;
     error?: string;
   };
-  const value = ctx.staging.has(props.id) ? ctx.staging.get(props.id) : undefined;
+  const value = ctx.staging.has(props.id)
+    ? ctx.staging.get(props.id)
+    : undefined;
   return {
     type: "TextField",
     key: element.key,
@@ -332,7 +354,9 @@ const NCTextFieldHeadless: HeadlessComponent = (element, ctx) => {
 
 const NCCheckboxHeadless: HeadlessComponent = (element, ctx) => {
   const props = element.props as { id: string; label: string };
-  const value = ctx.staging.has(props.id) ? ctx.staging.get(props.id) : undefined;
+  const value = ctx.staging.has(props.id)
+    ? ctx.staging.get(props.id)
+    : undefined;
   return {
     type: "Checkbox",
     key: element.key,
@@ -385,6 +409,7 @@ git commit -m "feat(observer): add NC headless component registry (5 components)
 ## Task 3: `createNCObserver` factory
 
 **Files:**
+
 - Create: `src/observer/nc-observer.ts`
 - Create: `src/observer/nc-observer.test.ts`
 
@@ -549,9 +574,9 @@ describe("createNCObserver", () => {
     const observer = createNCObserver(makeDeps());
     observer.render(singleTextFieldTree);
     // Cast bypasses the string literal union for negative-control testing.
-    expect(() =>
-      observer.serialize("bogus" as "json-string"),
-    ).toThrow(/Unknown serialize format/);
+    expect(() => observer.serialize("bogus" as "json-string")).toThrow(
+      /Unknown serialize format/,
+    );
     observer.destroy();
   });
 });
@@ -606,9 +631,7 @@ export interface CreateNCObserverOptions {
 // (with per-type emitters) belongs to a separate spec if ever needed.
 const ncHtmlSerializer = createHtmlSerializer({ emitters: {} });
 
-export function createNCObserver(
-  options: CreateNCObserverOptions,
-): NCObserver {
+export function createNCObserver(options: CreateNCObserverOptions): NCObserver {
   const renderer = createHeadlessRenderer({
     catalog: options.catalog,
     registry: options.registry ?? ncHeadlessRegistry,
@@ -681,15 +704,13 @@ git commit -m "feat(observer): add createNCObserver factory with failure-counter
 ## Task 4: Observer barrel export
 
 **Files:**
+
 - Create: `src/observer/index.ts`
 
 - [ ] **Step 1: Create the barrel**
 
 ```typescript
-export {
-  createNCObserver,
-  type CreateNCObserverOptions,
-} from "./nc-observer";
+export { createNCObserver, type CreateNCObserverOptions } from "./nc-observer";
 
 export { ncHeadlessRegistry } from "./nc-headless-components";
 ```
@@ -712,6 +733,7 @@ git commit -m "feat(observer): add barrel export"
 ## Task 5: Wire observer into `createNCRuntime`
 
 **Files:**
+
 - Modify: `src/runtime/context.ts`
 - Modify: `src/runtime/context.test.ts` (update all 7 existing tests)
 - Modify: `src/types/nc-types.ts` (flip `observer?` to required `observer`)
@@ -796,37 +818,37 @@ export interface CreateNCRuntimeOptions {
 Update the function body to create and wire the observer. After the existing `const stagingBuffer = createStagingBuffer();` line, add:
 
 ```typescript
-  const observer = createNCObserver({
-    catalog: options.catalog,
-    staging: stagingBuffer,
-    data: options.durableStore,
-    catalogVersion: options.catalogVersion,
-  });
+const observer = createNCObserver({
+  catalog: options.catalog,
+  staging: stagingBuffer,
+  data: options.durableStore,
+  catalogVersion: options.catalogVersion,
+});
 ```
 
 Update the `destroy` function to dispose the observer:
 
 ```typescript
-  const destroy = (): void => {
-    if (destroyed) return;
-    destroyed = true;
-    intentHandler = null;
-    observer.destroy();
-    // The durableStore is caller-owned; we don't dispose it here.
-  };
+const destroy = (): void => {
+  if (destroyed) return;
+  destroyed = true;
+  intentHandler = null;
+  observer.destroy();
+  // The durableStore is caller-owned; we don't dispose it here.
+};
 ```
 
 Update the returned runtime object to include the observer:
 
 ```typescript
-  return {
-    stagingBuffer,
-    durableStore: options.durableStore,
-    observer,
-    emitIntent,
-    setIntentHandler,
-    destroy,
-  };
+return {
+  stagingBuffer,
+  durableStore: options.durableStore,
+  observer,
+  emitIntent,
+  setIntentHandler,
+  destroy,
+};
 ```
 
 - [ ] **Step 4b: Flip `observer?` to required on `NCRuntime`**
@@ -883,6 +905,7 @@ const runtime = await createNCRuntime({
 ```
 
 Add the import `import { ncStarterCatalog, NC_CATALOG_VERSION } from "../catalog";` (or `from "./catalog";` in `src/runtime/context.test.ts`) to each of the 5 affected test files if not already present:
+
 - `src/app/nc-app.test.tsx` — likely already imports these (used in NCApp props)
 - `src/integration.test.tsx` — already imports (used in NCRenderer props)
 - `src/renderer/nc-renderer.test.tsx` — already imports
@@ -911,6 +934,7 @@ git commit -m "feat(runtime): wire observer into createNCRuntime"
 ## Task 6: Call `observer.render` from NCRenderer
 
 **Files:**
+
 - Modify: `src/renderer/nc-renderer.tsx`
 - Modify: `src/renderer/nc-renderer.test.tsx`
 
@@ -1013,24 +1037,24 @@ Expected: 2 new tests FAIL — observer.getLastRender() returns null because no 
 In `src/renderer/nc-renderer.tsx`, find the `React.useLayoutEffect` block (currently at ~line 103). After the existing `runtime.stagingBuffer.reconcile(liveIds)` call, add:
 
 ```typescript
-      // Path C: shadow every successful React tree commit with a headless
-      // render so the LLM orchestrator can observe the committed tree
-      // (including resolved staging values) without importing React.
-      // Observer catches its own exceptions — React is unaffected if
-      // the headless render fails. See specs/2026-04-16-headless-dual-backend-design.md.
-      runtime.observer.render(result.data!);
+// Path C: shadow every successful React tree commit with a headless
+// render so the LLM orchestrator can observe the committed tree
+// (including resolved staging values) without importing React.
+// Observer catches its own exceptions — React is unaffected if
+// the headless render fails. See specs/2026-04-16-headless-dual-backend-design.md.
+runtime.observer.render(result.data!);
 ```
 
 The updated try block:
 
 ```typescript
-    try {
-      const liveIds = collectFieldIds(result.data!);
-      runtime.stagingBuffer.reconcile(liveIds);
-      runtime.observer.render(result.data!);
-    } catch (err) {
-      console.warn("[NC] Reconcile threw; buffer untouched:", err);
-    }
+try {
+  const liveIds = collectFieldIds(result.data!);
+  runtime.stagingBuffer.reconcile(liveIds);
+  runtime.observer.render(result.data!);
+} catch (err) {
+  console.warn("[NC] Reconcile threw; buffer untouched:", err);
+}
 ```
 
 Note: the observer's own `try/catch` inside `createNCObserver` handles its internal errors. The outer `try/catch` here only catches errors from reconcile. If observer.render ever throws synchronously (it shouldn't — the factory catches everything), it would be caught here and logged once, but the observer's own counters would not advance.
@@ -1055,6 +1079,7 @@ git commit -m "feat(renderer): call runtime.observer.render after every tree com
 ## Task 7: End-to-end integration test
 
 **Files:**
+
 - Modify: `src/integration.test.tsx`
 
 - [ ] **Step 1: Confirm integration.test.tsx call sites are already updated (from Task 5)**
@@ -1079,7 +1104,7 @@ const runtime = await createNCRuntime({
 
 - [ ] **Step 2: Add the end-to-end observer test**
 
-Per spec line 367 ("observer reflects last *tree* commit, not last keystroke. Intent events carry up-to-the-click `staging_snapshot` separately"), the observer does NOT pick up typed values between tree commits. Up-to-the-click field state travels on `IntentEvent.staging_snapshot`, not through the observer cache. The test therefore verifies two things in parallel:
+Per spec line 367 ("observer reflects last _tree_ commit, not last keystroke. Intent events carry up-to-the-click `staging_snapshot` separately"), the observer does NOT pick up typed values between tree commits. Up-to-the-click field state travels on `IntentEvent.staging_snapshot`, not through the observer cache. The test therefore verifies two things in parallel:
 
 1. The IntentEvent the handler receives carries the typed value on `staging_snapshot.email` — this is the spec's canonical path for up-to-the-click data.
 2. The observer cache reflects the tree-commit view (captured on the initial render with an empty staging buffer) — this confirms the spec's tree-commit-only guarantee rather than contradicting it.
@@ -1189,6 +1214,7 @@ git commit -m "test(integration): add Path C observer end-to-end test"
 ## Task 8: Public barrel + README + AGENTS.md + architecture docs
 
 **Files:**
+
 - Modify: `src/index.ts`
 - Modify: `src/types/index.ts` (confirm or add `NCObserver` re-export)
 - Modify: `README.md`
@@ -1237,11 +1263,13 @@ export {
 In the quickstart section, find the `createNCRuntime` call and update it:
 
 Before:
+
 ```typescript
 const runtime = await createNCRuntime({ durableStore });
 ```
 
 After:
+
 ```typescript
 const runtime = await createNCRuntime({
   durableStore,
@@ -1291,6 +1319,7 @@ with:
 ```
 
 Add a new bullet to the returned-fields list:
+
 - `observer` — LLM observer (new as of Path C)
 
 Update the Layer 3 block diagram (around line 93-96) to mention the observer alongside the backpressure gate.
@@ -1300,16 +1329,19 @@ Update the Layer 3 block diagram (around line 93-96) to mention the observer alo
 Bump the export count in the stats table (around line 98 and again in the overview):
 
 Before:
+
 ```
 | Public Exports        | 24 (13 values + 11 types) |
 ```
 
 After:
+
 ```
 | Public Exports        | 28 (15 values + 13 types) |
 ```
 
 Update the directory tree comment:
+
 ```
 ├── src/ (19 TypeScript files, ~930 lines, 28 public exports)
 ```
@@ -1360,6 +1392,7 @@ git commit -m "docs: export observer surface + update createNCRuntime callers"
 ## Task 9: Update CHANGELOG
 
 **Files:**
+
 - Modify: `CHANGELOG.md`
 
 - [ ] **Step 1: Add an Added entry for the observer**
@@ -1378,43 +1411,48 @@ Insert under `## [Unreleased]` > `### Added`:
 
 - [ ] **Step 2: Add a Breaking Changes section (if not already present under Unreleased)**
 
-```markdown
+````markdown
 ### Changed
 
 - **`createNCRuntime` signature (minor breaking).** Now requires `catalog` and accepts an optional `catalogVersion`. Required because the runtime-owned LLM observer's headless renderer binds the catalog at construction (see `@json-ui/headless`'s `HeadlessRendererOptions.catalog` requirement). Migration:
 
   Before:
+
   ```typescript
   await createNCRuntime({ durableStore });
   ```
+````
 
-  After:
-  ```typescript
-  await createNCRuntime({
-    durableStore,
-    catalog: ncStarterCatalog,
-    catalogVersion: NC_CATALOG_VERSION,
-  });
-  ```
+After:
 
-  `NCApp` users are unaffected if `NCApp` handles the wiring internally. Direct `createNCRuntime` callers (e.g., custom integrations that construct the runtime before mounting `NCApp` or `NCRenderer`) must update.
+```typescript
+await createNCRuntime({
+  durableStore,
+  catalog: ncStarterCatalog,
+  catalogVersion: NC_CATALOG_VERSION,
+});
 ```
+
+`NCApp` users are unaffected if `NCApp` handles the wiring internally. Direct `createNCRuntime` callers (e.g., custom integrations that construct the runtime before mounting `NCApp` or `NCRenderer`) must update.
+
+````
 
 - [ ] **Step 3: Commit**
 
 ```bash
 git add CHANGELOG.md
 git commit -m "docs(changelog): Path C observer implementation notes"
-```
+````
 
 ---
 
 ## Task 10: Project memory + final push
 
 **Files:**
-- Modify: `C:\Users\danie\.claude\projects\C--Users-danie-Dropbox-Github-neural-computer\memory\project_state.md`
-- Modify: `C:\Users\danie\.claude\projects\C--Users-danie-Dropbox-Github-neural-computer\memory\MEMORY.md`
-- Create: `C:\Users\danie\.claude\projects\C--Users-danie-Dropbox-Github-neural-computer\memory\feedback_headless_component_signature.md`
+
+- Modify: `<agent-memory>/memory/project_state.md`
+- Modify: `<agent-memory>/memory/MEMORY.md`
+- Create: `<agent-memory>/memory/feedback_headless_component_signature.md`
 
 - [ ] **Step 1: Update project_state.md**
 
@@ -1424,7 +1462,7 @@ Update the line counts, test counts (47 → ~66), and mention Path C as shipped.
 
 The HeadlessComponent signature being positional (not destructured) caught the Opus + Sonnet review. Future agents implementing headless extensions should know.
 
-```markdown
+````markdown
 ---
 name: @json-ui/headless HeadlessComponent is positional, not destructured
 description: HeadlessComponent signature is (element, ctx, children), not ({element, children, context}). Easy to get wrong; caught in every new implementation.
@@ -1440,6 +1478,7 @@ type HeadlessComponent<P> = (
   children: NormalizedNode[],
 ) => NormalizedNode;
 ```
+````
 
 Positional arguments, `ctx` in the middle. NOT destructured object as `({element, ctx, children})`.
 
@@ -1453,7 +1492,8 @@ const C: HeadlessComponent = ({ element, ctx, children }) => { ... };  // WRONG
 ```
 
 Caught by the Opus + Sonnet review of the Path C spec (2026-04-16). All 5 component sketches had to be rewritten.
-```
+
+````
 
 - [ ] **Step 3: Update MEMORY.md to link the new feedback file**
 
@@ -1461,7 +1501,7 @@ Add to the Feedback / conventions section:
 
 ```markdown
 - [Headless component signature is positional](feedback_headless_component_signature.md) — (element, ctx, children), not destructured
-```
+````
 
 - [ ] **Step 4: Push all commits to origin/main**
 
@@ -1476,6 +1516,7 @@ Expected: push succeeds (direct-to-main model per AGENTS.md git conventions).
 ## Task 11: Harden Invariant 7 — forbid orchestrator from importing observer
 
 **Files:**
+
 - Modify: `src/orchestrator/buffer-isolation.test.ts`
 
 **Rationale:** The existing meta-test forbids orchestrator files from importing React, react-dom, @json-ui/react, @json-ui/headless, and the renderer/app modules. The observer is orchestrator-consumable through `runtime.observer` (a handle on the runtime object), but direct `import from "../observer"` would be a new backdoor. Add it to the forbidden list.

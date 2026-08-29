@@ -11,16 +11,13 @@ import { join } from "path";
 // module directly — that backdoor would let orchestrator code call
 // createNCObserver or bypass runtime.observer's disposal semantics.
 const FORBIDDEN_IMPORTS: ReadonlyArray<RegExp> = [
-  /from\s+["']@json-ui\/react["']/,
-  /from\s+["']@json-ui\/headless["']/,
-  /from\s+["']react["']/,
-  /from\s+["']react-dom["']/,
-  /from\s+["']\.\.\/renderer["']/,
-  /from\s+["']\.\.\/renderer\//,
-  /from\s+["']\.\.\/app["']/,
-  /from\s+["']\.\.\/app\//,
-  /from\s+["']\.\.\/observer["']/,
-  /from\s+["']\.\.\/observer\//,
+  /(?:from|import|require)\s*\(?\s*['"]@json-ui\/react/,
+  /(?:from|import|require)\s*\(?\s*['"]@json-ui\/headless/,
+  /(?:from|import|require)\s*\(?\s*['"]react(?:['"]|\/)/,
+  /(?:from|import|require)\s*\(?\s*['"]react-dom/,
+  /['"]\.\.\/renderer['"/]/,
+  /['"]\.\.\/app['"/]/,
+  /['"]\.\.\/observer['"/]/,
 ];
 
 async function collectTsFiles(dir: string): Promise<string[]> {
@@ -54,6 +51,20 @@ describe("NC Invariant 7: orchestrator buffer isolation", () => {
           `${file} must not match forbidden import pattern ${pattern}`,
         ).toBe(false);
       }
+    }
+  });
+
+  it("forbidden patterns match require() and dynamic import()", () => {
+    const samples = [
+      `require("@json-ui/react")`,
+      `require('react')`,
+      `await import("@json-ui/headless")`,
+      `import("../renderer/nc-renderer")`,
+      `from "@json-ui/react"`,
+    ];
+    for (const sample of samples) {
+      const matched = FORBIDDEN_IMPORTS.some((pattern) => pattern.test(sample));
+      expect(matched, sample).toBe(true);
     }
   });
 });

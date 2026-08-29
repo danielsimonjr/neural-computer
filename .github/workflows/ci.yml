@@ -1,10 +1,7 @@
 name: CI
 
-# neural-computer depends on sibling repos via local file: paths
-# (@danielsimonjr/memoryjs -> ../memoryjs, @json-ui/* -> ../JSON-UI/packages/*).
-# Those packages expose their API only through dist/ (exports.types -> ./dist/index.d.ts),
-# so the siblings must be checked out AND built before neural-computer typechecks/tests/builds.
-# All three repos are public, so the default GITHUB_TOKEN can check them out (no secret needed).
+# neural-computer depends on sibling repos via local file: paths.
+# Sibling SHAs are pinned so CI does not float on those defaults.
 on:
   push:
     branches: [main]
@@ -21,18 +18,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # Check out all three repos as siblings under the workspace root so that
-      # ../memoryjs and ../JSON-UI/packages/* resolve from neural-computer/.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: neural-computer
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: danielsimonjr/memoryjs
+          ref: 541d42dd0af46340a582f63d43b64b6e6d09aaab
           path: memoryjs
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: danielsimonjr/JSON-UI
+          ref: 0a81ae8cff1267eea8ef449097418f17d78de4cd
           path: JSON-UI
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -42,7 +39,6 @@ jobs:
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: '1.4.0'
-      # Build the siblings first — their dist/ must exist before neural-computer resolves them.
       - name: Build memoryjs
         working-directory: memoryjs
         run: bun install --frozen-lockfile && bun run build
@@ -51,12 +47,12 @@ jobs:
         working-directory: JSON-UI
         run: bun install --frozen-lockfile && bun run build
 
-      # Now neural-computer's file: links point at populated dist/ folders.
-      - name: neural-computer typecheck / test / build
+      - name: neural-computer typecheck / lint / test / build
         working-directory: neural-computer
         run: |
           bun install --frozen-lockfile
-          bun run typecheck
-          bun run --if-present lint
-          bun run test
-          bun run build
+      bun run typecheck
+      bun run lint
+      bun run format:check
+      bun run test
+      bun run build

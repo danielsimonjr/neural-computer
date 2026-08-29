@@ -1,31 +1,43 @@
 {
   "metadata": {
-    "generatedAt": "2026-04-16T02:30:56.605Z",
-    "totalSourceFiles": 17,
-    "totalTestFiles": 11,
-    "testedCount": 13,
-    "untestedCount": 4,
-    "coveragePercent": "76.5"
+    "generatedAt": "2026-08-29T00:58:47.756Z",
+    "totalSourceFiles": 29,
+    "totalTestFiles": 15,
+    "testedCount": 21,
+    "untestedCount": 8,
+    "coveragePercent": "72.4"
   },
   "untestedFiles": [
     "src/app/index.ts",
+    "src/core.ts",
     "src/index.ts",
     "src/memory/index.ts",
-    "src/types/index.ts"
+    "src/observer/index.ts",
+    "src/react.ts",
+    "src/renderer/intent-flight-context.ts",
+    "src/test-setup.ts"
   ],
   "testedFiles": [
     "src/app/nc-app.tsx",
+    "src/catalog/field-id.ts",
     "src/catalog/index.ts",
+    "src/catalog/limits.ts",
     "src/catalog/nc-catalog.ts",
     "src/memory/projection.ts",
+    "src/observer/nc-headless-components.ts",
+    "src/observer/nc-observer.ts",
     "src/orchestrator/handle-intent.ts",
     "src/orchestrator/index.ts",
+    "src/renderer/error-boundary.tsx",
+    "src/renderer/field-id-stability.ts",
     "src/renderer/index.ts",
     "src/renderer/input-components.tsx",
     "src/renderer/nc-renderer.tsx",
     "src/renderer/use-committed-tree.ts",
     "src/runtime/context.ts",
+    "src/runtime/freeze.ts",
     "src/runtime/index.ts",
+    "src/types/index.ts",
     "src/types/nc-types.ts"
   ],
   "coverageMap": {
@@ -33,21 +45,53 @@
     "src/app/nc-app.tsx": [
       "src/app/nc-app.test.tsx"
     ],
+    "src/catalog/field-id.ts": [
+      "src/app/nc-app.test.tsx",
+      "src/catalog/field-id.test.ts",
+      "src/integration/path-c.test.tsx",
+      "src/observer/nc-observer.test.ts",
+      "src/orchestrator/handle-intent.test.ts",
+      "src/renderer/nc-renderer.test.tsx",
+      "src/runtime/context.test.ts"
+    ],
     "src/catalog/index.ts": [
       "src/app/nc-app.test.tsx",
-      "src/integration.test.tsx",
-      "src/renderer/nc-renderer.test.tsx"
+      "src/integration/path-c.test.tsx",
+      "src/observer/nc-observer.test.ts",
+      "src/orchestrator/handle-intent.test.ts",
+      "src/renderer/nc-renderer.test.tsx",
+      "src/runtime/context.test.ts"
+    ],
+    "src/catalog/limits.ts": [
+      "src/app/nc-app.test.tsx",
+      "src/integration/path-c.test.tsx",
+      "src/observer/nc-observer.test.ts",
+      "src/orchestrator/handle-intent.test.ts",
+      "src/renderer/nc-renderer.test.tsx",
+      "src/runtime/context.test.ts"
     ],
     "src/catalog/nc-catalog.ts": [
       "src/app/nc-app.test.tsx",
       "src/catalog/nc-catalog.test.ts",
-      "src/integration.test.tsx",
-      "src/renderer/nc-renderer.test.tsx"
+      "src/integration/path-c.test.tsx",
+      "src/observer/nc-observer.test.ts",
+      "src/orchestrator/handle-intent.test.ts",
+      "src/renderer/nc-renderer.test.tsx",
+      "src/runtime/context.test.ts"
     ],
+    "src/core.ts": [],
     "src/index.ts": [],
     "src/memory/index.ts": [],
     "src/memory/projection.ts": [
       "src/memory/projection.test.ts"
+    ],
+    "src/observer/index.ts": [],
+    "src/observer/nc-headless-components.ts": [
+      "src/observer/nc-headless-components.test.ts",
+      "src/observer/nc-observer.test.ts"
+    ],
+    "src/observer/nc-observer.ts": [
+      "src/observer/nc-observer.test.ts"
     ],
     "src/orchestrator/handle-intent.ts": [
       "src/app/nc-app.test.tsx",
@@ -56,34 +100,52 @@
     "src/orchestrator/index.ts": [
       "src/app/nc-app.test.tsx"
     ],
+    "src/react.ts": [],
+    "src/renderer/error-boundary.tsx": [
+      "src/integration/path-c.test.tsx"
+    ],
+    "src/renderer/field-id-stability.ts": [
+      "src/integration/path-c.test.tsx",
+      "src/renderer/field-id-stability.test.ts"
+    ],
     "src/renderer/index.ts": [
-      "src/integration.test.tsx"
+      "src/integration/path-c.test.tsx"
     ],
     "src/renderer/input-components.tsx": [
-      "src/integration.test.tsx",
+      "src/integration/path-c.test.tsx",
       "src/renderer/input-components.test.tsx"
     ],
+    "src/renderer/intent-flight-context.ts": [],
     "src/renderer/nc-renderer.tsx": [
-      "src/integration.test.tsx",
+      "src/integration/path-c.test.tsx",
       "src/renderer/nc-renderer.test.tsx"
     ],
     "src/renderer/use-committed-tree.ts": [
-      "src/integration.test.tsx",
+      "src/integration/path-c.test.tsx",
       "src/renderer/use-committed-tree.test.tsx"
     ],
     "src/runtime/context.ts": [
       "src/app/nc-app.test.tsx",
-      "src/integration.test.tsx",
+      "src/integration/path-c.test.tsx",
       "src/renderer/nc-renderer.test.tsx",
       "src/runtime/context.test.ts"
     ],
-    "src/runtime/index.ts": [
+    "src/runtime/freeze.ts": [
       "src/app/nc-app.test.tsx",
-      "src/integration.test.tsx",
+      "src/integration/path-c.test.tsx",
       "src/renderer/nc-renderer.test.tsx"
     ],
-    "src/types/index.ts": [],
+    "src/runtime/index.ts": [
+      "src/app/nc-app.test.tsx",
+      "src/integration/path-c.test.tsx",
+      "src/renderer/nc-renderer.test.tsx"
+    ],
+    "src/test-setup.ts": [],
+    "src/types/index.ts": [
+      "src/catalog/field-id.test.ts"
+    ],
     "src/types/nc-types.ts": [
+      "src/catalog/field-id.test.ts",
       "src/types/nc-types.test.ts"
     ]
   },
@@ -92,30 +154,61 @@
       "src/app/nc-app.tsx",
       "src/runtime/index.ts",
       "src/runtime/context.ts",
+      "src/runtime/freeze.ts",
       "src/catalog/index.ts",
       "src/catalog/nc-catalog.ts",
+      "src/catalog/field-id.ts",
+      "src/catalog/limits.ts",
       "src/orchestrator/index.ts",
       "src/orchestrator/handle-intent.ts"
+    ],
+    "src/catalog/field-id.test.ts": [
+      "src/catalog/field-id.ts",
+      "src/types/index.ts",
+      "src/types/nc-types.ts"
     ],
     "src/catalog/nc-catalog.test.ts": [
       "src/catalog/nc-catalog.ts"
     ],
-    "src/integration.test.tsx": [
+    "src/integration/path-c.test.tsx": [
       "src/runtime/index.ts",
       "src/runtime/context.ts",
+      "src/runtime/freeze.ts",
       "src/catalog/index.ts",
       "src/catalog/nc-catalog.ts",
+      "src/catalog/field-id.ts",
+      "src/catalog/limits.ts",
       "src/renderer/index.ts",
       "src/renderer/input-components.tsx",
       "src/renderer/nc-renderer.tsx",
-      "src/renderer/use-committed-tree.ts"
+      "src/renderer/use-committed-tree.ts",
+      "src/renderer/error-boundary.tsx",
+      "src/renderer/field-id-stability.ts"
     ],
     "src/memory/projection.test.ts": [
       "src/memory/projection.ts"
     ],
+    "src/observer/nc-headless-components.test.ts": [
+      "src/observer/nc-headless-components.ts"
+    ],
+    "src/observer/nc-observer.test.ts": [
+      "src/observer/nc-observer.ts",
+      "src/observer/nc-headless-components.ts",
+      "src/catalog/index.ts",
+      "src/catalog/nc-catalog.ts",
+      "src/catalog/field-id.ts",
+      "src/catalog/limits.ts"
+    ],
     "src/orchestrator/buffer-isolation.test.ts": [],
     "src/orchestrator/handle-intent.test.ts": [
-      "src/orchestrator/handle-intent.ts"
+      "src/orchestrator/handle-intent.ts",
+      "src/catalog/index.ts",
+      "src/catalog/nc-catalog.ts",
+      "src/catalog/field-id.ts",
+      "src/catalog/limits.ts"
+    ],
+    "src/renderer/field-id-stability.test.ts": [
+      "src/renderer/field-id-stability.ts"
     ],
     "src/renderer/input-components.test.tsx": [
       "src/renderer/input-components.tsx"
@@ -124,14 +217,21 @@
       "src/renderer/nc-renderer.tsx",
       "src/runtime/index.ts",
       "src/runtime/context.ts",
+      "src/runtime/freeze.ts",
       "src/catalog/index.ts",
-      "src/catalog/nc-catalog.ts"
+      "src/catalog/nc-catalog.ts",
+      "src/catalog/field-id.ts",
+      "src/catalog/limits.ts"
     ],
     "src/renderer/use-committed-tree.test.tsx": [
       "src/renderer/use-committed-tree.ts"
     ],
     "src/runtime/context.test.ts": [
-      "src/runtime/context.ts"
+      "src/runtime/context.ts",
+      "src/catalog/index.ts",
+      "src/catalog/nc-catalog.ts",
+      "src/catalog/field-id.ts",
+      "src/catalog/limits.ts"
     ],
     "src/types/nc-types.test.ts": [
       "src/types/nc-types.ts"

@@ -1,7 +1,7 @@
 # Neural Computer - System Architecture
 
-**Version**: 0.1.0
-**Last Updated**: 2026-04-16
+**Version**: 0.1.0 (docs refreshed 2026-08-29)
+**Last Updated**: 2026-08-29
 
 ---
 
@@ -16,30 +16,29 @@
 7. [Staging Buffer Rules](#staging-buffer-rules)
 8. [Failure Modes](#failure-modes)
 9. [Testing Strategy](#testing-strategy)
-10. [Path C Readiness](#path-c-readiness)
+10. [Path C: Observer](#path-c-observer)
 
 ---
 
 ## System Overview
 
-Neural Computer is a TypeScript runtime providing:
+Neural Computer is a TypeScript runtime that ships a catalog-constrained form widget, a stub intent handler, and a headless observer cache. It is **not** yet an LLM-driven application runtime and **not** a Python REPL host. The shipped loop is: user types into staging, a named action emits an `IntentEvent`, the stub (or a future handler) commits a new `UITree`, NCRenderer validates during render and keeps the last-good tree on screen, then reconcile and `observer.render` run after a successful commit.
 
-- **Intent-Event UI Architecture**: User input accumulates in a staging buffer; the LLM only observes it when a named action fires
-- **Catalog-Constrained Rendering**: Every UI tree is validated against a Zod-typed component catalog before rendering
-- **Mechanical Reconciliation**: Staging buffer entries are preserved or dropped based solely on field ID presence in the committed tree
-- **Backpressure-Gated Dispatch**: One intent at a time; concurrent intents are rejected, not queued
-- **Knowledge Graph Projection**: memoryjs entities projected into the React data model for display components
+Key properties: every tree is validated against a Zod-typed catalog before JSON-UI renders it; staging is flushed only on named intents; concurrent intents are rejected and the in-flight flag is public; memoryjs entities are projected into the React data model.
 
-### Key Statistics (v1)
+### Key Statistics
 
-| Metric                | Value                     |
-| --------------------- | ------------------------- |
-| Source Files          | 20 TypeScript files       |
-| Lines of Code         | ~1090                     |
-| Public Exports        | 28 (15 values + 13 types) |
-| Tests                 | 66 across 13 files        |
-| Circular Dependencies | 0                         |
-| Spec Invariants       | 13, all tested            |
+| Metric                | Value                                 |
+| --------------------- | ------------------------------------- |
+| Source files          | 28 TypeScript files (excluding tests) |
+| Test files            | 15 under `src/**/*.test.*`            |
+| Lines of source       | ~1799                                 |
+| Catalog version       | `nc-starter-0.3`                      |
+| Named state surfaces  | 7                                     |
+| Spec invariants       | 13, all tested                        |
+| Circular dependencies | 0                                     |
+
+`skipLibCheck` remains `true` in `tsconfig.json`. React 19 is a peer dependency; host apps must dedupe React (this package's `overrides` do not protect consumers).
 
 ---
 
@@ -47,23 +46,23 @@ Neural Computer is a TypeScript runtime providing:
 
 ### 1. Access Discipline Over Ontology
 
-The staging buffer is real state. The spec does not pretend it is "not state" — it names it explicitly along with every other state surface. The useful guarantee is that the LLM orchestrator's observation surface is narrow: exactly `(durable state + intent event payloads)`. This is an access constraint, not an ontological claim.
+The staging buffer is real state. The spec names it along with every other surface. The useful guarantee is that a future LLM orchestrator's observation surface is narrow: exactly `(durable state + intent event payloads)`. That is an access constraint, not an ontological claim.
 
 ### 2. Mechanical Reconciliation
 
-The buffer reconciles itself. The LLM never imperatively manipulates it — it only emits trees. Same field ID present = preserve. Field ID absent = drop. No "clear form" instruction. No "keep input" instruction. The LLM controls the buffer's contents by controlling which fields appear in the next tree.
+The buffer reconciles itself. The handler never imperatively manipulates it — it only emits trees. Same field id present means preserve. Field id absent means drop. `cancel` is the exception: after the IntentEvent snapshot is built, emitIntent reconciles against an empty set so staging is discarded.
 
 ### 3. Deferred Handler Binding
 
-The runtime is created synchronously at app start, but the intent handler (which closes over React's `setTree`) is installed later via `setIntentHandler` in a `useEffect`. This bridges the gap between runtime construction and React's post-mount lifecycle without mutating state across function boundaries.
+The runtime is created **synchronously** at app start. The intent handler (which closes over React's `setTree`) is installed later via `setIntentHandler` in a `useEffect`. This bridges runtime construction and React's post-mount lifecycle.
 
 ### 4. Buffer Isolation
 
-The orchestrator module never imports from the renderer, React, or any rendering library. It sees only `IntentEvent` objects from `@json-ui/core`. This is enforced structurally by a meta-test (`buffer-isolation.test.ts`) that walks every non-test file under `src/orchestrator/` and asserts no forbidden import pattern.
+The orchestrator module never imports from the renderer, React, `@json-ui/headless`, `../observer`, `../renderer`, or `../app`. It sees `IntentEvent` objects from `@json-ui/core` and reads the observer only through `runtime.observer` on the handle it is given. Enforced by `buffer-isolation.test.ts`.
 
-### 5. Validate-Then-Walk
+### 5. Validate During Render, Walk Stripped Data
 
-After `catalog.validateTree(tree)`, all downstream code walks `result.data` (the Zod-parsed/stripped tree), never the raw `tree` prop. Zod v4 strips unknown keys by default; walking the raw tree would pick up phantom props that the validator silently dropped.
+`catalog.validateTree(tree)` runs in `useMemo` during render. Failed validation returns the last-good tree to `<Renderer>` (or null on the first paint if `initialTree` is invalid). After a successful parse, all downstream code — reconcile, `observer.render`, and React — walks the Zod-stripped `result.data`, never the raw incoming prop. Zod v4 strips unknown keys; walking the raw tree would pick up phantom props.
 
 ---
 
@@ -72,44 +71,18 @@ After `catalog.validateTree(tree)`, all downstream code walks `result.data` (the
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    Host Application                      │
+│         (must provide a single React 19 instance)        │
 └────────────────────────┬────────────────────────────────┘
                          │ Library API
 ┌────────────────────────┴────────────────────────────────┐
 │                  Neural Computer Runtime                  │
 │                                                          │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │  Layer 1: App (NCApp)                              │  │
-│  │  Tree state (useState) + handler wiring (useEffect)│  │
-│  └────────────────────────┬───────────────────────────┘  │
-│                           │                              │
-│  ┌────────────────────────┴───────────────────────────┐  │
-│  │  Layer 2: Renderer (NCRenderer)                    │  │
-│  │  ┌──────────────┬──────────────┬────────────────┐  │  │
-│  │  │ Validate     │ Reconcile    │ Input Components│  │  │
-│  │  │ (catalog)    │ (staging)    │ (staging hooks) │  │  │
-│  │  └──────────────┴──────────────┴────────────────┘  │  │
-│  └────────────────────────┬───────────────────────────┘  │
-│                           │                              │
-│  ┌────────────────────────┴───────────────────────────┐  │
-│  │  Layer 3: Runtime (createNCRuntime)                │  │
-│  │  StagingBuffer + durableStore + backpressure gate  │  │
-│  │  + LLM observer (@json-ui/headless shadow render)  │  │
-│  └────────────────────────┬───────────────────────────┘  │
-│                           │                              │
-│  ┌────────────────────────┴───────────────────────────┐  │
-│  │  Layer 4: Orchestrator (createStubIntentHandler)   │  │
-│  │  IntentEvent → nextTree → onTreeCommit             │  │
-│  └────────────────────────────────────────────────────┘  │
-│                                                          │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │  Catalog: ncStarterCatalog + NC_CATALOG_VERSION    │  │
-│  │  5 components, 2 actions, Zod-typed props          │  │
-│  └────────────────────────────────────────────────────┘  │
-│                                                          │
-│  ┌────────────────────────────────────────────────────┐  │
-│  │  Memory: defaultNCProjection                       │  │
-│  │  memoryjs entities → ObservableDataModel           │  │
-│  └────────────────────────────────────────────────────┘  │
+│  Layer 1: App (NCApp)                                    │
+│  Layer 2: Renderer (NCRenderer + inputs + error boundary)│
+│  Layer 3: Runtime (createNCRuntime, observer, freeze)    │
+│  Layer 4: Orchestrator (createStubIntentHandler)         │
+│  Catalog: ncStarterCatalog (nc-starter-0.3)              │
+│  Memory:  defaultNCProjection                            │
 └──────────────────────────────────────────────────────────┘
                          │
           ┌──────────────┴─────────────┐
@@ -117,7 +90,7 @@ After `catalog.validateTree(tree)`, all downstream code walks `result.data` (the
 ┌─────────┴──────────┐   ┌─────────────┴─────────────┐
 │  @json-ui/core     │   │  @danielsimonjr/memoryjs  │
 │  @json-ui/react    │   │  (knowledge graph)        │
-│  (renderer)        │   │                           │
+│  @json-ui/headless │   │                           │
 └────────────────────┘   └───────────────────────────┘
 ```
 
@@ -127,76 +100,80 @@ After `catalog.validateTree(tree)`, all downstream code walks `result.data` (the
 
 ### Layer 1: App (`src/app/`)
 
-`NCApp` owns the current UITree in `useState` and wires the intent handler to the runtime on mount via `useEffect`. The `buildIntentHandler` prop is a factory that takes `setTree` and returns an `NCIntentHandler`, bridging runtime construction with React's lifecycle.
+`NCApp` owns the current UITree in `useState` and wires the intent handler on mount. Changing the `initialTree` **reference** resets the current tree (same as remounting with a new `key`). Unmount installs a no-op handler so a late intent cannot call `setTree`. `extraRegistry`, `onValidationError`, and `onRenderError` are plumbed through to `NCRenderer`.
 
-Callers who need to own tree state themselves (e.g., because the tree comes from a `useUIStream` hook running elsewhere) mount `NCRenderer` directly and call `runtime.setIntentHandler` manually.
+Callers who own tree state themselves (for example a `useCommittedTree` stream) mount `NCRenderer` directly and call `runtime.setIntentHandler` manually.
 
 ### Layer 2: Renderer (`src/renderer/`)
 
-`NCRenderer` mounts `@json-ui/react`'s `JSONUIProvider` with NC's runtime-shared `StagingBuffer` and `ObservableDataModel`. On every committed tree, it:
+`NCRenderer` mounts `JSONUIProvider` with NC's shared `StagingBuffer` and `ObservableDataModel`. On every incoming `tree` prop it:
 
-1. Validates the tree against the catalog (`catalog.validateTree`)
-2. Walks the **validated** tree (`result.data`) to collect live field IDs
-3. Reconciles the staging buffer — drops entries not in the live set
-4. Wires `onIntent` to `runtime.emitIntent` with a `.catch` for diagnostics
+1. Validates during render (`useMemo` + `catalog.validateTree`). Identity-checks `catalog` / `catalogVersion` against `runtime.catalog` / `runtime.catalogVersion` and uses the runtime's copies if they diverge.
+2. Rejects same-id, different-component-type commits via `field-id-stability.ts`.
+3. Passes the last-good Zod-stripped tree to `<Renderer>` (never the raw invalid prop).
+4. After a successful commit, `useLayoutEffect` reconciles staging against live ids collected from that stripped tree, then calls `runtime.observer.render` with the same tree. Strict Mode double-invokes are skipped when the incoming `tree` reference was already shadowed.
+5. Wires `onIntent` to `runtime.emitIntent` with a `.catch` for diagnostics.
+6. Subscribes to `runtime.subscribeIntentFlight` so buttons disable while an intent is in flight.
 
-Reconciliation runs in `useLayoutEffect` (not `useEffect`) to close the one-frame window where an orphan field's staging value would be visible between DOM mutation and paint.
-
-Input components (`NCTextField`, `NCCheckbox`, `NCButton`) bind to the shared `StagingBuffer` via `useStagingField` and fire catalog actions via `useActions().execute`.
+Input components bind to staging via `useStagingField`. `NCButton` forwards `{name, params}` to `execute()`. `NCErrorBoundary` catches render throws. Three id namespaces must not be conflated: React `key`, `element.key` (`data-key`), and staging field `id` (`data-field-id`).
 
 ### Layer 3: Runtime (`src/runtime/`)
 
-`createNCRuntime({ durableStore, catalog, catalogVersion? })` returns an `NCRuntime` with:
+`createNCRuntime({ durableStore, catalog, catalogVersion? })` is **synchronous**. It returns an `NCRuntime` with:
 
-- A fresh `StagingBuffer` (created via `@json-ui/core`'s `createStagingBuffer`)
-- A shared reference to the caller-owned `durableStore`
-- An `observer` — LLM observer (new as of Path C) that shadows every successful tree commit with a headless render; exposes `getLastRender()`, `getLastRenderPassId()`, `getConsecutiveFailures()`, `serialize()`, `destroy()`
-- A mutable intent-handler slot (installed later via `setIntentHandler`)
-- A backpressure gate (`intentInFlight` boolean, enforcing Invariant 10)
-- A `destroy()` method for cleanup (also calls `observer.destroy()`)
+- A fresh `StagingBuffer`
+- The caller-owned `durableStore`
+- The same `catalog` / `catalogVersion` the renderer must echo
+- An `observer` whose headless renderer is bound to that catalog at construction
+- A mutable intent-handler slot (`setIntentHandler`)
+- Public backpressure: `isIntentInFlight()` and `subscribeIntentFlight(listener)`
+- `destroy()` (idempotent; in-flight handlers still run to completion but cannot emit further; `setIntentHandler` is ignored after destroy)
 
-The handler is captured via `const currentHandler = intentHandler` BEFORE the `await`, so mid-flight handler swaps do not corrupt the running call.
+`emitIntent` captures `const currentHandler = intentHandler` **before** `await`. Drops (no handler, already in flight, after destroy) **resolve**. Handler failures **reject**. The in-flight flag always clears in `finally`. If `action_name === "cancel"`, staging is reconciled to empty after the event (with its snapshot) has been handed to the handler path — the snapshot is already on the IntentEvent.
+
+`freeze.ts` deep-freezes observer output and provides null-prototype dictionaries for the projection.
 
 ### Layer 4: Orchestrator (`src/orchestrator/`)
 
-`createStubIntentHandler` maps an `IntentEvent` to a `UITree` via a pure `nextTree` function and calls `onTreeCommit` with the result. This is the v1 stub; the real Anthropic SDK-backed handler will conform to the same `NCIntentHandler` signature.
-
-The orchestrator module does NOT import React, `@json-ui/react`, or anything from `src/renderer/` or `src/app/`. This is enforced by the buffer-isolation meta-test.
+`createStubIntentHandler` requires `catalog`. It maps an `IntentEvent` to a `UITree` via `nextTree`, **validates** that tree, and calls `onTreeCommit` only on success. Invalid `nextTree` results reject; `onTreeCommit` is not called. There is no Anthropic handler in this package.
 
 ### Cross-Cutting: Catalog (`src/catalog/`)
 
-`ncStarterCatalog` declares 5 components and 2 actions via `@json-ui/core`'s `createCatalog`:
+`ncStarterCatalog` declares six components and two actions. `NC_CATALOG_VERSION` is `nc-starter-0.3`. Field ids go through `ncFieldIdSchema` (non-empty, no path separators, not `__proto__` / `constructor` / `prototype`). Strings are capped at 8192 characters. `Button.action.name` is `z.enum(["submit_form", "cancel"])`.
 
-| Component   | Props                                   | Role                           |
-| ----------- | --------------------------------------- | ------------------------------ |
-| `Container` | `{}`                                    | Layout wrapper with children   |
-| `Text`      | `{ content: string }`                   | Display text                   |
-| `TextField` | `{ id, label, placeholder?, error? }`   | Text input bound to staging    |
-| `Checkbox`  | `{ id, label }`                         | Boolean input bound to staging |
-| `Button`    | `{ label, action?: { name, params? } }` | Fires catalog actions          |
-
-Every input component carries `id: z.string()` for staging-buffer keying. `NC_CATALOG_VERSION = "nc-starter-0.1"` is threaded through every emitted `IntentEvent`.
+| Component   | Props (v0.2)                                                                    | Role                                                       |
+| ----------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `Container` | `direction?: "column" \| "row"`, `visible?`                                     | Minimal flex wrapper. Not a layout system.                 |
+| `Text`      | `content`, `visible?`                                                           | Display text                                               |
+| `TextField` | `id`, `label`, `placeholder?`, `error?`, `multiline?`, `inputType?`, `visible?` | Staging-bound input; `multiline` is a textarea. No Select. |
+| `Checkbox`  | `id`, `label`, `visible?`                                                       | Boolean input                                              |
+| `Button`    | `label`, `visible?`, `action?: { name, params? }`                               | Forwards `params` to `execute()`                           |
 
 ### Cross-Cutting: Memory (`src/memory/`)
 
-`defaultNCProjection` groups memoryjs entities by type and builds an O(1) name-indexed map for display components. Relations are counted but not projected in v1.
+`defaultNCProjection` groups entities by type, indexes by name (last write wins, with a warning on duplicates), and projects relations as `{from, to, relationType}` plus `relationCount`. Maps use null-prototype objects. Missing timestamps become `null`.
+
+### Cross-Cutting: Observer (`src/observer/`)
+
+`createNCObserver` wraps `@json-ui/headless`. `getLastRender()` returns a deeply frozen graph. `serialize("html")` is diagnostic only and is not safe for `innerHTML`. Builtin registry keys cannot be overridden via `extraRegistry` / `extraHeadlessRegistry`.
 
 ---
 
 ## State Surfaces
 
-The NC spec names six state surfaces explicitly. Each has a declared owner and a declared read discipline.
+The runtime names **seven** surfaces. The April-11 spec originally named five; Path C added the observer cache; the in-flight flag is a first-class public surface after the 2026-08-29 audit.
 
-| Surface                   | Owner                       | Orchestrator Access             | Persistence                |
-| ------------------------- | --------------------------- | ------------------------------- | -------------------------- |
-| **Durable state**         | memoryjs                    | Read/write freely               | Across sessions            |
-| **Current UI tree**       | LLM (re-emitted each cycle) | None (pure derivation)          | None                       |
-| **Staging buffer**        | NCRenderer wrapper          | Read-only, on intent flush only | In-memory, dies on unmount |
-| **In-flight intent flag** | createNCRuntime             | Implicit (backpressure gate)    | In-memory                  |
-| **Catalog version**       | Config constant             | Read-only, on IntentEvent       | Constant per session       |
-| **LLM session state**     | Anthropic SDK               | Invisible to NC                 | Within session             |
+| Surface                   | Owner                    | Orchestrator Access             | Persistence                |
+| ------------------------- | ------------------------ | ------------------------------- | -------------------------- |
+| **Durable state**         | memoryjs                 | Read/write freely               | Across sessions            |
+| **Current UI tree**       | Handler (re-emitted)     | None (pure derivation)          | None                       |
+| **Staging buffer**        | NCRenderer / runtime     | Read-only, on intent flush only | In-memory, dies on unmount |
+| **In-flight intent flag** | createNCRuntime          | Implicit; also public API       | In-memory                  |
+| **Catalog version**       | Config constant          | Read-only, on IntentEvent       | Constant per session       |
+| **LLM session state**     | Future Anthropic SDK     | Invisible to NC                 | Within session             |
+| **Observer cache**        | createNCRuntime.observer | `getLastRender` / `serialize`   | In-memory, frozen          |
 
-The sixth surface (LLM session state) is the Anthropic SDK's prompt-cache and tool-use state between calls. It is durable within a session but invisible to the rest of the system. NC treats it as an implementation detail of the orchestrator — its existence is acknowledged rather than managed.
+LLM session state is acknowledged rather than managed. NC does not construct an SDK client.
 
 ---
 
@@ -204,69 +181,67 @@ The sixth surface (LLM session state) is the Anthropic SDK's prompt-cache and to
 
 ### Why a mutable handler slot instead of constructor injection?
 
-React's `useState` only exists after the component mounts. The intent handler needs to close over `setTree`, which means the handler cannot be created until after React's `useEffect` runs. The mutable slot via `setIntentHandler` lets the runtime be constructed synchronously at app start while the handler is installed later.
+React's `useState` only exists after the component mounts. The handler needs `setTree`, so it cannot be created until after `useEffect` runs. `setIntentHandler` lets the runtime be constructed synchronously while the handler is installed later.
 
-### Why `useLayoutEffect` for reconciliation?
+### Why validate in `useMemo` rather than `useLayoutEffect`?
 
-`useEffect` runs asynchronously after paint. Between DOM mutation and the effect firing, there is a one-frame window where an orphan field's unmounted React component has already removed itself from the DOM but its staging value is still in the buffer. Any code that reads the buffer during this window (e.g., a sibling component's render) would see stale data. `useLayoutEffect` runs synchronously after DOM mutations but before paint, closing this window. The reconcile is a pure in-memory operation, so the timing has no perf cost.
+Validation in an effect runs after React has already committed the incoming `tree` to `<Renderer>`. That was NC-001: invalid trees reached JSON-UI. Validating during render and passing only `renderTree` (last-good stripped data) keeps Invariant 8. Reconcile and `observer.render` still run in `useLayoutEffect` because they are store mutations, not render.
 
 ### Why walk `result.data` instead of the raw `tree`?
 
-Zod v4 object schemas strip unknown keys by default. A Container element with a stray `id: "phantom"` prop passes `catalog.validateTree` (the key is stripped in `result.data`) but `collectFieldIds(rawTree)` would still pick it up, wrongly preserving a phantom staging entry forever. Walking the validated tree avoids this class of bugs entirely.
+Zod v4 object schemas strip unknown keys. A Container with a stray `id: "phantom"` passes validation while a walk of the raw tree would preserve a phantom staging entry forever. React and the observer both walk the stripped tree (Invariant 12).
+
+### Why public `isIntentInFlight` instead of a silent drop?
+
+Spec Open Question 2 forbade shipping backpressure as a silent drop. Drops still resolve (they are not errors), but the flag is public, `subscribeIntentFlight` drives `useSyncExternalStore`, and `NCButton` disables while true.
 
 ### Why `.catch` on every `execute()` and `emitIntent()`?
 
-Both return `Promise<void>` and can reject. A bare `void` silently swallows the rejection, turning real errors into a UI that appears to do nothing. The `.catch(err => console.error(...))` gives a diagnostic trail. The `intentInFlight` flag clears in `finally` regardless, so the runtime recovers either way.
+Both return promises that can reject. A bare `void` swallows the rejection. The in-flight flag still clears in `finally`.
 
 ---
 
 ## Staging Buffer Rules
 
-Derived from the spec (`docs/specs/2026-04-11-ephemeral-ui-state-design.md`):
+Derived from `docs/specs/2026-04-11-ephemeral-ui-state-design.md`:
 
-1. **Ownership**: The buffer is owned by NCRenderer, not by JSON-UI. The orchestrator never reads it directly.
-2. **Keying**: Entries are keyed by the element's `id` prop. Field IDs must be unique within a tree.
-3. **Reconciliation**: On re-render, field IDs present in the new tree are preserved; absent IDs are dropped. Props do not affect keying.
-4. **Flush**: On intent events only. The buffer is snapshotted (not consumed) and sent as `staging_snapshot`. The buffer stays live for the next cycle.
+1. **Ownership**: The buffer is owned by the runtime / NCRenderer, not by JSON-UI. The orchestrator never reads it directly.
+2. **Keying**: Entries are keyed by the element's `id` prop. Field ids must be unique within a tree and must not change component type across commits in one renderer lifetime.
+3. **Reconciliation**: On a successful commit, field ids present in the new stripped tree are preserved; absent ids are dropped. Props do not affect keying.
+4. **Flush**: On intent events only. The buffer is snapshotted (not consumed) onto `staging_snapshot`. `cancel` then clears it. `submit_form` leaves it for the next reconcile.
 
 ---
 
 ## Failure Modes
 
-| Risk                         | Handling                                                                                                   |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| LLM emits malformed tree     | `catalog.validateTree` returns `success: false`; reconcile is skipped, buffer untouched                    |
-| Streaming response times out | `useCommittedTree` (atomic mode) suppresses partial trees; reconcile never runs on incomplete data         |
-| NCRenderer unmounts          | Buffer dies. Deliberate non-goal — persistent drafts are a separate spec                                   |
-| Handler throws               | `emitIntent` propagates the rejection; NCRenderer's `.catch` logs it; `intentInFlight` clears in `finally` |
-| Duplicate field IDs          | `validateUniqueFieldIds` (inside `catalog.validateTree`) returns `fieldIdError`; reconcile skipped         |
+| Risk                         | Handling                                                                                        |
+| ---------------------------- | ----------------------------------------------------------------------------------------------- |
+| Malformed tree               | `validateTree` fails during render; `<Renderer>` keeps last-good; reconcile skipped             |
+| Same id, different type      | `detectFieldIdTypeChanges` rejects; last-good stays                                             |
+| Streaming response times out | `useCommittedTree` atomic mode suppresses partial trees; stub handler also validates `nextTree` |
+| NCRenderer unmounts          | Buffer dies. Persistent drafts are a separate spec                                              |
+| Handler throws               | `emitIntent` rejects; NCRenderer `.catch` logs; `isIntentInFlight` clears in `finally`          |
+| Duplicate field ids          | `validateUniqueFieldIds` inside `validateTree`; last-good stays                                 |
+| Observer throw               | Last cached render kept; `getConsecutiveFailures` advances (Invariant 13)                       |
+| Render throw in a component  | `NCErrorBoundary` shows an alert; `onRenderError` fires                                         |
 
 ---
 
 ## Testing Strategy
 
-- **Unit tests**: Per-module coverage for types, catalog, runtime, orchestrator, renderer, app, memory, observer (11/20 source files have direct test files; the 9 untested files are barrel re-exports with zero logic)
-- **Meta-test**: `buffer-isolation.test.ts` walks orchestrator source files and asserts no forbidden imports
-- **Integration test**: `integration.test.tsx` covers the full Path C React flow end-to-end (type → submit → intent → reconcile)
-- **Regression test**: Zod strip regression in `nc-renderer.test.tsx` uses `as unknown as UITree` to test phantom prop behavior
-- **Invariant coverage**: All 13 spec invariants have at least one dedicated test (see [INVARIANTS.md](./INVARIANTS.md))
+Unit tests live next to modules (catalog, runtime, orchestrator, renderer, app, memory, observer, types). The meta-test `buffer-isolation.test.ts` walks orchestrator source and asserts no forbidden imports, including `../observer`. `integration/path-c.test.tsx` covers type → submit → intent → reconcile → observer. Field-id stability and last-good-tree behavior live in `nc-renderer.test.tsx` and `field-id-stability.test.ts`. All 13 invariants have tests (see [INVARIANTS.md](./INVARIANTS.md)). There are 15 test files and 84 `it`/`test` cases.
 
 ---
 
-## Path C: LLM Observer
+## Path C: Observer
 
-Path C (shipped via plan `2026-04-16-headless-dual-backend`) runs `@json-ui/headless` alongside the React renderer on the same shared stores. `createNCRuntime` owns an `NCObserver` whose headless renderer is bound to the same catalog `NCRenderer` validates against; after every successful React tree commit, `NCRenderer` calls `runtime.observer.render(tree)` to shadow the render.
+Path C (plan `2026-04-16-headless-dual-backend`) runs `@json-ui/headless` alongside React on the same shared stores. `createNCRuntime` owns the observer; after every successful commit NCRenderer calls `runtime.observer.render(renderTree)` with the Zod-stripped tree React received.
 
-Key properties:
+`FORBIDDEN_IMPORTS` includes `@json-ui/headless` and `../observer` so the orchestrator consumes `NormalizedNode` output via `runtime.observer` without importing the observer module. Observer render is a second full tree walk on the layout path (NC-087); it is skipped when the same `tree` reference was already shadowed.
 
-- `NCRuntime.stagingBuffer` and `NCRuntime.durableStore` are shared references — the observer's headless session consumes the same state the React side does
-- The `FORBIDDEN_IMPORTS` list in `buffer-isolation.test.ts` includes `@json-ui/headless` — the orchestrator consumes the observer's `NormalizedNode` output via `runtime.observer.serialize()` without importing the headless renderer directly
-- `collectFieldIds` lives in `@json-ui/core` (not in headless or react) so both paths share the same reconciliation semantics
-- Invariants 12 and 13 (see [INVARIANTS.md](./INVARIANTS.md)) specify the observer's correctness contract
-
-Still deferred to future specs: real Anthropic-backed intent handler, Python REPL dispatch, persistent staging buffer, catalog versioning / migration.
+Still deferred: real Anthropic-backed intent handler, Python REPL dispatch, persistent staging buffer, catalog migration from `nc-starter-0.1`.
 
 ---
 
-*Last Updated*: 2026-04-16
-*Version*: 0.1.0
+_Last Updated_: 2026-08-29
+_Version_: 0.1.0

@@ -7,7 +7,8 @@ Cloned from `memoryjs/tools/create-dependency-graph` with added `.tsx` file supp
 ## Usage
 
 ```bash
-# From the neural-computer repo root:
+# From the neural-computer repo root (uses root `js-yaml` / `tsx`; do not
+# `npm install` inside this folder — there is no nested lockfile):
 npm run docs:deps
 
 # Or run directly with tsx:

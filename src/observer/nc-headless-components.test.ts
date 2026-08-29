@@ -6,17 +6,19 @@ import { ncHeadlessRegistry } from "./nc-headless-components";
 
 function makeCtx(stagingValues: Record<string, unknown> = {}) {
   const staging = createStagingBuffer();
-  for (const [k, v] of Object.entries(stagingValues)) staging.set(k, v as never);
+  for (const [k, v] of Object.entries(stagingValues))
+    staging.set(k, v as never);
   const data = createObservableDataModel({});
   return createHeadlessContext({ staging, data });
 }
 
 describe("ncHeadlessRegistry", () => {
-  it("exports the 5 expected component types", () => {
+  it("exports the 6 expected component types", () => {
     expect(ncHeadlessRegistry.Container).toBeDefined();
     expect(ncHeadlessRegistry.Text).toBeDefined();
     expect(ncHeadlessRegistry.TextField).toBeDefined();
     expect(ncHeadlessRegistry.Checkbox).toBeDefined();
+    expect(ncHeadlessRegistry.Select).toBeDefined();
     expect(ncHeadlessRegistry.Button).toBeDefined();
   });
 
@@ -28,8 +30,20 @@ describe("ncHeadlessRegistry", () => {
       children: ["a", "b"],
     };
     const childNodes = [
-      { type: "Text", key: "a", props: { content: "a" }, children: [], meta: { visible: true } },
-      { type: "Text", key: "b", props: { content: "b" }, children: [], meta: { visible: true } },
+      {
+        type: "Text",
+        key: "a",
+        props: { content: "a" },
+        children: [],
+        meta: { visible: true },
+      },
+      {
+        type: "Text",
+        key: "b",
+        props: { content: "b" },
+        children: [],
+        meta: { visible: true },
+      },
     ];
     const node = ncHeadlessRegistry.Container!(element, makeCtx(), childNodes);
     expect(node.type).toBe("Container");
@@ -39,7 +53,9 @@ describe("ncHeadlessRegistry", () => {
 
   it("Text emits content prop", () => {
     const element: UIElement = {
-      key: "t", type: "Text", props: { content: "hello" },
+      key: "t",
+      type: "Text",
+      props: { content: "hello" },
     };
     const node = ncHeadlessRegistry.Text!(element, makeCtx(), []);
     expect(node.type).toBe("Text");
@@ -48,7 +64,9 @@ describe("ncHeadlessRegistry", () => {
 
   it("TextField includes currentValue when staging has a value", () => {
     const element: UIElement = {
-      key: "f", type: "TextField", props: { id: "email", label: "Email" },
+      key: "f",
+      type: "TextField",
+      props: { id: "email", label: "Email" },
     };
     const node = ncHeadlessRegistry.TextField!(
       element,
@@ -62,7 +80,9 @@ describe("ncHeadlessRegistry", () => {
 
   it("TextField omits currentValue when staging has no value for the id", () => {
     const element: UIElement = {
-      key: "f", type: "TextField", props: { id: "untouched", label: "X" },
+      key: "f",
+      type: "TextField",
+      props: { id: "untouched", label: "X" },
     };
     const node = ncHeadlessRegistry.TextField!(element, makeCtx(), []);
     const props = node.props as { currentValue?: unknown };
@@ -71,7 +91,9 @@ describe("ncHeadlessRegistry", () => {
 
   it("Checkbox includes currentValue when staging has a boolean", () => {
     const element: UIElement = {
-      key: "c", type: "Checkbox", props: { id: "agree", label: "Agree" },
+      key: "c",
+      type: "Checkbox",
+      props: { id: "agree", label: "Agree" },
     };
     const node = ncHeadlessRegistry.Checkbox!(
       element,
@@ -80,6 +102,21 @@ describe("ncHeadlessRegistry", () => {
     );
     const props = node.props as { currentValue?: boolean };
     expect(props.currentValue).toBe(true);
+  });
+
+  it("Select includes currentValue when staging has a value", () => {
+    const element: UIElement = {
+      key: "s",
+      type: "Select",
+      props: { id: "color", label: "Color", options: ["red", "blue"] },
+    };
+    const node = ncHeadlessRegistry.Select!(
+      element,
+      makeCtx({ color: "blue" }),
+      [],
+    );
+    const props = node.props as { currentValue?: string };
+    expect(props.currentValue).toBe("blue");
   });
 
   it("Button preserves label + action shape verbatim", () => {

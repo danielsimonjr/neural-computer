@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import type { Entity, Relation } from "@danielsimonjr/memoryjs";
 import { defaultNCProjection } from "./projection";
 
@@ -21,6 +21,7 @@ describe("defaultNCProjection", () => {
     expect(defaultNCProjection([], [])).toEqual({
       entitiesByType: {},
       entities: {},
+      relations: [],
       relationCount: 0,
     });
   });
@@ -66,6 +67,19 @@ describe("defaultNCProjection", () => {
       [rel, rel],
     );
     expect(result.relationCount).toBe(2);
+    expect(result.relations).toEqual([rel, rel]);
+  });
+
+  it("warns on duplicate entity names and last write wins", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const result = defaultNCProjection(
+      [makeEntity("Alice", "user"), makeEntity("Alice", "admin")],
+      [],
+    );
+    const byName = result.entities as Record<string, { entityType: string }>;
+    expect(byName.Alice?.entityType).toBe("admin");
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it("round-trips as a JSON value", () => {

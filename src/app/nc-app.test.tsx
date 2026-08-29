@@ -7,6 +7,17 @@ import { createNCRuntime } from "../runtime";
 import { ncStarterCatalog, NC_CATALOG_VERSION } from "../catalog";
 import { createStubIntentHandler } from "../orchestrator";
 
+const nextAfterGo: UITree = {
+  root: "done",
+  elements: {
+    done: {
+      key: "done",
+      type: "Text",
+      props: { content: "after submit_form" },
+    },
+  },
+};
+
 describe("NCApp", () => {
   it("mounts NCRenderer, wires the intent handler, and drives tree transitions", async () => {
     const durableStore = createObservableDataModel({});
@@ -33,18 +44,16 @@ describe("NCApp", () => {
       },
     };
 
-    const nextTree: UITree = {
-      root: "done",
-      elements: {
-        done: {
-          key: "done",
-          type: "Text",
-          props: { content: "after submit_form" },
-        },
-      },
-    };
-
     const treeCommits: UITree[] = [];
+    const buildIntentHandler = (setTree: (tree: UITree) => void) =>
+      createStubIntentHandler({
+        catalog: ncStarterCatalog,
+        nextTree: () => nextAfterGo,
+        onTreeCommit: (tree) => {
+          treeCommits.push(tree);
+          setTree(tree);
+        },
+      });
 
     render(
       <NCApp
@@ -52,15 +61,7 @@ describe("NCApp", () => {
         catalog={ncStarterCatalog}
         catalogVersion={NC_CATALOG_VERSION}
         initialTree={initialTree}
-        buildIntentHandler={(setTree) =>
-          createStubIntentHandler({
-            nextTree: () => nextTree,
-            onTreeCommit: (tree) => {
-              treeCommits.push(tree);
-              setTree(tree);
-            },
-          })
-        }
+        buildIntentHandler={buildIntentHandler}
       />,
     );
 
@@ -133,6 +134,93 @@ describe("NCApp", () => {
     });
     expect(second).toHaveBeenCalledTimes(1);
 
+    runtime.destroy();
+  });
+
+  it("resets the tree when initialTree identity changes (NC-026)", async () => {
+    const durableStore = createObservableDataModel({});
+    const runtime = createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
+    const first: UITree = {
+      root: "a",
+      elements: {
+        a: { key: "a", type: "Text", props: { content: "first" } },
+      },
+    };
+    const second: UITree = {
+      root: "b",
+      elements: {
+        b: { key: "b", type: "Text", props: { content: "second" } },
+      },
+    };
+    const noop = () => async () => {};
+    const { rerender } = render(
+      <NCApp
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+        initialTree={first}
+        buildIntentHandler={noop}
+      />,
+    );
+    expect(screen.getByText("first")).toBeDefined();
+    rerender(
+      <NCApp
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+        initialTree={second}
+        buildIntentHandler={noop}
+      />,
+    );
+    expect(screen.getByText("second")).toBeDefined();
+    runtime.destroy();
+  });
+
+  it("unmount during in-flight intent does not throw (NC-017/079)", async () => {
+    const durableStore = createObservableDataModel({});
+    const runtime = createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
+    let release: () => void = () => {};
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    const tree: UITree = {
+      root: "btn",
+      elements: {
+        btn: {
+          key: "btn",
+          type: "Button",
+          props: { label: "Go", action: { name: "submit_form" } },
+        },
+      },
+    };
+    const { unmount } = render(
+      <NCApp
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+        initialTree={tree}
+        buildIntentHandler={() => async () => {
+          await gate;
+        }}
+      />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Go" }));
+      await Promise.resolve();
+    });
+    unmount();
+    release();
+    await act(async () => {
+      await gate;
+    });
     runtime.destroy();
   });
 });

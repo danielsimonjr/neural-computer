@@ -1,5 +1,7 @@
 # Ephemeral UI State Implementation Plan
 
+**SUPERSEDED** by `docs/plans/2026-04-15-neural-computer-v2-plan.md`. Do not implement from this file. Staging-buffer primitives live in `@json-ui/core`; this plan hand-rolled them before those primitives shipped.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build the staging-buffer-based renderer wrapper described in `docs/specs/2026-04-11-ephemeral-ui-state-design.md`. Produces an `NCRenderer` React component that wraps `@json-ui/react`'s `Renderer`, accumulates in-progress user input in an access-disciplined buffer, flushes it as `IntentEvent`s on named catalog actions, and resolves `DynamicValue` action params against the buffer before they reach JSON-UI.
@@ -25,6 +27,7 @@
 **Goal:** Build the sibling JSON-UI packages, install NC dependencies via `file:` paths, configure vitest with jsdom for React component tests, verify the `file:` resolution actually took effect, verify strict typecheck passes on the placeholder `src/index.ts`.
 
 **Files:**
+
 - Modify: `package.json` (switch `@json-ui/*` deps to `file:` paths)
 - Create: `vitest.config.ts`
 
@@ -121,6 +124,7 @@ git commit -m "chore: install deps, configure vitest with jsdom"
 **Goal:** Define `FieldId`, `StagingSnapshot`, and `IntentEvent` — the pure types shared across the renderer/orchestrator boundary. Type-only module, no runtime code, no tests.
 
 **Files:**
+
 - Create: `src/orchestrator/intent-event.ts`
 
 - [ ] **Step 1: Create `src/orchestrator/intent-event.ts`**
@@ -176,6 +180,7 @@ git commit -m "feat: add FieldId, StagingSnapshot, IntentEvent types"
 **Goal:** Implement the pure staging buffer module — `set`, `get`, `snapshot`, `reconcile`. The first step creates the file and a test that drives the minimal implementation; subsequent steps add **invariant-lock tests** that pin down behaviors already satisfied by the minimal implementation. This is an explicit deviation from strict red-green TDD: the tests after Step 4 are coverage locks, not driver tests. They ensure the implementation commits to the specified behavior across future edits.
 
 **Files:**
+
 - Create: `src/renderer/staging-buffer.ts`
 - Create: `src/renderer/staging-buffer.test.ts`
 
@@ -258,16 +263,16 @@ Expected: PASS (1 test).
 Step 3's minimal implementation already provides `get`. This test pins the behavior in place for future edits. Append to `src/renderer/staging-buffer.test.ts`:
 
 ```typescript
-  test("get returns the value previously set (invariant lock)", () => {
-    const buf = createStagingBuffer();
-    buf.set("name", "Alice");
-    expect(buf.get("name")).toBe("Alice");
-  });
+test("get returns the value previously set (invariant lock)", () => {
+  const buf = createStagingBuffer();
+  buf.set("name", "Alice");
+  expect(buf.get("name")).toBe("Alice");
+});
 
-  test("get returns undefined for unknown field (invariant lock)", () => {
-    const buf = createStagingBuffer();
-    expect(buf.get("missing")).toBeUndefined();
-  });
+test("get returns undefined for unknown field (invariant lock)", () => {
+  const buf = createStagingBuffer();
+  expect(buf.get("missing")).toBeUndefined();
+});
 ```
 
 - [ ] **Step 6: Run and confirm pass on first run (invariant lock, not red-green)**
@@ -283,16 +288,16 @@ Expected: PASS (3 tests). These pass immediately because the minimal implementat
 Append:
 
 ```typescript
-  test("snapshot is non-destructive (Invariant 4, invariant lock)", () => {
-    const buf = createStagingBuffer();
-    buf.set("a", 1);
-    buf.set("b", 2);
-    const first = buf.snapshot();
-    const second = buf.snapshot();
-    expect(second).toEqual(first);
-    expect(buf.get("a")).toBe(1);
-    expect(buf.get("b")).toBe(2);
-  });
+test("snapshot is non-destructive (Invariant 4, invariant lock)", () => {
+  const buf = createStagingBuffer();
+  buf.set("a", 1);
+  buf.set("b", 2);
+  const first = buf.snapshot();
+  const second = buf.snapshot();
+  expect(second).toEqual(first);
+  expect(buf.get("a")).toBe(1);
+  expect(buf.get("b")).toBe(2);
+});
 ```
 
 - [ ] **Step 8: Run and confirm pass**
@@ -304,14 +309,14 @@ Expected: PASS (4 tests).
 Append:
 
 ```typescript
-  test("reconcile drops entries whose IDs are absent from activeFieldIds (Invariant 1)", () => {
-    const buf = createStagingBuffer();
-    buf.set("kept", "v1");
-    buf.set("dropped", "v2");
-    buf.reconcile(new Set(["kept"]));
-    expect(buf.snapshot()).toEqual({ kept: "v1" });
-    expect(buf.get("dropped")).toBeUndefined();
-  });
+test("reconcile drops entries whose IDs are absent from activeFieldIds (Invariant 1)", () => {
+  const buf = createStagingBuffer();
+  buf.set("kept", "v1");
+  buf.set("dropped", "v2");
+  buf.reconcile(new Set(["kept"]));
+  expect(buf.snapshot()).toEqual({ kept: "v1" });
+  expect(buf.get("dropped")).toBeUndefined();
+});
 ```
 
 - [ ] **Step 10: Run and confirm pass**
@@ -323,12 +328,12 @@ Expected: PASS (5 tests).
 Append:
 
 ```typescript
-  test("reconcile preserves entries whose IDs are still active (Invariant 2)", () => {
-    const buf = createStagingBuffer();
-    buf.set("x", 42);
-    buf.reconcile(new Set(["x", "y"]));
-    expect(buf.get("x")).toBe(42);
-  });
+test("reconcile preserves entries whose IDs are still active (Invariant 2)", () => {
+  const buf = createStagingBuffer();
+  buf.set("x", 42);
+  buf.reconcile(new Set(["x", "y"]));
+  expect(buf.get("x")).toBe(42);
+});
 ```
 
 - [ ] **Step 12: Run and confirm pass**
@@ -342,14 +347,14 @@ The buffer only sees the ID set; it cannot observe props. The renderer-level ver
 Append:
 
 ```typescript
-  test("reconcile preserves across repeated calls with same ID set (Invariant 3, buffer-level)", () => {
-    const buf = createStagingBuffer();
-    buf.set("email", "user@example.com");
-    buf.reconcile(new Set(["email"]));
-    buf.reconcile(new Set(["email"]));
-    buf.reconcile(new Set(["email"]));
-    expect(buf.get("email")).toBe("user@example.com");
-  });
+test("reconcile preserves across repeated calls with same ID set (Invariant 3, buffer-level)", () => {
+  const buf = createStagingBuffer();
+  buf.set("email", "user@example.com");
+  buf.reconcile(new Set(["email"]));
+  buf.reconcile(new Set(["email"]));
+  buf.reconcile(new Set(["email"]));
+  expect(buf.get("email")).toBe("user@example.com");
+});
 ```
 
 - [ ] **Step 14: Run and confirm pass**
@@ -370,6 +375,7 @@ git commit -m "feat: staging buffer with set/get/snapshot/reconcile + invariant-
 **Goal:** Pure function that walks a JSON-UI `UITree` and returns the set of field IDs present. `NCRenderer` will call this on every committed tree to drive reconciliation. Throws on duplicate field IDs (Invariant 8). No React dependency.
 
 **Files:**
+
 - Create: `src/renderer/tree-walker.ts`
 - Create: `src/renderer/tree-walker.test.ts`
 
@@ -449,16 +455,20 @@ Expected: PASS (1 test).
 Append:
 
 ```typescript
-  test("returns a single id when one input element has one", () => {
-    const tree: UITree = {
-      root: "r",
-      elements: {
-        r: { key: "r", type: "Root", props: {}, children: ["f1"] },
-        f1: { key: "f1", type: "TextField", props: { id: "email", label: "Email" } },
+test("returns a single id when one input element has one", () => {
+  const tree: UITree = {
+    root: "r",
+    elements: {
+      r: { key: "r", type: "Root", props: {}, children: ["f1"] },
+      f1: {
+        key: "f1",
+        type: "TextField",
+        props: { id: "email", label: "Email" },
       },
-    };
-    expect(collectFieldIds(tree)).toEqual(new Set(["email"]));
-  });
+    },
+  };
+  expect(collectFieldIds(tree)).toEqual(new Set(["email"]));
+});
 ```
 
 - [ ] **Step 6: Run and confirm pass**
@@ -470,18 +480,32 @@ Expected: PASS (2 tests).
 Append:
 
 ```typescript
-  test("collects all ids from a multi-input tree", () => {
-    const tree: UITree = {
-      root: "r",
-      elements: {
-        r: { key: "r", type: "Root", props: {}, children: ["f1", "f2", "f3"] },
-        f1: { key: "f1", type: "TextField", props: { id: "name", label: "Name" } },
-        f2: { key: "f2", type: "TextField", props: { id: "email", label: "Email" } },
-        f3: { key: "f3", type: "Checkbox", props: { id: "subscribe", label: "Subscribe" } },
+test("collects all ids from a multi-input tree", () => {
+  const tree: UITree = {
+    root: "r",
+    elements: {
+      r: { key: "r", type: "Root", props: {}, children: ["f1", "f2", "f3"] },
+      f1: {
+        key: "f1",
+        type: "TextField",
+        props: { id: "name", label: "Name" },
       },
-    };
-    expect(collectFieldIds(tree)).toEqual(new Set(["name", "email", "subscribe"]));
-  });
+      f2: {
+        key: "f2",
+        type: "TextField",
+        props: { id: "email", label: "Email" },
+      },
+      f3: {
+        key: "f3",
+        type: "Checkbox",
+        props: { id: "subscribe", label: "Subscribe" },
+      },
+    },
+  };
+  expect(collectFieldIds(tree)).toEqual(
+    new Set(["name", "email", "subscribe"]),
+  );
+});
 ```
 
 - [ ] **Step 8: Run and confirm pass**
@@ -493,17 +517,26 @@ Expected: PASS (3 tests).
 Append:
 
 ```typescript
-  test("ignores elements that do not declare an id prop", () => {
-    const tree: UITree = {
-      root: "r",
-      elements: {
-        r: { key: "r", type: "Card", props: { title: "Hello" }, children: ["l1", "f1"] },
-        l1: { key: "l1", type: "Label", props: { text: "Just a label" } },
-        f1: { key: "f1", type: "TextField", props: { id: "q", label: "Question" } },
+test("ignores elements that do not declare an id prop", () => {
+  const tree: UITree = {
+    root: "r",
+    elements: {
+      r: {
+        key: "r",
+        type: "Card",
+        props: { title: "Hello" },
+        children: ["l1", "f1"],
       },
-    };
-    expect(collectFieldIds(tree)).toEqual(new Set(["q"]));
-  });
+      l1: { key: "l1", type: "Label", props: { text: "Just a label" } },
+      f1: {
+        key: "f1",
+        type: "TextField",
+        props: { id: "q", label: "Question" },
+      },
+    },
+  };
+  expect(collectFieldIds(tree)).toEqual(new Set(["q"]));
+});
 ```
 
 - [ ] **Step 10: Run and confirm pass**
@@ -515,16 +548,20 @@ Expected: PASS (4 tests).
 Append:
 
 ```typescript
-  test("ignores non-string id props defensively", () => {
-    const tree: UITree = {
-      root: "r",
-      elements: {
-        r: { key: "r", type: "Root", props: {}, children: ["b1"] },
-        b1: { key: "b1", type: "TextField", props: { id: 42, label: "Bad" } as never },
+test("ignores non-string id props defensively", () => {
+  const tree: UITree = {
+    root: "r",
+    elements: {
+      r: { key: "r", type: "Root", props: {}, children: ["b1"] },
+      b1: {
+        key: "b1",
+        type: "TextField",
+        props: { id: 42, label: "Bad" } as never,
       },
-    };
-    expect(collectFieldIds(tree)).toEqual(new Set());
-  });
+    },
+  };
+  expect(collectFieldIds(tree)).toEqual(new Set());
+});
 ```
 
 - [ ] **Step 12: Run and confirm pass**
@@ -536,17 +573,25 @@ Expected: PASS (5 tests).
 Append:
 
 ```typescript
-  test("throws DuplicateFieldIdError on colliding ids (Invariant 8)", () => {
-    const tree: UITree = {
-      root: "r",
-      elements: {
-        r: { key: "r", type: "Container", props: {}, children: ["f1", "f2"] },
-        f1: { key: "f1", type: "TextField", props: { id: "email", label: "Email" } },
-        f2: { key: "f2", type: "TextField", props: { id: "email", label: "Email Again" } },
+test("throws DuplicateFieldIdError on colliding ids (Invariant 8)", () => {
+  const tree: UITree = {
+    root: "r",
+    elements: {
+      r: { key: "r", type: "Container", props: {}, children: ["f1", "f2"] },
+      f1: {
+        key: "f1",
+        type: "TextField",
+        props: { id: "email", label: "Email" },
       },
-    };
-    expect(() => collectFieldIds(tree)).toThrow(/duplicate field id "email"/);
-  });
+      f2: {
+        key: "f2",
+        type: "TextField",
+        props: { id: "email", label: "Email Again" },
+      },
+    },
+  };
+  expect(() => collectFieldIds(tree)).toThrow(/duplicate field id "email"/);
+});
 ```
 
 - [ ] **Step 14: Run and confirm pass**
@@ -567,6 +612,7 @@ git commit -m "feat: collectFieldIds tree walker with duplicate-id enforcement (
 **Goal:** Wrap the pure staging buffer in a React context so NC input components can read and write it via a hook. The context holds the buffer in a `useRef` so instance identity is stable across renders.
 
 **Files:**
+
 - Create: `src/renderer/staging-buffer-context.tsx`
 - Create: `src/renderer/staging-buffer-context.test.tsx`
 
@@ -697,6 +743,7 @@ git commit -m "feat: StagingBufferProvider + useStagingBuffer hook"
 **Goal:** Implement `NCTextField` and `NCCheckbox` with direct-props signatures (for easy standalone testing), plus a `toRegistered<P>(Component)` adapter that turns them into JSON-UI-compatible `ComponentRenderer`s. The adapter is critical: JSON-UI's `Renderer` invokes registered components via `ComponentRenderProps` (`{ element, onAction, children, loading }`), passing `element.props` inside, not as the component's direct props. Without the adapter, a direct-props component registered in JSON-UI's registry would receive `undefined` for every one of its declared props.
 
 **Files:**
+
 - Create: `src/renderer/input-fields.tsx`
 - Create: `src/renderer/input-fields.test.tsx`
 
@@ -933,6 +980,7 @@ git commit -m "feat: NCTextField, NCCheckbox, and toRegistered adapter for JSON-
 **Goal:** Define the minimal NC catalog using `@json-ui/core`'s `createCatalog`. Every input component schema includes `id: z.string()`.
 
 **Files:**
+
 - Create: `src/catalog/input-fields.ts`
 
 - [ ] **Step 1: Create `src/catalog/input-fields.ts`**
@@ -953,7 +1001,8 @@ export const ncStarterCatalog = createCatalog({
         placeholder: z.string().optional(),
         error: z.string().optional(),
       }),
-      description: "Single-line text input. Writes to the staging buffer under `id`.",
+      description:
+        "Single-line text input. Writes to the staging buffer under `id`.",
     },
     Checkbox: {
       props: z.object({
@@ -967,11 +1016,14 @@ export const ncStarterCatalog = createCatalog({
         label: z.string(),
         action: z.any(),
       }),
-      description: "Clickable button. If `action` is present, clicking fires an intent event.",
+      description:
+        "Clickable button. If `action` is present, clicking fires an intent event.",
     },
   },
   actions: {
-    submit_form: { description: "Submit the current form contents to the orchestrator." },
+    submit_form: {
+      description: "Submit the current form contents to the orchestrator.",
+    },
     cancel: { description: "Cancel the current action." },
   },
 });
@@ -999,6 +1051,7 @@ git commit -m "feat: NC starter catalog with id-required input schemas"
 **Goal:** Pure function that takes `action.params` and a staging snapshot, walks the params for `DynamicValue` entries (shaped `{path: "..."}`) that reference staging field IDs, and substitutes their values. Called by `makeActionHandlers` before firing an `IntentEvent`.
 
 **Files:**
+
 - Create: `src/renderer/resolve-dynamic.ts`
 - Create: `src/renderer/resolve-dynamic.test.ts`
 
@@ -1057,7 +1110,10 @@ export function preResolveDynamicParams(
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(params)) {
-    if (isDynamic(value) && Object.prototype.hasOwnProperty.call(snapshot, value.path)) {
+    if (
+      isDynamic(value) &&
+      Object.prototype.hasOwnProperty.call(snapshot, value.path)
+    ) {
       out[key] = snapshot[value.path];
     } else {
       out[key] = value;
@@ -1080,12 +1136,12 @@ Expected: PASS (1 test).
 Append:
 
 ```typescript
-  test("substitutes a DynamicValue path when the path matches a staging field ID", () => {
-    const params = { email: { path: "email" }, limit: 10 };
-    const snapshot = { email: "dan@example.com" };
-    const result = preResolveDynamicParams(params, snapshot);
-    expect(result).toEqual({ email: "dan@example.com", limit: 10 });
-  });
+test("substitutes a DynamicValue path when the path matches a staging field ID", () => {
+  const params = { email: { path: "email" }, limit: 10 };
+  const snapshot = { email: "dan@example.com" };
+  const result = preResolveDynamicParams(params, snapshot);
+  expect(result).toEqual({ email: "dan@example.com", limit: 10 });
+});
 ```
 
 - [ ] **Step 6: Run and confirm pass**
@@ -1097,12 +1153,12 @@ Expected: PASS (2 tests).
 Append:
 
 ```typescript
-  test("leaves DynamicValue paths that do not match any staging field ID untouched", () => {
-    const params = { userId: { path: "user/id" } };
-    const snapshot = { email: "dan@example.com" };
-    const result = preResolveDynamicParams(params, snapshot);
-    expect(result).toEqual({ userId: { path: "user/id" } });
-  });
+test("leaves DynamicValue paths that do not match any staging field ID untouched", () => {
+  const params = { userId: { path: "user/id" } };
+  const snapshot = { email: "dan@example.com" };
+  const result = preResolveDynamicParams(params, snapshot);
+  expect(result).toEqual({ userId: { path: "user/id" } });
+});
 ```
 
 - [ ] **Step 8: Run and confirm pass**
@@ -1114,12 +1170,12 @@ Expected: PASS (3 tests).
 Append:
 
 ```typescript
-  test("objects with extra keys beyond `path` are not treated as DynamicValue", () => {
-    const params = { meta: { path: "email", label: "Email" } };
-    const snapshot = { email: "x@y.z" };
-    const result = preResolveDynamicParams(params, snapshot);
-    expect(result).toEqual({ meta: { path: "email", label: "Email" } });
-  });
+test("objects with extra keys beyond `path` are not treated as DynamicValue", () => {
+  const params = { meta: { path: "email", label: "Email" } };
+  const snapshot = { email: "x@y.z" };
+  const result = preResolveDynamicParams(params, snapshot);
+  expect(result).toEqual({ meta: { path: "email", label: "Email" } });
+});
 ```
 
 - [ ] **Step 10: Run and confirm pass**
@@ -1140,6 +1196,7 @@ git commit -m "feat: pre-resolve DynamicValue action params against staging buff
 **Goal:** Extract the per-intent action-handler construction into a pure, testable function. Given a catalog, a staging buffer, an `onIntent` callback, and an optional `catalogVersion`, it returns a `Record<actionName, (params) => void>` passable directly to `JSONUIProvider`. Isolating this keeps `NCRenderer` (Task 10) short and gives us hermetic tests for intent emission.
 
 **Files:**
+
 - Create: `src/renderer/action-handlers.ts`
 - Create: `src/renderer/action-handlers.test.ts`
 
@@ -1220,8 +1277,12 @@ export function makeActionHandlers({
   buffer,
   onIntent,
   catalogVersion,
-}: MakeActionHandlersOptions): Record<string, (params: Record<string, unknown>) => void> {
-  const handlers: Record<string, (params: Record<string, unknown>) => void> = {};
+}: MakeActionHandlersOptions): Record<
+  string,
+  (params: Record<string, unknown>) => void
+> {
+  const handlers: Record<string, (params: Record<string, unknown>) => void> =
+    {};
   for (const actionName of Object.keys(catalog.actions)) {
     handlers[actionName] = (params: Record<string, unknown>) => {
       const snapshot = buffer.snapshot();
@@ -1253,18 +1314,22 @@ Expected: PASS (1 test).
 Append:
 
 ```typescript
-  test("action_params and staging_snapshot stay separate on key collision (Invariant 6)", () => {
-    const buf = createStagingBuffer();
-    buf.set("email", "user-typed@example.com");
-    const onIntent = vi.fn();
-    const handlers = makeActionHandlers({ catalog: ncStarterCatalog, buffer: buf, onIntent });
-
-    handlers.submit_form!({ email: "llm-chose-this@example.com" });
-
-    const event = onIntent.mock.calls[0]![0] as IntentEvent;
-    expect(event.action_params).toEqual({ email: "llm-chose-this@example.com" });
-    expect(event.staging_snapshot).toEqual({ email: "user-typed@example.com" });
+test("action_params and staging_snapshot stay separate on key collision (Invariant 6)", () => {
+  const buf = createStagingBuffer();
+  buf.set("email", "user-typed@example.com");
+  const onIntent = vi.fn();
+  const handlers = makeActionHandlers({
+    catalog: ncStarterCatalog,
+    buffer: buf,
+    onIntent,
   });
+
+  handlers.submit_form!({ email: "llm-chose-this@example.com" });
+
+  const event = onIntent.mock.calls[0]![0] as IntentEvent;
+  expect(event.action_params).toEqual({ email: "llm-chose-this@example.com" });
+  expect(event.staging_snapshot).toEqual({ email: "user-typed@example.com" });
+});
 ```
 
 - [ ] **Step 6: Run and confirm pass**
@@ -1276,17 +1341,21 @@ Expected: PASS (2 tests).
 Append:
 
 ```typescript
-  test("pre-resolves DynamicValue params against the staging buffer (Invariant 11)", () => {
-    const buf = createStagingBuffer();
-    buf.set("email", "dan@example.com");
-    const onIntent = vi.fn();
-    const handlers = makeActionHandlers({ catalog: ncStarterCatalog, buffer: buf, onIntent });
-
-    handlers.submit_form!({ to: { path: "email" } });
-
-    const event = onIntent.mock.calls[0]![0] as IntentEvent;
-    expect(event.action_params).toEqual({ to: "dan@example.com" });
+test("pre-resolves DynamicValue params against the staging buffer (Invariant 11)", () => {
+  const buf = createStagingBuffer();
+  buf.set("email", "dan@example.com");
+  const onIntent = vi.fn();
+  const handlers = makeActionHandlers({
+    catalog: ncStarterCatalog,
+    buffer: buf,
+    onIntent,
   });
+
+  handlers.submit_form!({ to: { path: "email" } });
+
+  const event = onIntent.mock.calls[0]![0] as IntentEvent;
+  expect(event.action_params).toEqual({ to: "dan@example.com" });
+});
 ```
 
 - [ ] **Step 8: Run and confirm pass**
@@ -1298,18 +1367,22 @@ Expected: PASS (3 tests).
 Append:
 
 ```typescript
-  test("does not clear the staging buffer on flush (Rule 4B)", () => {
-    const buf = createStagingBuffer();
-    buf.set("email", "dan@example.com");
-    buf.set("name", "Daniel");
-    const onIntent = vi.fn();
-    const handlers = makeActionHandlers({ catalog: ncStarterCatalog, buffer: buf, onIntent });
-
-    handlers.submit_form!({});
-
-    // Buffer contents must remain after flush.
-    expect(buf.snapshot()).toEqual({ email: "dan@example.com", name: "Daniel" });
+test("does not clear the staging buffer on flush (Rule 4B)", () => {
+  const buf = createStagingBuffer();
+  buf.set("email", "dan@example.com");
+  buf.set("name", "Daniel");
+  const onIntent = vi.fn();
+  const handlers = makeActionHandlers({
+    catalog: ncStarterCatalog,
+    buffer: buf,
+    onIntent,
   });
+
+  handlers.submit_form!({});
+
+  // Buffer contents must remain after flush.
+  expect(buf.snapshot()).toEqual({ email: "dan@example.com", name: "Daniel" });
+});
 ```
 
 - [ ] **Step 10: Run and confirm pass**
@@ -1330,6 +1403,7 @@ git commit -m "feat: makeActionHandlers factory with Invariants 5, 6, 11 and Rul
 **Goal:** The main `NCRenderer` React component. Wraps JSON-UI's `JSONUIProvider` + `Renderer`, provides the `StagingBufferProvider`, walks committed trees to drive reconciliation, and wires in `makeActionHandlers` from Task 9. Reconciliation is guarded by a `try/catch` so invalid trees (duplicate field IDs) are skipped rather than crashing the effect.
 
 **Files:**
+
 - Create: `src/renderer/nc-renderer.tsx`
 - Create: `src/renderer/nc-renderer.test.tsx`
 
@@ -1606,6 +1680,7 @@ git commit -m "feat: NCRenderer wrapper with hermetic reconciliation test and in
 **Goal:** Close three remaining gaps — Invariant 3 at the renderer level (same ID with different props preserves the buffered value), Invariant 9 / Risk 2 (invalid-tree reconciliation skip, tested hermetically via a spy on `reconcile`), and Invariant 7 (orchestrator isolation enforced by a file-content test).
 
 **Files:**
+
 - Modify: `src/renderer/nc-renderer.test.tsx` (append two new tests that reuse the module-level `capturedBuf` and `ProbeComponent` from Task 10 Step 5)
 - Create: `src/renderer/orchestrator-isolation.test.ts`
 
@@ -1815,6 +1890,7 @@ git commit -m "test: Invariant 3 (renderer-level), Invariant 9 (hermetic spy), I
 **Goal:** Create the barrel export at `src/renderer/index.ts`, update `src/index.ts` to re-export the public surface, and add one end-to-end smoke test that exercises the full flow: render → type → click action → receive IntentEvent with the staging snapshot.
 
 **Files:**
+
 - Create: `src/renderer/index.ts`
 - Modify: `src/index.ts`
 - Create: `src/integration.test.tsx`
@@ -1964,32 +2040,32 @@ git commit -m "feat: public exports + end-to-end integration smoke test"
 
 **Spec coverage (honest):**
 
-| Spec element | Covered by | Notes |
-|---|---|---|
-| Rule 1 (Ownership) | Task 5 | `StagingBufferProvider` owns buffer in `useRef` |
-| Rule 2 (Keying: id required) | Tasks 4, 7 | Walker reads `props.id`; catalog requires `id: z.string()` |
-| Rule 3 (Reconciliation, buffer-level) | Task 3 step 13 | Buffer preserves across repeated reconcile with same ID set |
-| Rule 3 (Reconciliation, renderer-level) | Task 11 step 1 | Same-id-different-props test with `error` prop added |
-| Rule 4 (Flush on intent) | Task 9 | `makeActionHandlers` emits full IntentEvent |
-| Rule 4A (action_params / staging_snapshot separate) | Task 9 step 5 | Direct collision test |
-| Rule 4B (buffer not cleared on flush) | Task 9 step 9 | Direct assertion after flush |
-| Risk 1 (LLM acceptance) | Out of scope | Prompt engineering; lives in a catalog-prompting spec |
-| Risk 2 (invalid-tree reconciliation skip) | Task 11 step 3 | Spy-based hermetic test |
-| Risk 2 (partial streaming) | **DEFERRED** | Requires JSON-UI streaming API not yet present |
-| Risk 3 (unmount) | Non-goal | Explicitly documented in spec |
-| DynamicValue pre-resolution | Tasks 8, 9 step 7 | Pure function + handler integration |
-| NC implements all inputs | Task 6 | NCTextField, NCCheckbox, plus toRegistered adapter |
-| Invariant 1 (reconcile drops) | Tasks 3 step 9, 10 step 5 | Buffer and renderer level |
-| Invariant 2 (reconcile preserves presence) | Task 3 step 11 | Buffer level |
-| Invariant 3 (props-agnostic keying) | Tasks 3 step 13, 11 step 1 | Buffer level + renderer level |
-| Invariant 4 (snapshot non-destructive) | Task 3 step 7 | |
-| Invariant 5 (full snapshot in intent) | Task 9 step 1 | |
-| Invariant 6 (action_params vs staging_snapshot) | Task 9 step 5 | Direct collision test |
-| Invariant 7 (orchestrator isolation) | Task 11 step 5 | File-content test (grep-style) |
-| Invariant 8 (duplicate ids throw) | Task 4 step 13 | Built into tree walker |
-| Invariant 9 (invalid-tree safety) | Task 11 step 3 | Spy-based hermetic test |
-| Invariant 10 (backpressure rejection) | **DEFERRED** | Cannot implement at renderer layer alone — requires orchestrator cooperation |
-| Invariant 11 (DynamicValue before resolveAction) | Task 9 step 7 | Pre-resolution happens in action handler before JSON-UI's resolveAction |
+| Spec element                                        | Covered by                 | Notes                                                                        |
+| --------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------- |
+| Rule 1 (Ownership)                                  | Task 5                     | `StagingBufferProvider` owns buffer in `useRef`                              |
+| Rule 2 (Keying: id required)                        | Tasks 4, 7                 | Walker reads `props.id`; catalog requires `id: z.string()`                   |
+| Rule 3 (Reconciliation, buffer-level)               | Task 3 step 13             | Buffer preserves across repeated reconcile with same ID set                  |
+| Rule 3 (Reconciliation, renderer-level)             | Task 11 step 1             | Same-id-different-props test with `error` prop added                         |
+| Rule 4 (Flush on intent)                            | Task 9                     | `makeActionHandlers` emits full IntentEvent                                  |
+| Rule 4A (action_params / staging_snapshot separate) | Task 9 step 5              | Direct collision test                                                        |
+| Rule 4B (buffer not cleared on flush)               | Task 9 step 9              | Direct assertion after flush                                                 |
+| Risk 1 (LLM acceptance)                             | Out of scope               | Prompt engineering; lives in a catalog-prompting spec                        |
+| Risk 2 (invalid-tree reconciliation skip)           | Task 11 step 3             | Spy-based hermetic test                                                      |
+| Risk 2 (partial streaming)                          | **DEFERRED**               | Requires JSON-UI streaming API not yet present                               |
+| Risk 3 (unmount)                                    | Non-goal                   | Explicitly documented in spec                                                |
+| DynamicValue pre-resolution                         | Tasks 8, 9 step 7          | Pure function + handler integration                                          |
+| NC implements all inputs                            | Task 6                     | NCTextField, NCCheckbox, plus toRegistered adapter                           |
+| Invariant 1 (reconcile drops)                       | Tasks 3 step 9, 10 step 5  | Buffer and renderer level                                                    |
+| Invariant 2 (reconcile preserves presence)          | Task 3 step 11             | Buffer level                                                                 |
+| Invariant 3 (props-agnostic keying)                 | Tasks 3 step 13, 11 step 1 | Buffer level + renderer level                                                |
+| Invariant 4 (snapshot non-destructive)              | Task 3 step 7              |                                                                              |
+| Invariant 5 (full snapshot in intent)               | Task 9 step 1              |                                                                              |
+| Invariant 6 (action_params vs staging_snapshot)     | Task 9 step 5              | Direct collision test                                                        |
+| Invariant 7 (orchestrator isolation)                | Task 11 step 5             | File-content test (grep-style)                                               |
+| Invariant 8 (duplicate ids throw)                   | Task 4 step 13             | Built into tree walker                                                       |
+| Invariant 9 (invalid-tree safety)                   | Task 11 step 3             | Spy-based hermetic test                                                      |
+| Invariant 10 (backpressure rejection)               | **DEFERRED**               | Cannot implement at renderer layer alone — requires orchestrator cooperation |
+| Invariant 11 (DynamicValue before resolveAction)    | Task 9 step 7              | Pre-resolution happens in action handler before JSON-UI's resolveAction      |
 
 **Explicitly deferred (not silently dropped):**
 

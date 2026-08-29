@@ -1,11 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
-import {
-  DataProvider,
-  StagingProvider,
-  ActionProvider,
-} from "@json-ui/react";
+import { DataProvider, StagingProvider, ActionProvider } from "@json-ui/react";
 import { createStagingBuffer } from "@json-ui/core";
 import {
   NCTextField,
@@ -13,19 +9,24 @@ import {
   NCButton,
   NCContainer,
   NCText,
+  NCSelect,
 } from "./input-components";
 
 function Wrapper({
   children,
   buffer = createStagingBuffer(),
+  onIntent,
 }: {
   children: React.ReactNode;
   buffer?: ReturnType<typeof createStagingBuffer>;
+  onIntent?: (event: unknown) => void;
 }) {
   return (
     <DataProvider initialData={{}}>
       <StagingProvider store={buffer}>
-        <ActionProvider>{children}</ActionProvider>
+        <ActionProvider onIntent={onIntent} staging={buffer}>
+          {children}
+        </ActionProvider>
       </StagingProvider>
     </DataProvider>
   );
@@ -142,5 +143,72 @@ describe("NCButton", () => {
       </Wrapper>,
     );
     expect(screen.getByRole("button", { name: "Submit" })).toBeDefined();
+  });
+
+  it("forwards action name and params to execute", async () => {
+    const onIntent = vi.fn();
+    render(
+      <Wrapper onIntent={onIntent}>
+        <NCButton
+          element={{
+            key: "r",
+            type: "Button",
+            props: {
+              label: "Send",
+              action: { name: "submit_form", params: { n: 1 } },
+            },
+          }}
+        />
+      </Wrapper>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    expect(onIntent).toHaveBeenCalled();
+    const event = onIntent.mock.calls[0]![0] as {
+      action_name: string;
+      action_params: Record<string, unknown>;
+    };
+    expect(event.action_name).toBe("submit_form");
+    expect(event.action_params).toEqual({ n: 1 });
+  });
+});
+
+describe("NCSelect", () => {
+  it("binds a selected option to the staging buffer", () => {
+    const buffer = createStagingBuffer();
+    render(
+      <Wrapper buffer={buffer}>
+        <NCSelect
+          element={{
+            key: "r",
+            type: "Select",
+            props: {
+              id: "color",
+              label: "Color",
+              options: ["red", "blue"],
+            },
+          }}
+        />
+      </Wrapper>,
+    );
+    const select = screen.getByLabelText("Color") as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: "blue" } });
+    expect(buffer.get("color")).toBe("blue");
+  });
+});
+
+describe("NCTextField multiline", () => {
+  it("renders a textarea when multiline is set", () => {
+    render(
+      <Wrapper>
+        <NCTextField
+          element={{
+            key: "r",
+            type: "TextField",
+            props: { id: "bio", label: "Bio", multiline: true },
+          }}
+        />
+      </Wrapper>,
+    );
+    expect(screen.getByLabelText("Bio").tagName).toBe("TEXTAREA");
   });
 });

@@ -1,4 +1,3 @@
-// Root ESLint config. Buffer-isolation rule added in Task 12.
 module.exports = {
   root: true,
   parser: "@typescript-eslint/parser",
@@ -9,6 +8,41 @@ module.exports = {
   },
   plugins: ["@typescript-eslint"],
   extends: [],
-  rules: {},
-  ignorePatterns: ["dist", "node_modules", "coverage", "docs"],
+  rules: {
+    "@typescript-eslint/no-explicit-any": "off",
+  },
+  ignorePatterns: ["dist", "node_modules", "coverage", "docs", "tools"],
+  overrides: [
+    {
+      files: ["src/orchestrator/**/*.ts"],
+      excludedFiles: ["**/*.test.ts", "**/*.test.tsx"],
+      rules: {
+        "no-restricted-imports": [
+          "error",
+          {
+            paths: [
+              "react",
+              "react-dom",
+              "react/jsx-runtime",
+              "react/jsx-dev-runtime",
+              "@json-ui/react",
+              "@json-ui/headless",
+            ],
+            patterns: [
+              "../renderer",
+              "../app",
+              "../observer",
+              "../renderer/*",
+              "../app/*",
+              "../observer/*",
+              "react/*",
+              "react-dom/*",
+              "@json-ui/react/*",
+              "@json-ui/headless/*",
+            ],
+          },
+        ],
+      },
+    },
+  ],
 };

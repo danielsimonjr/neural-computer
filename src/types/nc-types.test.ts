@@ -4,12 +4,8 @@ import type {
   StagingBuffer,
   ObservableDataModel,
 } from "@json-ui/core";
-import type {
-  NCIntentHandler,
-  NCRuntime,
-  NCCatalogVersion,
-  NCObserver,
-} from "./nc-types";
+import { asNCCatalogVersion } from "./nc-types";
+import type { NCIntentHandler, NCRuntime, NCObserver } from "./nc-types";
 
 describe("NC core types", () => {
   it("NCIntentHandler is an async function taking IntentEvent", () => {
@@ -18,13 +14,14 @@ describe("NC core types", () => {
     >();
   });
 
-  it("NCRuntime exposes stagingBuffer, durableStore, emitIntent, setIntentHandler, destroy", () => {
+  it("NCRuntime exposes stagingBuffer, durableStore, observer, emitIntent, setIntentHandler, destroy", () => {
     expectTypeOf<NCRuntime>()
       .toHaveProperty("stagingBuffer")
       .toEqualTypeOf<StagingBuffer>();
     expectTypeOf<NCRuntime>()
       .toHaveProperty("durableStore")
       .toEqualTypeOf<ObservableDataModel>();
+    expectTypeOf<NCRuntime>().toHaveProperty("observer");
     expectTypeOf<NCRuntime>()
       .toHaveProperty("emitIntent")
       .toEqualTypeOf<(event: IntentEvent) => Promise<void>>();
@@ -32,12 +29,15 @@ describe("NC core types", () => {
       .toHaveProperty("setIntentHandler")
       .toEqualTypeOf<(handler: NCIntentHandler) => void>();
     expectTypeOf<NCRuntime>()
+      .toHaveProperty("isIntentInFlight")
+      .toEqualTypeOf<() => boolean>();
+    expectTypeOf<NCRuntime>()
       .toHaveProperty("destroy")
       .toEqualTypeOf<() => void>();
   });
 
-  it("NCCatalogVersion is a string brand", () => {
-    const v: NCCatalogVersion = "nc-starter-0.1" as NCCatalogVersion;
+  it("NCCatalogVersion is a string brand constructed via asNCCatalogVersion", () => {
+    const v = asNCCatalogVersion("nc-starter-0.3");
     expect(typeof v).toBe("string");
   });
 

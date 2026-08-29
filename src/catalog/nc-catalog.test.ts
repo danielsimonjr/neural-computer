@@ -12,6 +12,7 @@ describe("ncStarterCatalog", () => {
     expect(ncStarterCatalog.hasComponent("Text")).toBe(true);
     expect(ncStarterCatalog.hasComponent("TextField")).toBe(true);
     expect(ncStarterCatalog.hasComponent("Checkbox")).toBe(true);
+    expect(ncStarterCatalog.hasComponent("Select")).toBe(true);
     expect(ncStarterCatalog.hasComponent("Button")).toBe(true);
   });
 
@@ -84,5 +85,56 @@ describe("ncStarterCatalog", () => {
     expect(result.success).toBe(false);
     expect(result.fieldIdError).toBeDefined();
     expect(result.fieldIdError?.fieldId).toBe("shared");
+  });
+
+  it("rejects empty and reserved field ids", () => {
+    for (const id of ["", " ", "__proto__", "constructor", "a/b"]) {
+      const result = ncStarterCatalog.validateTree({
+        root: "r",
+        elements: {
+          r: { key: "r", type: "TextField", props: { id, label: "X" } },
+        },
+      });
+      expect(result.success, `id ${JSON.stringify(id)}`).toBe(false);
+    }
+  });
+
+  it("rejects Button actions not in the catalog allowlist", () => {
+    const result = ncStarterCatalog.validateTree({
+      root: "r",
+      elements: {
+        r: {
+          key: "r",
+          type: "Button",
+          props: { label: "Go", action: { name: "rm_rf" } },
+        },
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("validates a Select tree and rejects empty options", () => {
+    const ok = ncStarterCatalog.validateTree({
+      root: "r",
+      elements: {
+        r: {
+          key: "r",
+          type: "Select",
+          props: { id: "color", label: "Color", options: ["red", "blue"] },
+        },
+      },
+    });
+    expect(ok.success).toBe(true);
+    const empty = ncStarterCatalog.validateTree({
+      root: "r",
+      elements: {
+        r: {
+          key: "r",
+          type: "Select",
+          props: { id: "color", label: "Color", options: [] },
+        },
+      },
+    });
+    expect(empty.success).toBe(false);
   });
 });
