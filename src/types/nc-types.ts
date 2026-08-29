@@ -5,18 +5,16 @@ import type {
   StagingBuffer,
   ObservableDataModel,
   UITree,
-  Catalog,
+  AnyCatalog,
 } from "@json-ui/core";
 import type { NormalizedNode } from "@json-ui/headless";
 
 /**
- * Catalog without preserving component generics. JSON-UI method variance
- * makes a specific `Catalog<MyComponents>` unassignable to the default
- * `Catalog` type. JSON-UI will export this as `AnyCatalog`; until that
- * ships, NC owns the alias.
+ * Re-export of `@json-ui/core`'s `AnyCatalog`. Method variance makes a
+ * specific `Catalog<MyComponents>` unassignable to the default `Catalog`
+ * type; hosts that store a catalog on `NCRuntime` use this alias.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type AnyCatalog = Catalog<any, any, any>;
+export type { AnyCatalog };
 
 /**
  * An NC intent handler receives a fully-formed IntentEvent from the

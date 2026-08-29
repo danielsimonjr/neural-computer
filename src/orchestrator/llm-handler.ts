@@ -34,15 +34,6 @@ export interface CreateLlmIntentHandlerOptions {
   maxRounds?: number;
 }
 
-/**
- * JSON-UI will add `write?` on ObservableDataModel. CI still pins a SHA
- * without it, so the handler probes the method instead of importing the
- * new field.
- */
-type DurableStoreWithOptionalWrite = NCRuntime["durableStore"] & {
-  write?(path: string, value: JSONValue): void | Promise<void>;
-};
-
 const COMMIT_TOOL: NCLlmTool = {
   name: "commit_ui_tree",
   description:
@@ -331,8 +322,7 @@ async function handleTool(
             : "";
         const value = (isRecord(use.input) ? use.input.value : undefined) as
           JSONValue | undefined;
-        const store = options.runtime
-          .durableStore as DurableStoreWithOptionalWrite;
+        const store = options.runtime.durableStore;
         if (options.onDurableWrite) {
           await options.onDurableWrite({ path, value: value as JSONValue });
         } else if (typeof store.write === "function") {
