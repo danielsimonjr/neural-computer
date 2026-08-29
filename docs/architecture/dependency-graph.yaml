@@ -2,9 +2,9 @@ metadata:
   name: neural-computer
   version: 0.1.0
   lastUpdated: "2026-08-29"
-  totalFiles: 34
+  totalFiles: 39
   totalModules: 11
-  totalExports: 218
+  totalExports: 282
 entryPoints:
   - file: src/index.ts
     type: main
@@ -387,6 +387,23 @@ modules:
             - createStubIntentHandler
             - submittedFieldsStillPresent
             - type CreateStubIntentHandlerOptions
+            - createLlmIntentHandler
+            - composeNcObservation
+            - createAnthropicTransport
+            - createAnthropicIntentHandler
+            - NCLlmError
+            - NC_OBSERVATION_MAX_BYTES
+            - NC_LLM_DEFAULT_MAX_ROUNDS
+            - NC_LLM_DEFAULT_MAX_TOKENS
+            - NC_DEFAULT_ANTHROPIC_MODEL
+            - type CreateLlmIntentHandlerOptions
+            - type DurableWrite
+            - type NCLlmTransport
+            - type NCLlmMessage
+            - type NCLlmContent
+            - type NCLlmTool
+            - type CreateAnthropicTransportOptions
+            - type NCLlmErrorCode
           reExport: true
         - file: ./observer
           imports:
@@ -434,6 +451,23 @@ modules:
         - createStubIntentHandler
         - submittedFieldsStillPresent
         - type CreateStubIntentHandlerOptions
+        - createLlmIntentHandler
+        - composeNcObservation
+        - createAnthropicTransport
+        - createAnthropicIntentHandler
+        - NCLlmError
+        - NC_OBSERVATION_MAX_BYTES
+        - NC_LLM_DEFAULT_MAX_ROUNDS
+        - NC_LLM_DEFAULT_MAX_TOKENS
+        - NC_DEFAULT_ANTHROPIC_MODEL
+        - type CreateLlmIntentHandlerOptions
+        - type DurableWrite
+        - type NCLlmTransport
+        - type NCLlmMessage
+        - type NCLlmContent
+        - type NCLlmTool
+        - type CreateAnthropicTransportOptions
+        - type NCLlmErrorCode
         - createNCObserver
         - ncHeadlessRegistry
         - type CreateNCObserverOptions
@@ -474,6 +508,23 @@ modules:
         - createStubIntentHandler
         - submittedFieldsStillPresent
         - type CreateStubIntentHandlerOptions
+        - createLlmIntentHandler
+        - composeNcObservation
+        - createAnthropicTransport
+        - createAnthropicIntentHandler
+        - NCLlmError
+        - NC_OBSERVATION_MAX_BYTES
+        - NC_LLM_DEFAULT_MAX_ROUNDS
+        - NC_LLM_DEFAULT_MAX_TOKENS
+        - NC_DEFAULT_ANTHROPIC_MODEL
+        - type CreateLlmIntentHandlerOptions
+        - type DurableWrite
+        - type NCLlmTransport
+        - type NCLlmMessage
+        - type NCLlmContent
+        - type NCLlmTool
+        - type CreateAnthropicTransportOptions
+        - type NCLlmErrorCode
         - createNCObserver
         - ncHeadlessRegistry
         - type CreateNCObserverOptions
@@ -615,6 +666,23 @@ modules:
             - createStubIntentHandler
             - submittedFieldsStillPresent
             - type CreateStubIntentHandlerOptions
+            - createLlmIntentHandler
+            - composeNcObservation
+            - createAnthropicTransport
+            - createAnthropicIntentHandler
+            - NCLlmError
+            - NC_OBSERVATION_MAX_BYTES
+            - NC_LLM_DEFAULT_MAX_ROUNDS
+            - NC_LLM_DEFAULT_MAX_TOKENS
+            - NC_DEFAULT_ANTHROPIC_MODEL
+            - type CreateLlmIntentHandlerOptions
+            - type DurableWrite
+            - type NCLlmTransport
+            - type NCLlmMessage
+            - type NCLlmContent
+            - type NCLlmTool
+            - type CreateAnthropicTransportOptions
+            - type NCLlmErrorCode
           reExport: true
         - file: ./app
           imports:
@@ -679,6 +747,23 @@ modules:
         - createStubIntentHandler
         - submittedFieldsStillPresent
         - type CreateStubIntentHandlerOptions
+        - createLlmIntentHandler
+        - composeNcObservation
+        - createAnthropicTransport
+        - createAnthropicIntentHandler
+        - NCLlmError
+        - NC_OBSERVATION_MAX_BYTES
+        - NC_LLM_DEFAULT_MAX_ROUNDS
+        - NC_LLM_DEFAULT_MAX_TOKENS
+        - NC_DEFAULT_ANTHROPIC_MODEL
+        - type CreateLlmIntentHandlerOptions
+        - type DurableWrite
+        - type NCLlmTransport
+        - type NCLlmMessage
+        - type NCLlmContent
+        - type NCLlmTool
+        - type CreateAnthropicTransportOptions
+        - type NCLlmErrorCode
         - NCApp
         - type NCAppProps
         - createNCObserver
@@ -733,6 +818,23 @@ modules:
         - createStubIntentHandler
         - submittedFieldsStillPresent
         - type CreateStubIntentHandlerOptions
+        - createLlmIntentHandler
+        - composeNcObservation
+        - createAnthropicTransport
+        - createAnthropicIntentHandler
+        - NCLlmError
+        - NC_OBSERVATION_MAX_BYTES
+        - NC_LLM_DEFAULT_MAX_ROUNDS
+        - NC_LLM_DEFAULT_MAX_TOKENS
+        - NC_DEFAULT_ANTHROPIC_MODEL
+        - type CreateLlmIntentHandlerOptions
+        - type DurableWrite
+        - type NCLlmTransport
+        - type NCLlmMessage
+        - type NCLlmContent
+        - type NCLlmTool
+        - type CreateAnthropicTransportOptions
+        - type NCLlmErrorCode
         - NCApp
         - type NCAppProps
         - createNCObserver
@@ -876,6 +978,42 @@ modules:
       functions:
         - createNCObserver
   orchestrator:
+    src/orchestrator/anthropic-transport.ts:
+      description: Inject a send function to avoid constructing a real client (tests).
+      externalDependencies:
+        - package: "@anthropic-ai/sdk"
+          imports:
+            - Anthropic
+      nodeDependencies: []
+      internalDependencies:
+        - file: ./limits
+          imports:
+            - NC_DEFAULT_ANTHROPIC_MODEL
+            - NC_LLM_DEFAULT_MAX_TOKENS
+        - file: ./llm-transport
+          imports:
+            - NCLlmCompleteRequest
+            - NCLlmContent
+            - NCLlmToolResultContent
+            - NCLlmToolUseContent
+            - NCLlmTransport
+          typeOnly: true
+        - file: ./llm-handler
+          imports:
+            - createLlmIntentHandler
+            - CreateLlmIntentHandlerOptions
+        - file: ../types
+          imports:
+            - NCIntentHandler
+          typeOnly: true
+      exports:
+        - createAnthropicTransport
+        - createAnthropicIntentHandler
+      interfaces:
+        - CreateAnthropicTransportOptions
+      functions:
+        - createAnthropicTransport
+        - createAnthropicIntentHandler
     src/orchestrator/handle-intent.ts:
       description: Options for the stub intent handler. The stub is deterministic —
       externalDependencies:
@@ -910,14 +1048,184 @@ modules:
             - submittedFieldsStillPresent
             - type CreateStubIntentHandlerOptions
           reExport: true
+        - file: ./observation
+          imports:
+            - composeNcObservation
+            - type ComposeNcObservationInput
+            - type NcObservation
+          reExport: true
+        - file: ./llm-handler
+          imports:
+            - createLlmIntentHandler
+            - type CreateLlmIntentHandlerOptions
+            - type DurableWrite
+          reExport: true
+        - file: ./llm-transport
+          imports:
+            - NCLlmError
+            - type NCLlmErrorCode
+            - type NCLlmTransport
+            - type NCLlmMessage
+            - type NCLlmContent
+            - type NCLlmTool
+            - type NCLlmCompleteRequest
+            - type NCLlmCompleteResponse
+          reExport: true
+        - file: ./anthropic-transport
+          imports:
+            - createAnthropicTransport
+            - createAnthropicIntentHandler
+            - type CreateAnthropicTransportOptions
+          reExport: true
+        - file: ./limits
+          imports:
+            - NC_OBSERVATION_MAX_BYTES
+            - NC_LLM_DEFAULT_MAX_ROUNDS
+            - NC_LLM_DEFAULT_MAX_TOKENS
+            - NC_DEFAULT_ANTHROPIC_MODEL
+          reExport: true
       exports:
         - createStubIntentHandler
         - submittedFieldsStillPresent
         - type CreateStubIntentHandlerOptions
+        - composeNcObservation
+        - type ComposeNcObservationInput
+        - type NcObservation
+        - createLlmIntentHandler
+        - type CreateLlmIntentHandlerOptions
+        - type DurableWrite
+        - NCLlmError
+        - type NCLlmErrorCode
+        - type NCLlmTransport
+        - type NCLlmMessage
+        - type NCLlmContent
+        - type NCLlmTool
+        - type NCLlmCompleteRequest
+        - type NCLlmCompleteResponse
+        - createAnthropicTransport
+        - createAnthropicIntentHandler
+        - type CreateAnthropicTransportOptions
+        - NC_OBSERVATION_MAX_BYTES
+        - NC_LLM_DEFAULT_MAX_ROUNDS
+        - NC_LLM_DEFAULT_MAX_TOKENS
+        - NC_DEFAULT_ANTHROPIC_MODEL
       reExported:
         - createStubIntentHandler
         - submittedFieldsStillPresent
         - type CreateStubIntentHandlerOptions
+        - composeNcObservation
+        - type ComposeNcObservationInput
+        - type NcObservation
+        - createLlmIntentHandler
+        - type CreateLlmIntentHandlerOptions
+        - type DurableWrite
+        - NCLlmError
+        - type NCLlmErrorCode
+        - type NCLlmTransport
+        - type NCLlmMessage
+        - type NCLlmContent
+        - type NCLlmTool
+        - type NCLlmCompleteRequest
+        - type NCLlmCompleteResponse
+        - createAnthropicTransport
+        - createAnthropicIntentHandler
+        - type CreateAnthropicTransportOptions
+        - NC_OBSERVATION_MAX_BYTES
+        - NC_LLM_DEFAULT_MAX_ROUNDS
+        - NC_LLM_DEFAULT_MAX_TOKENS
+        - NC_DEFAULT_ANTHROPIC_MODEL
+    src/orchestrator/limits.ts:
+      description: "SPDX-License-Identifier: Apache-2.0"
+      externalDependencies: []
+      nodeDependencies: []
+      internalDependencies: []
+      exports:
+        - NC_OBSERVATION_MAX_BYTES
+        - NC_LLM_DEFAULT_MAX_ROUNDS
+        - NC_LLM_DEFAULT_MAX_TOKENS
+        - NC_DEFAULT_ANTHROPIC_MODEL
+      constants:
+        - NC_OBSERVATION_MAX_BYTES
+        - NC_LLM_DEFAULT_MAX_ROUNDS
+        - NC_LLM_DEFAULT_MAX_TOKENS
+        - NC_DEFAULT_ANTHROPIC_MODEL
+    src/orchestrator/llm-handler.ts:
+      description: LLM-backed intent handler. Same signature as the stub. Commits one
+      externalDependencies:
+        - package: "@json-ui/core"
+          imports:
+            - generateCatalogPrompt
+            - Catalog
+            - JSONValue
+            - UITree
+      nodeDependencies: []
+      internalDependencies:
+        - file: ../catalog
+          imports:
+            - NC_LLM_ACCEPTANCE_CONTRACT
+        - file: ../compute
+          imports:
+            - NCPythonRepl
+          typeOnly: true
+        - file: ../types
+          imports:
+            - NCIntentHandler
+            - NCRuntime
+          typeOnly: true
+        - file: ./limits
+          imports:
+            - NC_LLM_DEFAULT_MAX_ROUNDS
+        - file: ./llm-transport
+          imports:
+            - NCLlmError
+            - NCLlmContent
+            - NCLlmMessage
+            - NCLlmTool
+            - NCLlmToolUseContent
+            - NCLlmTransport
+        - file: ./observation
+          imports:
+            - composeNcObservation
+      exports:
+        - createLlmIntentHandler
+      interfaces:
+        - DurableWrite
+        - CreateLlmIntentHandlerOptions
+      functions:
+        - createLlmIntentHandler
+    src/orchestrator/llm-transport.ts:
+      description: One model round. Tests inject a fake; production uses
+      externalDependencies: []
+      nodeDependencies: []
+      internalDependencies: []
+      exports:
+        - NCLlmError
+      classes:
+        - NCLlmError
+      interfaces:
+        - NCLlmMessage
+        - NCLlmTool
+        - NCLlmCompleteRequest
+        - NCLlmCompleteResponse
+        - NCLlmTransport
+    src/orchestrator/observation.ts:
+      description: Build the stable system prompt and the size-capped user JSON for one
+      externalDependencies:
+        - package: "@json-ui/core"
+          imports:
+            - IntentEvent
+      nodeDependencies: []
+      internalDependencies:
+        - file: ./limits
+          imports:
+            - NC_OBSERVATION_MAX_BYTES
+      exports:
+        - composeNcObservation
+      interfaces:
+        - ComposeNcObservationInput
+        - NcObservation
+      functions:
+        - composeNcObservation
   renderer:
     src/renderer/error-boundary.tsx:
       description: Catches render throws from NC components so a single bad cast cannot
@@ -1295,8 +1603,13 @@ dependencyGraph:
         - src/observer/nc-observer.ts
     - name: Orchestrator
       files:
+        - src/orchestrator/anthropic-transport.ts
         - src/orchestrator/handle-intent.ts
         - src/orchestrator/index.ts
+        - src/orchestrator/limits.ts
+        - src/orchestrator/llm-handler.ts
+        - src/orchestrator/llm-transport.ts
+        - src/orchestrator/observation.ts
     - name: Renderer
       files:
         - src/renderer/error-boundary.tsx
@@ -1316,19 +1629,19 @@ dependencyGraph:
         - src/types/index.ts
         - src/types/nc-types.ts
 statistics:
-  totalTypeScriptFiles: 34
+  totalTypeScriptFiles: 39
   totalModules: 11
-  totalLinesOfCode: 2694
-  totalExports: 218
-  totalClasses: 4
-  totalInterfaces: 14
-  totalFunctions: 17
+  totalLinesOfCode: 3430
+  totalExports: 282
+  totalClasses: 5
+  totalInterfaces: 24
+  totalFunctions: 21
   totalTypeGuards: 2
   totalEnums: 0
-  totalConstants: 31
-  totalReExports: 166
-  totalTypeOnlyImports: 5
+  totalConstants: 35
+  totalReExports: 221
+  totalTypeOnlyImports: 9
   runtimeCircularDeps: 0
   typeOnlyCircularDeps: 0
   unusedFilesCount: 3
-  unusedExportsCount: 17
+  unusedExportsCount: 25

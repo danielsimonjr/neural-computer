@@ -2849,9 +2849,9 @@ git push origin main
 
 ## Out of scope (follow-up specs)
 
-- **Real Anthropic LLM integration** — `createStubIntentHandler` is v1. A follow-up task will add `createAnthropicIntentHandler` that calls `@anthropic-ai/sdk`, streams the response, feeds patches through `useCommittedTree`'s atomic mode, and parses the final tree.
-- **Python REPL subprocess dispatch** — shipped 2026-08-29 as `src/compute/` / `createPythonRepl`. See `docs/specs/2026-08-29-compute-rlm-repl-design.md`. The RLM _loop_ (model writes code until a final answer) still belongs to a future LLM handler.
-- **LLM Observer headless-renderer session** — Path C's dual-backend second half. Mounted alongside `NCRenderer` with the same runtime references. Separate spec because the LLM Observer's serialization format and subscription semantics need their own design pass.
+- **Real Anthropic LLM integration** — shipped 2026-08-29 as `createLlmIntentHandler` / `createAnthropicIntentHandler`. See `docs/specs/2026-08-29-llm-intent-handler-design.md`. The stub remains for tests.
+- **Python REPL subprocess dispatch** — shipped 2026-08-29 as `src/compute/` / `createPythonRepl`. See `docs/specs/2026-08-29-compute-rlm-repl-design.md`. The RLM _loop_ is the LLM handler's `python_exec` tool.
+- **LLM Observer headless-renderer session** — shipped 2026-04-16 (Path C).
 - **Persistent staging buffer across process restart** — explicit non-goal in the April 11 spec (Risk 3 + Open Question 3). A future opt-in would route through memoryjs rather than parallel storage.
-- **Backpressure UX** — the runtime rejects and logs, but the visual treatment of rejected intents (disabled Submit button, toast, silent) is a UX decision load-bearing enough to warrant its own spec.
+- **Backpressure UX** — shipped: `isIntentInFlight` / `subscribeIntentFlight`; buttons disable while true.
 - **Catalog versioning / migration** — `NC_CATALOG_VERSION` is a constant. A real versioning flow (LLM sees a new catalog, old trees still validate gracefully) is a follow-up.

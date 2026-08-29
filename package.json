@@ -2,7 +2,7 @@
   "name": "neural-computer",
   "version": "0.1.0",
   "private": true,
-  "description": "Catalog-constrained React UI runtime with a staging buffer, one-at-a-time intent gate, stub intent handler, headless observer cache, and a Python REPL compute arm. LLM-backed dispatch is not in this package yet.",
+  "description": "Catalog-constrained React UI runtime with a staging buffer, one-at-a-time intent gate, stub or LLM intent handler, headless observer cache, and a Python REPL compute arm.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
@@ -44,6 +44,7 @@
     "docs:deps": "npx tsx tools/create-dependency-graph/create-dependency-graph.ts --include-tests"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.122.0",
     "@danielsimonjr/memoryjs": "file:../memoryjs",
     "@json-ui/core": "file:../JSON-UI/packages/core",
     "@json-ui/headless": "file:../JSON-UI/packages/headless",

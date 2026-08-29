@@ -5,9 +5,9 @@
  *
  * Catalog-constrained React UI runtime with a staging buffer, a
  * one-at-a-time intent gate, a stub intent handler, a headless
- * observer cache, and a Python REPL compute arm (RLM pattern).
- * There is no LLM-backed intent handler yet. Import
- * `neural-computer/core` from Node to avoid the React graph.
+ * observer cache, a Python REPL compute arm (RLM pattern), and an
+ * LLM intent handler (transport-injected; Anthropic is one adapter).
+ * Import `neural-computer/core` from Node to avoid the React graph.
  */
 
 export {
@@ -60,6 +60,23 @@ export {
   createStubIntentHandler,
   submittedFieldsStillPresent,
   type CreateStubIntentHandlerOptions,
+  createLlmIntentHandler,
+  composeNcObservation,
+  createAnthropicTransport,
+  createAnthropicIntentHandler,
+  NCLlmError,
+  NC_OBSERVATION_MAX_BYTES,
+  NC_LLM_DEFAULT_MAX_ROUNDS,
+  NC_LLM_DEFAULT_MAX_TOKENS,
+  NC_DEFAULT_ANTHROPIC_MODEL,
+  type CreateLlmIntentHandlerOptions,
+  type DurableWrite,
+  type NCLlmTransport,
+  type NCLlmMessage,
+  type NCLlmContent,
+  type NCLlmTool,
+  type CreateAnthropicTransportOptions,
+  type NCLlmErrorCode,
 } from "./orchestrator";
 
 export { NCApp, type NCAppProps } from "./app";
