@@ -16,6 +16,10 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 - **React is a peerDependency.** Import `neural-computer/react` or the root barrel from Client Components. Use `neural-computer/core` from Node.
 - **`@anthropic-ai/sdk` removed** until an LLM handler spec exists.
 
+### Added
+
+- **Python REPL compute arm (`src/compute/`).** `createPythonRepl()` spawns a persistent CPython worker (`python3 -u -I -X utf8`) and speaks JSON lines. `exec` / `set` / `get` / `loadContext` / `reset` / `isBusy` / `destroy`. One operation at a time; timeout kills the worker and respawns empty. Optional `llmQuery` implements in-REPL `llm_query`. Not attached to `NCRuntime`. Exported from `neural-computer/core` and the root barrel, not from `/react`. Spec: `docs/specs/2026-08-29-compute-rlm-repl-design.md`.
+
 ### Fixed
 
 Audit `docs/audits/2026-08-29-full-codebase-audit.md` (NC-001–NC-092). Highlights:
@@ -30,11 +34,11 @@ Audit `docs/audits/2026-08-29-full-codebase-audit.md` (NC-001–NC-092). Highlig
 - Intent payloads are capped (`NC_STAGING_MAX_FIELDS`, `NC_SNAPSHOT_MAX_BYTES`). Mismatched renderer catalog/version throws. `destroy()` bumps a generation and clears the in-flight flag.
 - Path C integration tests live at `src/integration/path-c.test.tsx`. Vitest `setupFiles` cleans up the Testing Library DOM between tests.
 - Architecture docs (`docs/architecture/`) rewritten to match this tree: seven state surfaces, catalog `nc-starter-0.3`, validation during render, public `isIntentInFlight`, `neural-computer/core` and `/react`. Plan files no longer contain author-machine Dropbox paths.
+- **CI `run: |` block indentation.** The typecheck / lint / format / test / build lines were less indented than `bun install`, so GitHub Actions could treat them as outside the script. The job also prints `python3 --version` and asserts `dist/worker.py` exists after build.
 
 ### Known deferred items
 
-- **Real LLM-backed intent handler** (`createAnthropicIntentHandler`). The stub plus `NC_LLM_ACCEPTANCE_CONTRACT` / `submittedFieldsStillPresent` cover the testable slice of Risk 1.
-- **Python REPL subprocess dispatch** (RLM pattern).
+- **Real LLM-backed intent handler** (`createAnthropicIntentHandler`). The stub plus `NC_LLM_ACCEPTANCE_CONTRACT` / `submittedFieldsStillPresent` cover the testable slice of Risk 1. A future handler is what will drive the RLM loop against `createPythonRepl`.
 - **Persistent staging buffer across process restart.**
 - **Catalog migration** for trees emitted against `nc-starter-0.1` / `nc-starter-0.2`.
 

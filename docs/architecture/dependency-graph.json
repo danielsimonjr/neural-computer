@@ -3,9 +3,9 @@
     "name": "neural-computer",
     "version": "0.1.0",
     "lastUpdated": "2026-08-29",
-    "totalFiles": 29,
-    "totalModules": 10,
-    "totalExports": 164
+    "totalFiles": 34,
+    "totalModules": 11,
+    "totalExports": 218
   },
   "entryPoints": [
     {
@@ -277,6 +277,220 @@
         ]
       }
     },
+    "compute": {
+      "src/compute/index.ts": {
+        "description": "SPDX-License-Identifier: Apache-2.0",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./limits",
+            "imports": [
+              "NC_REPL_CONTEXT_NAME",
+              "NC_REPL_DEFAULT_PYTHON",
+              "NC_REPL_DEFAULT_TIMEOUT_MS",
+              "NC_REPL_MAX_CODE_BYTES",
+              "NC_REPL_MAX_IDENT_LENGTH",
+              "NC_REPL_MAX_STDOUT_BYTES",
+              "NC_REPL_MAX_VALUE_BYTES",
+              "NC_REPL_PROTOCOL_VERSION"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./types",
+            "imports": [
+              "NCReplError",
+              "type NCReplErrorCode"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./python-repl",
+            "imports": [
+              "createPythonRepl"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./worker-path",
+            "imports": [
+              "resolveWorkerPath"
+            ],
+            "reExport": true
+          }
+        ],
+        "exports": [
+          "NC_REPL_CONTEXT_NAME",
+          "NC_REPL_DEFAULT_PYTHON",
+          "NC_REPL_DEFAULT_TIMEOUT_MS",
+          "NC_REPL_MAX_CODE_BYTES",
+          "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_MAX_STDOUT_BYTES",
+          "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_PROTOCOL_VERSION",
+          "NCReplError",
+          "type NCReplErrorCode",
+          "createPythonRepl",
+          "resolveWorkerPath"
+        ],
+        "reExported": [
+          "NC_REPL_CONTEXT_NAME",
+          "NC_REPL_DEFAULT_PYTHON",
+          "NC_REPL_DEFAULT_TIMEOUT_MS",
+          "NC_REPL_MAX_CODE_BYTES",
+          "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_MAX_STDOUT_BYTES",
+          "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_PROTOCOL_VERSION",
+          "NCReplError",
+          "type NCReplErrorCode",
+          "createPythonRepl",
+          "resolveWorkerPath"
+        ]
+      },
+      "src/compute/limits.ts": {
+        "description": "Caps for the Python REPL worker. Unbounded snippets and prints would",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "exports": [
+          "NC_REPL_DEFAULT_TIMEOUT_MS",
+          "NC_REPL_MAX_CODE_BYTES",
+          "NC_REPL_MAX_STDOUT_BYTES",
+          "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_PROTOCOL_VERSION",
+          "NC_REPL_CONTEXT_NAME",
+          "NC_REPL_DEFAULT_PYTHON"
+        ],
+        "constants": [
+          "NC_REPL_DEFAULT_TIMEOUT_MS",
+          "NC_REPL_MAX_CODE_BYTES",
+          "NC_REPL_MAX_STDOUT_BYTES",
+          "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_PROTOCOL_VERSION",
+          "NC_REPL_CONTEXT_NAME",
+          "NC_REPL_DEFAULT_PYTHON"
+        ]
+      },
+      "src/compute/python-repl.ts": {
+        "description": "SPDX-License-Identifier: Apache-2.0",
+        "externalDependencies": [],
+        "nodeDependencies": [
+          {
+            "module": "child_process",
+            "imports": [
+              "spawn",
+              "ChildProcess"
+            ]
+          },
+          {
+            "module": "crypto",
+            "imports": [
+              "randomUUID"
+            ]
+          }
+        ],
+        "internalDependencies": [
+          {
+            "file": "./limits",
+            "imports": [
+              "NC_REPL_CONTEXT_NAME",
+              "NC_REPL_DEFAULT_PYTHON",
+              "NC_REPL_DEFAULT_TIMEOUT_MS",
+              "NC_REPL_MAX_CODE_BYTES",
+              "NC_REPL_MAX_IDENT_LENGTH",
+              "NC_REPL_MAX_STDOUT_BYTES",
+              "NC_REPL_MAX_VALUE_BYTES",
+              "NC_REPL_PROTOCOL_VERSION"
+            ]
+          },
+          {
+            "file": "./types",
+            "imports": [
+              "NCReplError",
+              "CreatePythonReplOptions",
+              "NCPythonRepl",
+              "NCReplExecResult"
+            ]
+          },
+          {
+            "file": "./worker-path",
+            "imports": [
+              "resolveWorkerPath"
+            ]
+          }
+        ],
+        "exports": [
+          "createPythonRepl",
+          "PythonRepl"
+        ],
+        "classes": [
+          "PythonRepl"
+        ],
+        "functions": [
+          "createPythonRepl"
+        ]
+      },
+      "src/compute/types.ts": {
+        "description": "Host implementation of the in-REPL `llm_query(prompt)` helper.",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "exports": [
+          "NCReplError"
+        ],
+        "classes": [
+          "NCReplError"
+        ],
+        "interfaces": [
+          "CreatePythonReplOptions",
+          "NCReplExecResult",
+          "NCPythonRepl"
+        ]
+      },
+      "src/compute/worker-path.ts": {
+        "description": "Locate worker.py next to this module (source tree) or next to the",
+        "externalDependencies": [],
+        "nodeDependencies": [
+          {
+            "module": "fs",
+            "imports": [
+              "existsSync"
+            ]
+          },
+          {
+            "module": "path",
+            "imports": [
+              "dirname",
+              "join"
+            ]
+          },
+          {
+            "module": "url",
+            "imports": [
+              "fileURLToPath"
+            ]
+          }
+        ],
+        "internalDependencies": [
+          {
+            "file": "./types",
+            "imports": [
+              "NCReplError"
+            ]
+          }
+        ],
+        "exports": [
+          "resolveWorkerPath"
+        ],
+        "functions": [
+          "resolveWorkerPath"
+        ]
+      }
+    },
     "root": {
       "src/core.ts": {
         "description": "React-free entry for Node / orchestrator processes.",
@@ -342,6 +556,27 @@
               "type CreateNCObserverOptions"
             ],
             "reExport": true
+          },
+          {
+            "file": "./compute",
+            "imports": [
+              "createPythonRepl",
+              "resolveWorkerPath",
+              "NCReplError",
+              "NC_REPL_CONTEXT_NAME",
+              "NC_REPL_DEFAULT_PYTHON",
+              "NC_REPL_DEFAULT_TIMEOUT_MS",
+              "NC_REPL_MAX_CODE_BYTES",
+              "NC_REPL_MAX_IDENT_LENGTH",
+              "NC_REPL_MAX_STDOUT_BYTES",
+              "NC_REPL_MAX_VALUE_BYTES",
+              "NC_REPL_PROTOCOL_VERSION",
+              "type CreatePythonReplOptions",
+              "type NCPythonRepl",
+              "type NCReplExecResult",
+              "type NCReplErrorCode"
+            ],
+            "reExport": true
           }
         ],
         "exports": [
@@ -368,7 +603,22 @@
           "type CreateStubIntentHandlerOptions",
           "createNCObserver",
           "ncHeadlessRegistry",
-          "type CreateNCObserverOptions"
+          "type CreateNCObserverOptions",
+          "createPythonRepl",
+          "resolveWorkerPath",
+          "NCReplError",
+          "NC_REPL_CONTEXT_NAME",
+          "NC_REPL_DEFAULT_PYTHON",
+          "NC_REPL_DEFAULT_TIMEOUT_MS",
+          "NC_REPL_MAX_CODE_BYTES",
+          "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_MAX_STDOUT_BYTES",
+          "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_PROTOCOL_VERSION",
+          "type CreatePythonReplOptions",
+          "type NCPythonRepl",
+          "type NCReplExecResult",
+          "type NCReplErrorCode"
         ],
         "reExported": [
           "ncStarterCatalog",
@@ -394,7 +644,22 @@
           "type CreateStubIntentHandlerOptions",
           "createNCObserver",
           "ncHeadlessRegistry",
-          "type CreateNCObserverOptions"
+          "type CreateNCObserverOptions",
+          "createPythonRepl",
+          "resolveWorkerPath",
+          "NCReplError",
+          "NC_REPL_CONTEXT_NAME",
+          "NC_REPL_DEFAULT_PYTHON",
+          "NC_REPL_DEFAULT_TIMEOUT_MS",
+          "NC_REPL_MAX_CODE_BYTES",
+          "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_MAX_STDOUT_BYTES",
+          "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_PROTOCOL_VERSION",
+          "type CreatePythonReplOptions",
+          "type NCPythonRepl",
+          "type NCReplExecResult",
+          "type NCReplErrorCode"
         ]
       },
       "src/react.ts": {
@@ -574,6 +839,27 @@
               "type CreateNCObserverOptions"
             ],
             "reExport": true
+          },
+          {
+            "file": "./compute",
+            "imports": [
+              "createPythonRepl",
+              "resolveWorkerPath",
+              "NCReplError",
+              "NC_REPL_CONTEXT_NAME",
+              "NC_REPL_DEFAULT_PYTHON",
+              "NC_REPL_DEFAULT_TIMEOUT_MS",
+              "NC_REPL_MAX_CODE_BYTES",
+              "NC_REPL_MAX_IDENT_LENGTH",
+              "NC_REPL_MAX_STDOUT_BYTES",
+              "NC_REPL_MAX_VALUE_BYTES",
+              "NC_REPL_PROTOCOL_VERSION",
+              "type CreatePythonReplOptions",
+              "type NCPythonRepl",
+              "type NCReplExecResult",
+              "type NCReplErrorCode"
+            ],
+            "reExport": true
           }
         ],
         "exports": [
@@ -614,7 +900,22 @@
           "type NCAppProps",
           "createNCObserver",
           "ncHeadlessRegistry",
-          "type CreateNCObserverOptions"
+          "type CreateNCObserverOptions",
+          "createPythonRepl",
+          "resolveWorkerPath",
+          "NCReplError",
+          "NC_REPL_CONTEXT_NAME",
+          "NC_REPL_DEFAULT_PYTHON",
+          "NC_REPL_DEFAULT_TIMEOUT_MS",
+          "NC_REPL_MAX_CODE_BYTES",
+          "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_MAX_STDOUT_BYTES",
+          "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_PROTOCOL_VERSION",
+          "type CreatePythonReplOptions",
+          "type NCPythonRepl",
+          "type NCReplExecResult",
+          "type NCReplErrorCode"
         ],
         "reExported": [
           "ncStarterCatalog",
@@ -654,7 +955,22 @@
           "type NCAppProps",
           "createNCObserver",
           "ncHeadlessRegistry",
-          "type CreateNCObserverOptions"
+          "type CreateNCObserverOptions",
+          "createPythonRepl",
+          "resolveWorkerPath",
+          "NCReplError",
+          "NC_REPL_CONTEXT_NAME",
+          "NC_REPL_DEFAULT_PYTHON",
+          "NC_REPL_DEFAULT_TIMEOUT_MS",
+          "NC_REPL_MAX_CODE_BYTES",
+          "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_MAX_STDOUT_BYTES",
+          "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_PROTOCOL_VERSION",
+          "type CreatePythonReplOptions",
+          "type NCPythonRepl",
+          "type NCReplExecResult",
+          "type NCReplErrorCode"
         ]
       }
     },
@@ -1428,6 +1744,16 @@
         ]
       },
       {
+        "name": "Compute",
+        "files": [
+          "src/compute/index.ts",
+          "src/compute/limits.ts",
+          "src/compute/python-repl.ts",
+          "src/compute/types.ts",
+          "src/compute/worker-path.ts"
+        ]
+      },
+      {
         "name": "Root",
         "files": [
           "src/core.ts",
@@ -1493,21 +1819,21 @@
     ]
   },
   "statistics": {
-    "totalTypeScriptFiles": 29,
-    "totalModules": 10,
-    "totalLinesOfCode": 2014,
-    "totalExports": 164,
-    "totalClasses": 2,
-    "totalInterfaces": 11,
-    "totalFunctions": 15,
+    "totalTypeScriptFiles": 34,
+    "totalModules": 11,
+    "totalLinesOfCode": 2694,
+    "totalExports": 218,
+    "totalClasses": 4,
+    "totalInterfaces": 14,
+    "totalFunctions": 17,
     "totalTypeGuards": 2,
     "totalEnums": 0,
-    "totalConstants": 23,
-    "totalReExports": 124,
+    "totalConstants": 31,
+    "totalReExports": 166,
     "totalTypeOnlyImports": 5,
     "runtimeCircularDeps": 0,
     "typeOnlyCircularDeps": 0,
     "unusedFilesCount": 3,
-    "unusedExportsCount": 15
+    "unusedExportsCount": 17
   }
 }

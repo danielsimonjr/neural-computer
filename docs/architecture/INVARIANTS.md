@@ -134,6 +134,20 @@ Both walks use Zod-stripped data: `<Renderer tree={renderTree}>` and `observer.r
 
 ---
 
+## Compute rules (not numbered with 1–13)
+
+These belong to `src/compute/` and do not extend the UI-runtime invariant list. Spec: `docs/specs/2026-08-29-compute-rlm-repl-design.md`.
+
+1. A second `exec`/`set`/`get`/`reset` while busy throws `busy` (does not queue).
+2. Timeout kills the worker and the next successful call runs in a fresh namespace.
+3. `destroy` is terminal and idempotent.
+4. Non-test files under `src/compute/` do not import React, `@json-ui/*`, `../renderer`, `../app`, `../observer`, or `../runtime`.
+5. `llm_query` protocol traffic does not appear in `NCReplExecResult.stdout`.
+
+**Tests**: `python-repl.test.ts`, `isolation.test.ts`
+
+---
+
 ## Coverage Summary
 
 | #   | Invariant                                        | Status  | Test Location(s)                                                               |
@@ -152,4 +166,4 @@ Both walks use Zod-stripped data: `<Renderer tree={renderTree}>` and `observer.r
 | 12  | Observer shadows React (both walk stripped data) | Covered | `nc-observer.test.ts`, `nc-renderer.test.tsx`, `integration/path-c.test.tsx`   |
 | 13  | Observer failure best-effort / detectable        | Covered | `nc-observer.test.ts`                                                          |
 
-15 test files under `src/**/*.test.*`; 84 `it`/`test` cases as of the 2026-08-29 documentation refresh.
+15 test files under `src/**/*.test.*`; 84 `it`/`test` cases as of the 2026-08-29 documentation refresh. Compute tests (`python-repl.test.ts`, `isolation.test.ts`) are additional and cover the REPL rules above.

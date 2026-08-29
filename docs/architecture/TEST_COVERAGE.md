@@ -6,17 +6,17 @@
 
 | Metric                     | Count |
 | -------------------------- | ----- |
-| Total Source Files         | 29    |
-| Total Test Files           | 15    |
-| Source Files with Tests    | 21    |
+| Total Source Files         | 34    |
+| Total Test Files           | 17    |
+| Source Files with Tests    | 26    |
 | Source Files without Tests | 8     |
-| Coverage                   | 72.4% |
+| Coverage                   | 76.5% |
 
 ---
 
 ## Source Files Without Test Coverage
 
-Barrels (`**/index.ts`), package entries (`src/core.ts`, `src/react.ts`), and Vitest setup (`src/test-setup.ts`) are not expected to have dedicated test files. Coverage for those symbols lives in the colocated tests that import through the barrels.
+The following 8 source files are not directly imported by any test file:
 
 ### app/
 
@@ -52,6 +52,11 @@ Barrels (`**/index.ts`), package entries (`src/core.ts`, `src/react.ts`), and Vi
 | `catalog/index.ts`                   | `nc-app.test.tsx`, `path-c.test.tsx`, `nc-observer.test.ts`, `handle-intent.test.ts`, `nc-renderer.test.tsx`, `context.test.ts`                       |
 | `catalog/limits.ts`                  | `nc-app.test.tsx`, `path-c.test.tsx`, `nc-observer.test.ts`, `handle-intent.test.ts`, `nc-renderer.test.tsx`, `context.test.ts`                       |
 | `catalog/nc-catalog.ts`              | `nc-app.test.tsx`, `nc-catalog.test.ts`, `path-c.test.tsx`, `nc-observer.test.ts`, `handle-intent.test.ts`, `nc-renderer.test.tsx`, `context.test.ts` |
+| `compute/index.ts`                   | `python-repl.test.ts`                                                                                                                                 |
+| `compute/limits.ts`                  | `python-repl.test.ts`                                                                                                                                 |
+| `compute/python-repl.ts`             | `python-repl.test.ts`                                                                                                                                 |
+| `compute/types.ts`                   | `python-repl.test.ts`                                                                                                                                 |
+| `compute/worker-path.ts`             | `python-repl.test.ts`                                                                                                                                 |
 | `memory/projection.ts`               | `projection.test.ts`                                                                                                                                  |
 | `observer/nc-headless-components.ts` | `nc-headless-components.test.ts`, `nc-observer.test.ts`                                                                                               |
 | `observer/nc-observer.ts`            | `nc-observer.test.ts`                                                                                                                                 |
@@ -78,6 +83,8 @@ Barrels (`**/index.ts`), package entries (`src/core.ts`, `src/react.ts`), and Vi
 | `app/nc-app.test.tsx`                     | 10 files            |
 | `catalog/field-id.test.ts`                | 3 files             |
 | `catalog/nc-catalog.test.ts`              | 1 files             |
+| `compute/isolation.test.ts`               | 0 files             |
+| `compute/python-repl.test.ts`             | 5 files             |
 | `integration/path-c.test.tsx`             | 13 files            |
 | `memory/projection.test.ts`               | 1 files             |
 | `observer/nc-headless-components.test.ts` | 1 files             |
