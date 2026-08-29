@@ -7,23 +7,17 @@ import {
   type HeadlessRegistry,
   type NormalizedNode,
 } from "@json-ui/headless";
-import type {
-  Catalog,
-  ObservableDataModel,
-  StagingBuffer,
-  UITree,
-} from "@json-ui/core";
+import type { ObservableDataModel, StagingBuffer, UITree } from "@json-ui/core";
 import { ncHeadlessRegistry } from "./nc-headless-components";
 import { NC_OBSERVER_STALE_THRESHOLD } from "../catalog/limits";
 import { freezeDeep } from "../runtime/freeze";
-import type { NCObserver } from "../types";
+import type { AnyCatalog, NCObserver } from "../types";
 
 export interface CreateNCObserverOptions {
   // Catalog is required per HeadlessRendererOptions (renderer.ts:27 in
   // @json-ui/headless). Bound once at construction — HeadlessRenderer.render
   // takes only the tree.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  catalog: Catalog<any, any, any>;
+  catalog: AnyCatalog;
   staging: StagingBuffer;
   data: ObservableDataModel;
   catalogVersion?: string;

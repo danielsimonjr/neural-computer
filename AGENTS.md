@@ -21,6 +21,8 @@ All design decisions live in `docs/`. Read the relevant spec before implementing
 - **Active spec:** `docs/specs/2026-04-11-ephemeral-ui-state-design.md` (shipped) — staging buffer, named state surfaces, four staging-buffer rules, `DynamicValue`. Read this before touching `src/renderer/`.
 - **Path C spec:** `docs/specs/2026-04-16-headless-dual-backend-design.md` (shipped) — LLM observer.
 - **Compute spec:** `docs/specs/2026-08-29-compute-rlm-repl-design.md` — Python REPL (RLM pattern). Read this before touching `src/compute/`.
+- **LLM handler spec:** `docs/specs/2026-08-29-llm-intent-handler-design.md` — tool loop + Anthropic transport. Read this before touching `src/orchestrator/llm-*.ts`.
+- **Sibling API spec:** `docs/specs/2026-08-29-sibling-api-surface.md` — JSON-UI / memoryjs seams. Do not modify those repos from this checkout unless you can push them.
 - **v1 implementation plan:** `docs/plans/2026-04-15-neural-computer-v2-plan.md` — supersedes the April-11 plan (which is marked SUPERSEDED).
 - **CHANGELOG.md** — behavior changes and traps not to re-introduce.
 - **docs/audits/** — 2026-08-29 full-repo audit; do not re-introduce NC-001–NC-092.
@@ -37,18 +39,19 @@ All design decisions live in `docs/`. Read the relevant spec before implementing
 - **`NCRenderer.onIntent` MUST attach a `.catch` on `runtime.emitIntent(event)`.**
 - **`createNCRuntime` owns the intent handler slot via `setIntentHandler`.** `emitIntent` captures the handler BEFORE `await`. The factory is **synchronous**.
 - **`NCApp.buildIntentHandler` should be stable** (`useCallback` or module scope).
-- **`useCommittedTree` MUST be used** for streamed trees. `NCApp` + `createStubIntentHandler` validate complete trees instead.
+- **`useCommittedTree` MUST be used** for streamed trees. `NCApp` plus the stub or LLM handler validate complete trees instead. The LLM handler does not POST patches to that hook.
 - **`createNCRuntime` requires `catalog`.** NCRenderer's `catalog` / `catalogVersion` must be the same references as `runtime.catalog` / `runtime.catalogVersion`.
 - **Validate during render.** Invalid trees must not reach `<Renderer>`; keep last-good. Reconcile and `observer.render` walk Zod-stripped data.
 - **Same field id cannot change component type** across commits in one renderer lifetime.
 
 ## Named state surfaces (seven)
 
-Durable state, current UI tree, staging buffer, in-flight intent flag, catalog version, LLM session state (future), observer cache.
+Durable state, current UI tree, staging buffer, in-flight intent flag, catalog version, LLM session state (transport-owned), observer cache.
 
 ## What Not to Do
 
 - Do not modify JSON-UI from this repo.
 - Do not invent new state categories beyond the seven named above.
 - Do not call the LLM on every keystroke. Intents are the only flush boundary.
-- Do not attach the Python REPL to `NCRuntime` or import compute from the renderer. Compute is a tool for a future handler, not an eighth UI state surface.
+- Do not attach the Python REPL to `NCRuntime` or import compute from the renderer. Compute is a tool the LLM handler may hold, not an eighth UI state surface.
+- Do not attach the LLM handler to `createNCRuntime`. Pass it through `setIntentHandler` / `NCApp.buildIntentHandler`.

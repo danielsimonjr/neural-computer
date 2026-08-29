@@ -2,7 +2,7 @@
 
 ## Trust boundary
 
-Neural Computer renders **untrusted UI trees** (LLM output) and sends **user staging snapshots** back to an orchestrator that will eventually call an LLM.
+Neural Computer renders **untrusted UI trees** (LLM output) and sends **user staging snapshots** back to an orchestrator (`createLlmIntentHandler` or a host handler).
 
 Treat every `UITree` as untrusted structured data. The starter catalog does not include `href`, `src`, or raw HTML. Do not add those via `extraRegistry` without sanitizing. React text escaping covers `NCText` content; it does not cover a custom component that assigns `innerHTML`.
 
@@ -16,7 +16,7 @@ Treat every `UITree` as untrusted structured data. The starter catalog does not 
 
 ## Action allowlist
 
-`ncStarterCatalog` only permits `submit_form` and `cancel` as `Button.action.name`. Custom catalogs must constrain `action.name` the same way. The runtime does not execute shell commands. A future LLM handler must still allowlist `action_name` against the catalog. The Python REPL is a separate subprocess (`createPythonRepl`); it is not invoked by catalog actions.
+`ncStarterCatalog` only permits `submit_form` and `cancel` as `Button.action.name`. Custom catalogs must constrain `action.name` the same way. The runtime does not execute shell commands. The LLM handler does not re-allowlist `action_name`; the catalog schema is the gate. The Python REPL is a separate subprocess (`createPythonRepl`); catalog actions do not spawn it. The handler may call `repl.exec` only when the host passed `repl`.
 
 ## Staging payload size
 
@@ -32,7 +32,7 @@ Text inputs are capped at 8192 characters (`NC_STRING_MAX_LENGTH`). Field ids ca
 
 ## Typecheck
 
-`tsconfig.json` still sets `"skipLibCheck": true`. That hides some sibling `.d.ts` drift (audit NC-042 / NC-066). It has not been flipped.
+`tsconfig.json` sets `"skipLibCheck": false`. That is a deliberate choice so sibling `.d.ts` drift surfaces (audit NC-042 / NC-066). Zod is pinned to `4.4.3`.
 
 ## Reporting
 

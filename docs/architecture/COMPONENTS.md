@@ -46,7 +46,7 @@ Caps and the starter action allowlist. `NC_FIELD_ID_MAX_LENGTH` is 128, `NC_STRI
 
 | Export                       | Kind     | Description                                                                                         |
 | ---------------------------- | -------- | --------------------------------------------------------------------------------------------------- |
-| `ncStarterCatalog`           | Constant | Five components, two actions                                                                        |
+| `ncStarterCatalog`           | Constant | Six components (including Select), two actions                                                      |
 | `NC_CATALOG_VERSION`         | Constant | `"nc-starter-0.3"` via `asNCCatalogVersion`                                                         |
 | `NC_LLM_ACCEPTANCE_CONTRACT` | Constant | Prompt-facing text: accept by omitting field ids; never reuse an id with a different component type |
 
@@ -56,8 +56,9 @@ Caps and the starter action allowlist. `NC_FIELD_ID_MAX_LENGTH` is 128, `NC_STRI
 | ----------- | ------------------------------------------------------------------------------- | ------------ | --------------------------------------------------------------------- |
 | `Container` | `direction?`, `visible?`                                                        | Yes          | Minimal flex (`column` default, `row` optional). Not a layout system. |
 | `Text`      | `content`, `visible?`                                                           | No           | Display text                                                          |
-| `TextField` | `id`, `label`, `placeholder?`, `error?`, `multiline?`, `inputType?`, `visible?` | No           | Staging-bound; `multiline` is a textarea. No Select in v1.            |
+| `TextField` | `id`, `label`, `placeholder?`, `error?`, `multiline?`, `inputType?`, `visible?` | No           | Staging-bound; `multiline` is a textarea.                             |
 | `Checkbox`  | `id`, `label`, `visible?`                                                       | No           | Boolean                                                               |
+| `Select`    | `id`, `label`, `options`, `error?`, `visible?`                                  | No           | Native `<select>`; option label is the value                          |
 | `Button`    | `label`, `visible?`, `action?: { name: submit_form \| cancel, params? }`        | No           | Fires catalog actions                                                 |
 
 **Tests**: `nc-catalog.test.ts`.
@@ -104,7 +105,25 @@ Barrel.
 
 **Tests**: `handle-intent.test.ts`.
 
-**Meta-test**: `buffer-isolation.test.ts` — forbidden imports include React, `@json-ui/react`, `@json-ui/headless`, `../renderer`, `../app`, and **`../observer`**.
+### `src/orchestrator/observation.ts`
+
+`composeNcObservation` builds the stable system prompt (`generateCatalogPrompt` + acceptance contract + finish instructions) and a size-capped user JSON (intent, durable snapshot, observer JSON, `observer_stale`, `submitted_field_ids`). Truncates observer first, then durable; never drops `intent`.
+
+**Tests**: `observation.test.ts`.
+
+### `src/orchestrator/llm-handler.ts`
+
+`createLlmIntentHandler` is the production `NCIntentHandler`. Tool loop: always `commit_ui_tree` and `durable_write`; optional `python_exec` / `python_load_context` / `python_reset` when `repl` is passed. `durable_write` prefers `onDurableWrite`, then `store.write`, then `store.set`. Invalid trees come back as tool errors until `maxRounds`. Commits one catalog-valid tree via `onTreeCommit`. Does not stream patches into `useCommittedTree`.
+
+**Tests**: `llm-handler.test.ts` (fake transport; no network).
+
+### `src/orchestrator/anthropic-transport.ts`
+
+`createAnthropicTransport` / `createAnthropicIntentHandler`. Inject `send` in tests. Default model `NC_DEFAULT_ANTHROPIC_MODEL`.
+
+**Tests**: `anthropic-transport.test.ts`.
+
+**Meta-test**: `buffer-isolation.test.ts` — forbidden imports include React, `@json-ui/react`, `@json-ui/headless`, `../renderer`, `../app`, and **`../observer`**. The handler reads `runtime.observer`, never `../observer`.
 
 ---
 
@@ -122,7 +141,7 @@ Barrel.
 
 ### `src/observer/nc-headless-components.ts`
 
-`ncHeadlessRegistry`: `Container`, `Text`, `TextField`, `Checkbox`, `Button` as positional `HeadlessComponent` functions. Inputs emit `currentValue` only when staging has a value. Button copies `action.params` from props; DynamicValue pre-resolution is upstream JSON-UI behavior.
+`ncHeadlessRegistry`: `Container`, `Text`, `TextField`, `Checkbox`, `Select`, `Button` as positional `HeadlessComponent` functions. Inputs emit `currentValue` only when staging has a value. Button copies `action.params` from props; DynamicValue pre-resolution is upstream JSON-UI behavior.
 
 **Tests**: `nc-headless-components.test.ts`.
 
@@ -163,6 +182,7 @@ Barrel.
 | `NCText`           | Component | `<p>` with `props.content`                                                                       |
 | `NCTextField`      | Component | `<input>` or `<textarea>` when `multiline`; `maxLength` 8192; `aria-invalid` when `error` is set |
 | `NCCheckbox`       | Component | Checkbox bound to staging                                                                        |
+| `NCSelect`         | Component | Native `<select>` bound to staging                                                               |
 | `NCButton`         | Component | `execute({ name, params })` — **params are forwarded**; disabled while in flight                 |
 
 Three id namespaces: React `key`, `data-key` (`element.key`), `data-field-id` (staging id).
@@ -176,7 +196,7 @@ Three id namespaces: React `key`, `data-key` (`element.key`), `data-field-id` (s
 | `NCRendererProps` | Interface          | `tree`, `runtime`, `catalog`, `catalogVersion`, optional `extraRegistry`, `onValidationError`, `onRenderError` |
 | `NCRenderer`      | Function component | Validates during render; last-good tree to `<Renderer>`                                                        |
 
-`extraRegistry` cannot override builtin names (`Container`, `Text`, `TextField`, `Checkbox`, `Button`) so a host cannot drop `action.params` by replacing `Button`.
+`extraRegistry` cannot override builtin names (`Container`, `Text`, `TextField`, `Checkbox`, `Select`, `Button`) so a host cannot drop `action.params` by replacing `Button`. Registry is passed to `JSONUIProvider`; `Renderer` reads it from context.
 
 After a successful commit, `useLayoutEffect` reconciles and calls `observer.render` on the **same Zod-stripped tree** the Renderer received. That effect is not validation.
 
@@ -184,7 +204,7 @@ After a successful commit, `useLayoutEffect` reconciles and calls `observer.rend
 
 ### `src/renderer/use-committed-tree.ts`
 
-`useCommittedTree` wraps `useUIStream` with `commitMode: "atomic"` (Invariant 9). `NCApp` itself uses `useState`; the stub handler validates complete trees. Streamed LLM responses belong in a custom owner that uses this hook.
+`useCommittedTree` wraps `useUIStream` with `commitMode: "atomic"` (Invariant 9). `NCApp` itself uses `useState`; the stub and LLM handlers validate complete trees. Streamed JSON-patch HTTP responses belong in a custom owner that uses this hook. The in-process LLM handler does not POST to it.
 
 **Tests**: `use-committed-tree.test.tsx`.
 
@@ -213,11 +233,11 @@ Re-exports components, NCRenderer, useCommittedTree, NCErrorBoundary, and field-
 
 ### `src/index.ts`
 
-Root package export: catalog, types, runtime, memory, renderer, orchestrator, app, observer, compute. Pulls React. See [API.md](./API.md).
+Root package export: catalog, types, runtime, memory, renderer, orchestrator (stub + LLM handler), app, observer, compute. Pulls React. See [API.md](./API.md).
 
 ### `src/core.ts`
 
-`neural-computer/core`. Same as the root barrel minus React renderer/app, including `createPythonRepl`. Safe for Node / orchestrator processes.
+`neural-computer/core`. Same as the root barrel minus React renderer/app, including `createPythonRepl` and `createLlmIntentHandler`. Safe for Node / orchestrator processes.
 
 ### `src/react.ts`
 

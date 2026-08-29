@@ -5,7 +5,7 @@
 ## Summary
 
 - **Potentially unused files**: 3
-- **Potentially unused exports**: 17
+- **Potentially unused exports**: 25
 
 ## Potentially Unused Files
 
@@ -45,9 +45,29 @@ These exports are not imported by any other file in the codebase:
 
 - `CreateNCObserverOptions` (interface)
 
+### `src/orchestrator/anthropic-transport.ts`
+
+- `CreateAnthropicTransportOptions` (interface)
+
 ### `src/orchestrator/handle-intent.ts`
 
 - `CreateStubIntentHandlerOptions` (interface)
+
+### `src/orchestrator/llm-handler.ts`
+
+- `DurableWrite` (interface)
+
+### `src/orchestrator/llm-transport.ts`
+
+- `NCLlmCompleteResponse` (interface)
+- `NCLlmRole` (type)
+- `NCLlmTextContent` (type)
+- `NCLlmErrorCode` (type)
+
+### `src/orchestrator/observation.ts`
+
+- `ComposeNcObservationInput` (interface)
+- `NcObservation` (interface)
 
 ### `src/renderer/input-components.tsx`
 

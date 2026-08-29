@@ -5,9 +5,16 @@ import type {
   StagingBuffer,
   ObservableDataModel,
   UITree,
-  Catalog,
+  AnyCatalog,
 } from "@json-ui/core";
 import type { NormalizedNode } from "@json-ui/headless";
+
+/**
+ * Re-export of `@json-ui/core`'s `AnyCatalog`. Method variance makes a
+ * specific `Catalog<MyComponents>` unassignable to the default `Catalog`
+ * type; hosts that store a catalog on `NCRuntime` use this alias.
+ */
+export type { AnyCatalog };
 
 /**
  * An NC intent handler receives a fully-formed IntentEvent from the
@@ -130,8 +137,7 @@ export interface NCRuntime {
    * Catalog bound at construction. NCRenderer MUST pass this same
    * reference as its `catalog` prop (identity check at render time).
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  catalog: Catalog<any, any, any>;
+  catalog: AnyCatalog;
   /**
    * Version string the runtime threads into the observer and that
    * NCRenderer must echo into JSONUIProvider. Identity-checked against

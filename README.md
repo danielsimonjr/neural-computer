@@ -1,6 +1,6 @@
 # Neural Computer
 
-A catalog-constrained React UI runtime: staging buffer, one-at-a-time intent gate, stub intent handler, headless observer cache, and a Python REPL compute arm (RLM pattern). Inspired by Zhuge et al., _Neural Computers_ (arXiv:2604.04625). **This package does not yet call an LLM.** The REPL is a subprocess the orchestrator can drive; it is not attached to `NCRuntime`.
+A catalog-constrained React UI runtime: staging buffer, one-at-a-time intent gate, stub or LLM intent handler, headless observer cache, and a Python REPL compute arm (RLM pattern). Inspired by Zhuge et al., _Neural Computers_ (arXiv:2604.04625). The LLM handler is transport-injected; unit tests never hit the network. The REPL is a subprocess the orchestrator can drive; it is not attached to `NCRuntime`.
 
 **Status:** v1 + Path C shipped. Private unpublished package (`file:` siblings). React 19 is a **peer dependency**. Use Bun (`bun install`) to match CI. See [`CHANGELOG.md`](./CHANGELOG.md) and [`examples/README.md`](./examples/README.md).
 
@@ -11,7 +11,7 @@ Shipped dependencies:
 - **JSON-UI** (`@json-ui/core`, `@json-ui/react`, `@json-ui/headless`) — catalog-constrained renderer plus headless observer. Sibling at [`../JSON-UI`](../JSON-UI).
 - **MemoryJS** (`@danielsimonjr/memoryjs`) — durable knowledge-graph state. Sibling at [`../memoryjs`](../memoryjs).
 
-Not shipped: Anthropic intent handler.
+Not shipped: catalog migration from `nc-starter-0.1` / `0.2`; persistent staging across process restart.
 
 ## Named state surfaces (seven)
 
@@ -20,7 +20,7 @@ Not shipped: Anthropic intent handler.
 3. Staging buffer
 4. In-flight intent flag (`runtime.isIntentInFlight`)
 5. Catalog version
-6. LLM session state (future handler; not managed here)
+6. LLM session state (transport-owned; not a field on `NCRuntime`)
 7. Observer cache (`runtime.observer`)
 
 ## Project layout (v1)
@@ -34,7 +34,7 @@ neural-computer/
 │   ├── types/                # NCRuntime, NCIntentHandler, NCCatalogVersion, NCObserver
 │   ├── catalog/              # ncStarterCatalog (nc-starter-0.3), field-id, limits
 │   ├── runtime/              # createNCRuntime (sync; backpressure + observer)
-│   ├── orchestrator/         # createStubIntentHandler + buffer-isolation test
+│   ├── orchestrator/         # stub + createLlmIntentHandler + Anthropic transport
 │   ├── renderer/             # NCRenderer, inputs, error-boundary, field-id-stability
 │   ├── app/                  # NCApp React mounting component
 │   ├── memory/               # defaultNCProjection for memoryjs adapter
@@ -48,7 +48,7 @@ neural-computer/
 ├── vitest.config.ts          # jsdom env + react dedup alias
 ├── tsup.config.ts            # ESM + CJS + dts; exports map for ., /core, /react
 ├── package.json
-└── tsconfig.json             # skipLibCheck is still true
+└── tsconfig.json             # skipLibCheck is false
 ```
 
 Shipped: `src/compute/` — Python subprocess dispatch via the RLM pattern (`createPythonRepl`). Not attached to `NCRuntime`. See [`docs/specs/2026-08-29-compute-rlm-repl-design.md`](./docs/specs/2026-08-29-compute-rlm-repl-design.md).
@@ -58,7 +58,9 @@ Shipped: `src/compute/` — Python subprocess dispatch via the RLM pattern (`cre
 - [`docs/specs/2026-04-11-ephemeral-ui-state-design.md`](./docs/specs/2026-04-11-ephemeral-ui-state-design.md) — the staging buffer pattern for in-progress user input. The spec originally named five surfaces; the runtime now names seven (in-flight flag and observer cache). Read this first.
 - [`docs/specs/2026-04-16-headless-dual-backend-design.md`](./docs/specs/2026-04-16-headless-dual-backend-design.md) — LLM observer (Path C).
 - [`docs/specs/2026-08-29-compute-rlm-repl-design.md`](./docs/specs/2026-08-29-compute-rlm-repl-design.md) — Python REPL compute arm. Independent of `NCRuntime`; exported from `neural-computer/core`.
-- [`docs/plans/2026-04-15-neural-computer-v2-plan.md`](./docs/plans/2026-04-15-neural-computer-v2-plan.md) — the v1 implementation plan, 13 tasks, shipped 2026-04-15. Supersedes the April-11 plan which was written before `@json-ui/core`, `@json-ui/react`, and `@danielsimonjr/memoryjs` shipped the primitives the April-11 plan hand-rolled.
+- [`docs/specs/2026-08-29-llm-intent-handler-design.md`](./docs/specs/2026-08-29-llm-intent-handler-design.md) — tool-loop intent handler; Anthropic is one transport.
+- [`docs/specs/2026-08-29-sibling-api-surface.md`](./docs/specs/2026-08-29-sibling-api-surface.md) — JSON-UI / memoryjs seams (`AnyCatalog`, `store.write`, registry context, memoryjs `onWrite`).
+- [`docs/plans/2026-04-15-neural-computer-v2-plan.md`](./docs/plans/2026-04-15-neural-computer-v2-plan.md) — the v1 implementation plan, 13 tasks, shipped 2026-04-15.
 
 ## Development
 
@@ -70,9 +72,9 @@ bun test
 
 Local development requires sibling checkouts at `../JSON-UI` and `../memoryjs` (`file:` dependencies in `package.json`). Node 20+. Python 3.10+ (`python3`) for `createPythonRepl`. React 19 is a **peer dependency**. This package's npm `overrides` do not protect a host application: consumers must dedupe `react` and `react-dom` so NC and `@json-ui/react` share one dispatcher (NC-086). Import `neural-computer/react` from Client Components; import `neural-computer/core` from Node.
 
-`tsconfig.json` still sets `"skipLibCheck": true`.
+`tsconfig.json` sets `"skipLibCheck": false`. Zod is pinned to `4.4.3` to match JSON-UI.
 
-Starter catalog honesty: Container is minimal flex (`direction` column or row), not a layout system. TextField supports `multiline` (textarea). There is no Select in v1.
+Starter catalog: Container is minimal flex (`direction` column or row), not a layout system. TextField supports `multiline` (textarea). Select is a native `<select>` of string options.
 
 ## Quickstart
 
@@ -144,11 +146,11 @@ createRoot(document.getElementById("app")!).render(<App />);
 
 ## Roadmap
 
-v1 shipped 2026-04-15. Path C (headless dual-backend LLM Observer) shipped 2026-04-16. Compute (`createPythonRepl`) shipped 2026-08-29. Deferred items (each is its own follow-up spec):
+v1 shipped 2026-04-15. Path C shipped 2026-04-16. Compute (`createPythonRepl`) and the LLM intent handler shipped 2026-08-29. Deferred items (each is its own follow-up spec):
 
-- Real Anthropic-backed intent handler replacing the stub (the handler is what will drive the REPL loop)
-- Persistent staging buffer (currently an explicit non-goal)
 - Catalog versioning + migration flow
+- Persistent staging buffer (currently an explicit non-goal)
+- Rich memoryjs transaction/graph DSL (v1 uses a host `onDurableWrite` callback)
 
 ## Prior art
 
