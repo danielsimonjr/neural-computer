@@ -5,15 +5,15 @@
 ## Summary
 
 - **Potentially unused files**: 3
-- **Potentially unused exports**: 15
+- **Potentially unused exports**: 17
 
 ## Potentially Unused Files
 
-These files are not imported by any other file in the codebase. That is expected for package entry points (`src/core.ts`, `src/react.ts`) and for Vitest setup (`src/test-setup.ts`).
+These files are not imported by any other file in the codebase:
 
-- `src/core.ts` — `neural-computer/core` tsup entry
-- `src/react.ts` — `neural-computer/react` tsup entry
-- `src/test-setup.ts` — vitest `setupFiles` (RTL `cleanup`)
+- `src/core.ts`
+- `src/react.ts`
+- `src/test-setup.ts`
 
 ## Potentially Unused Exports
 
@@ -26,6 +26,14 @@ These exports are not imported by any other file in the codebase:
 ### `src/catalog/limits.ts`
 
 - `NCStarterActionName` (type)
+
+### `src/compute/python-repl.ts`
+
+- `PythonRepl` (class)
+
+### `src/compute/types.ts`
+
+- `NCReplErrorCode` (type)
 
 ### `src/memory/projection.ts`
 

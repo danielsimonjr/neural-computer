@@ -40,7 +40,9 @@ App: `NCApp`, `NCAppProps`.
 
 Observer: `createNCObserver`, `ncHeadlessRegistry`, `CreateNCObserverOptions`.
 
-`neural-computer/core` is the same list minus renderer and app. `neural-computer/react` is renderer and app only.
+Compute: `createPythonRepl`, `NCReplError`, `NC_REPL_CONTEXT_NAME`, caps, `NCPythonRepl`. Not exported from `neural-computer/react`.
+
+`neural-computer/core` is the same list minus renderer and app (compute included). `neural-computer/react` is renderer and app only.
 
 ---
 
@@ -222,3 +224,27 @@ Changing `initialTree` by reference resets the current tree. `buildIntentHandler
   buildIntentHandler={buildIntentHandler}
 />
 ```
+
+---
+
+## Compute
+
+### `createPythonRepl(options?)`
+
+```typescript
+function createPythonRepl(
+  options?: CreatePythonReplOptions,
+): Promise<NCPythonRepl>;
+
+interface NCPythonRepl {
+  exec(code: string): Promise<NCReplExecResult>;
+  set(name: string, value: unknown): Promise<void>;
+  get(name: string): Promise<unknown>;
+  loadContext(text: string): Promise<void>;
+  reset(): Promise<void>;
+  isBusy(): boolean;
+  destroy(): Promise<void>;
+}
+```
+
+**Async** (spawn + handshake). Default interpreter `python3`. One operation at a time; a second call throws `NCReplError("busy")`. `exec` fulfills with `{ok, stdout, stderr, truncated, error?}` for user-code failures. Infrastructure failures (timeout, spawn, destroyed, limit) throw `NCReplError`. Timeout kills the worker and respawns empty. `loadContext` is `set("context", text)`. Optional `llmQuery` implements in-REPL `llm_query`. Spec: `docs/specs/2026-08-29-compute-rlm-repl-design.md`. Not a field on `NCRuntime`.

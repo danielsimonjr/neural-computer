@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `AGENTS.md` — the authoritative agent instructions.
 - `docs/specs/2026-04-11-ephemeral-ui-state-design.md` — staging buffer (shipped).
 - `docs/specs/2026-04-16-headless-dual-backend-design.md` — observer (shipped).
+- `docs/specs/2026-08-29-compute-rlm-repl-design.md` — Python REPL (shipped).
 - `docs/plans/2026-04-15-neural-computer-v2-plan.md` — v1 plan; supersedes April-11.
 - `docs/architecture/OVERVIEW.md` — diagram and 13 invariants.
 - `CHANGELOG.md` and `docs/audits/` — traps not to re-introduce.
@@ -35,7 +36,7 @@ npx vitest run -t "reconcile"
 
 ## Architecture in one paragraph
 
-NC is a **composer**. Sibling libraries: `@json-ui/core` + `@json-ui/react` + `@json-ui/headless`, `@danielsimonjr/memoryjs`. User input accumulates in a staging buffer; a named action flushes an `IntentEvent` to `NCIntentHandler`. Invalid trees never reach JSON-UI (last-good stays on screen). The observer shadows successful commits. There is no LLM or Python REPL in this package yet. Seven named state surfaces, thirteen testable invariants, backpressure that disables buttons.
+NC is a **composer**. Sibling libraries: `@json-ui/core` + `@json-ui/react` + `@json-ui/headless`, `@danielsimonjr/memoryjs`. User input accumulates in a staging buffer; a named action flushes an `IntentEvent` to `NCIntentHandler`. Invalid trees never reach JSON-UI (last-good stays on screen). The observer shadows successful commits. `createPythonRepl` owns a persistent CPython worker for the RLM compute arm; it is not attached to `NCRuntime`. There is no LLM-backed intent handler yet. Seven named state surfaces, thirteen testable invariants, backpressure that disables buttons.
 
 Module map (`src/index.ts` / `src/core.ts` / `src/react.ts`):
 
@@ -47,6 +48,7 @@ Module map (`src/index.ts` / `src/core.ts` / `src/react.ts`):
 - `memory/` — `defaultNCProjection`
 - `app/` — `NCApp`
 - `observer/` — `createNCObserver`, `ncHeadlessRegistry`
+- `compute/` — `createPythonRepl` (Python subprocess, RLM pattern)
 - `integration/` — Path C end-to-end
 
 ## Local-dev requirements

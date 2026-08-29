@@ -3,11 +3,11 @@
 /**
  * Neural Computer — public entry point.
  *
- * v1 is a catalog-constrained React UI runtime with a staging buffer,
- * a one-at-a-time intent gate, a stub intent handler, and a headless
- * observer cache. It is not yet an LLM-backed or Python-REPL runtime;
- * those remain follow-up specs. Import `neural-computer/core` from
- * Node to avoid the React graph.
+ * Catalog-constrained React UI runtime with a staging buffer, a
+ * one-at-a-time intent gate, a stub intent handler, a headless
+ * observer cache, and a Python REPL compute arm (RLM pattern).
+ * There is no LLM-backed intent handler yet. Import
+ * `neural-computer/core` from Node to avoid the React graph.
  */
 
 export {
@@ -69,3 +69,21 @@ export {
   ncHeadlessRegistry,
   type CreateNCObserverOptions,
 } from "./observer";
+
+export {
+  createPythonRepl,
+  resolveWorkerPath,
+  NCReplError,
+  NC_REPL_CONTEXT_NAME,
+  NC_REPL_DEFAULT_PYTHON,
+  NC_REPL_DEFAULT_TIMEOUT_MS,
+  NC_REPL_MAX_CODE_BYTES,
+  NC_REPL_MAX_IDENT_LENGTH,
+  NC_REPL_MAX_STDOUT_BYTES,
+  NC_REPL_MAX_VALUE_BYTES,
+  NC_REPL_PROTOCOL_VERSION,
+  type CreatePythonReplOptions,
+  type NCPythonRepl,
+  type NCReplExecResult,
+  type NCReplErrorCode,
+} from "./compute";

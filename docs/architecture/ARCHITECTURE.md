@@ -22,21 +22,19 @@
 
 ## System Overview
 
-Neural Computer is a TypeScript runtime that ships a catalog-constrained form widget, a stub intent handler, and a headless observer cache. It is **not** yet an LLM-driven application runtime and **not** a Python REPL host. The shipped loop is: user types into staging, a named action emits an `IntentEvent`, the stub (or a future handler) commits a new `UITree`, NCRenderer validates during render and keeps the last-good tree on screen, then reconcile and `observer.render` run after a successful commit.
+Neural Computer is a TypeScript runtime that ships a catalog-constrained form widget, a stub intent handler, a headless observer cache, and a Python REPL compute arm (`createPythonRepl`). It is **not** yet an LLM-driven application runtime. The shipped UI loop is: user types into staging, a named action emits an `IntentEvent`, the stub (or a future handler) commits a new `UITree`, NCRenderer validates during render and keeps the last-good tree on screen, then reconcile and `observer.render` run after a successful commit. A future handler may also `exec` Python against a loaded `context` variable; the renderer never does.
 
 Key properties: every tree is validated against a Zod-typed catalog before JSON-UI renders it; staging is flushed only on named intents; concurrent intents are rejected and the in-flight flag is public; memoryjs entities are projected into the React data model.
 
 ### Key Statistics
 
-| Metric                | Value                                 |
-| --------------------- | ------------------------------------- |
-| Source files          | 28 TypeScript files (excluding tests) |
-| Test files            | 15 under `src/**/*.test.*`            |
-| Lines of source       | ~1799                                 |
-| Catalog version       | `nc-starter-0.3`                      |
-| Named state surfaces  | 7                                     |
-| Spec invariants       | 13, all tested                        |
-| Circular dependencies | 0                                     |
+| Metric                | Value                                         |
+| --------------------- | --------------------------------------------- |
+| Test files            | 17 under `src/**/*.test.*`                    |
+| Catalog version       | `nc-starter-0.3`                              |
+| Named state surfaces  | 7 (compute is a tool, not a surface)          |
+| Spec invariants       | 13 UI-runtime, all tested, plus compute rules |
+| Circular dependencies | 0                                             |
 
 `skipLibCheck` remains `true` in `tsconfig.json`. React 19 is a peer dependency; host apps must dedupe React (this package's `overrides` do not protect consumers).
 
@@ -83,6 +81,7 @@ The orchestrator module never imports from the renderer, React, `@json-ui/headle
 │  Layer 4: Orchestrator (createStubIntentHandler)         │
 │  Catalog: ncStarterCatalog (nc-starter-0.3)              │
 │  Memory:  defaultNCProjection                            │
+│  Compute: createPythonRepl (optional; not on NCRuntime)  │
 └──────────────────────────────────────────────────────────┘
                          │
           ┌──────────────┴─────────────┐
@@ -135,7 +134,11 @@ Input components bind to staging via `useStagingField`. `NCButton` forwards `{na
 
 ### Layer 4: Orchestrator (`src/orchestrator/`)
 
-`createStubIntentHandler` requires `catalog`. It maps an `IntentEvent` to a `UITree` via `nextTree`, **validates** that tree, and calls `onTreeCommit` only on success. Invalid `nextTree` results reject; `onTreeCommit` is not called. There is no Anthropic handler in this package.
+`createStubIntentHandler` requires `catalog`. It maps an `IntentEvent` to a `UITree` via `nextTree`, **validates** that tree, and calls `onTreeCommit` only on success. Invalid `nextTree` results reject; `onTreeCommit` is not called. There is no Anthropic handler in this package. The orchestrator may import `createPythonRepl` from `src/compute/` (or `neural-computer/core`); it still must not import the renderer, React, headless, or `../observer`.
+
+### Cross-Cutting: Compute (`src/compute/`)
+
+`createPythonRepl({ pythonPath?, timeoutMs?, llmQuery? })` is **async**. It spawns `python3 -u -I -X utf8 worker.py`, waits for a JSON-lines `ready` handshake, and exposes `exec` / `set` / `get` / `loadContext` / `reset` / `isBusy` / `destroy`. One operation at a time (`busy` rather than queue). Timeout SIGKILLs the worker and respawns empty. Restricted builtins are not a jail; see SECURITY.md. Exported from `neural-computer/core`, not from `/react`. Not a field on `NCRuntime`.
 
 ### Cross-Cutting: Catalog (`src/catalog/`)
 
@@ -229,7 +232,7 @@ Derived from `docs/specs/2026-04-11-ephemeral-ui-state-design.md`:
 
 ## Testing Strategy
 
-Unit tests live next to modules (catalog, runtime, orchestrator, renderer, app, memory, observer, types). The meta-test `buffer-isolation.test.ts` walks orchestrator source and asserts no forbidden imports, including `../observer`. `integration/path-c.test.tsx` covers type → submit → intent → reconcile → observer. Field-id stability and last-good-tree behavior live in `nc-renderer.test.tsx` and `field-id-stability.test.ts`. All 13 invariants have tests (see [INVARIANTS.md](./INVARIANTS.md)). There are 15 test files and 84 `it`/`test` cases.
+Unit tests live next to modules (catalog, runtime, orchestrator, renderer, app, memory, observer, types, compute). The meta-test `buffer-isolation.test.ts` walks orchestrator source and asserts no forbidden imports, including `../observer`. Compute has a matching isolation test. `integration/path-c.test.tsx` covers type → submit → intent → reconcile → observer. Field-id stability and last-good-tree behavior live in `nc-renderer.test.tsx` and `field-id-stability.test.ts`. All 13 UI invariants have tests (see [INVARIANTS.md](./INVARIANTS.md)).
 
 ---
 
@@ -239,7 +242,7 @@ Path C (plan `2026-04-16-headless-dual-backend`) runs `@json-ui/headless` alongs
 
 `FORBIDDEN_IMPORTS` includes `@json-ui/headless` and `../observer` so the orchestrator consumes `NormalizedNode` output via `runtime.observer` without importing the observer module. Observer render is a second full tree walk on the layout path (NC-087); it is skipped when the same `tree` reference was already shadowed.
 
-Still deferred: real Anthropic-backed intent handler, Python REPL dispatch, persistent staging buffer, catalog migration from `nc-starter-0.1`.
+Still deferred: real Anthropic-backed intent handler, persistent staging buffer, catalog migration from `nc-starter-0.1`. Python REPL dispatch shipped 2026-08-29 (`createPythonRepl`).
 
 ---
 

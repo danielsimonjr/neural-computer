@@ -5,7 +5,7 @@
 
 ## What Is This?
 
-Neural Computer (NC) is a **catalog-constrained React form runtime**. It owns a staging buffer for in-progress input, a one-at-a-time intent gate, a deterministic stub intent handler, and a headless observer cache that shadows successful tree commits. It is inspired by Zhuge et al., _Neural Computers_ (arXiv:2604.04625), but **this package does not call an LLM and does not spawn a Python REPL**. Those remain follow-up specs.
+Neural Computer (NC) is a **catalog-constrained React form runtime**. It owns a staging buffer for in-progress input, a one-at-a-time intent gate, a deterministic stub intent handler, a headless observer cache that shadows successful tree commits, and an optional Python REPL (`createPythonRepl`) for the RLM compute arm. It is inspired by Zhuge et al., _Neural Computers_ (arXiv:2604.04625). **This package does not call an LLM.** The REPL is a subprocess a future handler can drive; it is not attached to `NCRuntime`.
 
 The runtime validates every UI tree against `ncStarterCatalog` (version `nc-starter-0.3`) before JSON-UI renders it. Invalid trees never reach `<Renderer>`; the last good validated tree stays on screen. A named catalog action (`submit_form` or `cancel`) flushes an `IntentEvent` to `NCIntentHandler`. The stub handler maps that event to the next tree. The observer (`@json-ui/headless`) produces a frozen `NormalizedNode` of the same Zod-stripped tree React just committed.
 
@@ -13,7 +13,7 @@ The runtime validates every UI tree against `ncStarterCatalog` (version `nc-star
 
 NC ships a Zod-typed starter catalog, a shared staging buffer flushed only on named actions, a public in-flight flag (`isIntentInFlight` / `subscribeIntentFlight`) that disables buttons, a memoryjs projection into the React data model, and DynamicValue resolution of action params against staging before the orchestrator sees them. Thirteen spec invariants are covered by tests under `src/**/*.test.*`.
 
-What it does **not** ship: an Anthropic (or any) LLM handler, a Python subprocess, persistent staging across process restart, or a Select component.
+What it does **not** ship: an Anthropic (or any) LLM handler, persistent staging across process restart, or catalog migration from `nc-starter-0.1` / `0.2`.
 
 ## Quick Architecture Overview
 
@@ -51,7 +51,7 @@ NCApp              NCRenderer              NCButton/
 
 NC is a composer, not a primary library.
 
-JSON-UI (`@json-ui/core`, `@json-ui/react`, `@json-ui/headless`) validates and renders catalog-constrained trees. memoryjs (`@danielsimonjr/memoryjs`) holds durable knowledge-graph state; NC projects entities and relations into the React data model. A Python REPL for computation is planned and is not in this package.
+JSON-UI (`@json-ui/core`, `@json-ui/react`, `@json-ui/headless`) validates and renders catalog-constrained trees. memoryjs (`@danielsimonjr/memoryjs`) holds durable knowledge-graph state; NC projects entities and relations into the React data model. `createPythonRepl` owns a persistent CPython worker for computation. The RLM loop (model writes code until a final answer) is still a future handler concern.
 
 All three JSON-UI packages and memoryjs are sibling repos consumed via `file:` deps until they publish to npm. React 19 is a **peer dependency**. Consumers must dedupe React themselves (`npm overrides` in this repo do not protect a host app that also depends on React). See NC-086.
 
@@ -113,6 +113,7 @@ neural-computer/
 │   ├── app/                  # NCApp
 │   ├── memory/               # defaultNCProjection
 │   ├── observer/             # createNCObserver + ncHeadlessRegistry
+│   ├── compute/              # createPythonRepl + worker.py
 │   └── integration/path-c.test.tsx  # Path C end-to-end
 │
 ├── docs/
@@ -129,7 +130,7 @@ neural-computer/
 └── package.json
 ```
 
-`compute/` (Python subprocess via the RLM pattern) is not implemented.
+`createPythonRepl` lives under `src/compute/`. It is a tool, not an eighth named UI state surface. `NCApp` / `NCRenderer` do not spawn it.
 
 ## Key Design Principles
 
@@ -137,17 +138,14 @@ Access discipline: the future LLM orchestrator sees exactly durable state plus i
 
 ## Key Statistics (after 2026-08-29 remediation)
 
-| Metric                     | Value                                                                |
-| -------------------------- | -------------------------------------------------------------------- |
-| Source files               | 28 TypeScript files (`.ts` + `.tsx`, excluding tests)                |
-| Test files                 | 15 under `src/**/*.test.*` (including `integration/path-c.test.tsx`) |
-| All `src/**/*.ts{,x}`      | 43                                                                   |
-| Lines of source (non-test) | ~1799                                                                |
-| Test cases (`it` / `test`) | 84                                                                   |
-| Catalog version            | `nc-starter-0.3`                                                     |
-| Named state surfaces       | 7                                                                    |
-| Spec invariants            | 13                                                                   |
-| Circular dependencies      | 0                                                                    |
+| Metric                | Value                                                                |
+| --------------------- | -------------------------------------------------------------------- |
+| Source files          | TypeScript files under `src/` excluding tests (see DEPENDENCY_GRAPH) |
+| Test files            | 17 under `src/**/*.test.*`                                           |
+| Catalog version       | `nc-starter-0.3`                                                     |
+| Named state surfaces  | 7 (compute is a tool, not a surface)                                 |
+| Spec invariants       | 13 UI-runtime + compute rules                                        |
+| Circular dependencies | 0                                                                    |
 
 `tsconfig.json` still sets `"skipLibCheck": true`. That hides some sibling-type drift (NC-042 / NC-066); it has not been flipped.
 

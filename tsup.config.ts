@@ -1,4 +1,15 @@
+import { copyFileSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
 import { defineConfig } from "tsup";
+
+function copyPythonWorker() {
+  const dist = join(process.cwd(), "dist");
+  mkdirSync(dist, { recursive: true });
+  copyFileSync(
+    join(process.cwd(), "src/compute/worker.py"),
+    join(dist, "worker.py"),
+  );
+}
 
 const shared = {
   format: ["esm", "cjs"] as const,
@@ -6,6 +17,8 @@ const shared = {
   sourcemap: true,
   clean: true,
   target: "es2022" as const,
+  // CJS has no import.meta; shims polyfill it so resolveWorkerPath finds dist/worker.py.
+  shims: true,
 };
 
 export default [
@@ -18,5 +31,6 @@ export default [
     ...shared,
     clean: false,
     entry: { core: "src/core.ts" },
+    onSuccess: copyPythonWorker,
   }),
 ];

@@ -1,11 +1,11 @@
 {
   "metadata": {
-    "generatedAt": "2026-08-29T00:58:47.756Z",
-    "totalSourceFiles": 29,
-    "totalTestFiles": 15,
-    "testedCount": 21,
+    "generatedAt": "2026-08-29T01:16:08.670Z",
+    "totalSourceFiles": 34,
+    "totalTestFiles": 17,
+    "testedCount": 26,
     "untestedCount": 8,
-    "coveragePercent": "72.4"
+    "coveragePercent": "76.5"
   },
   "untestedFiles": [
     "src/app/index.ts",
@@ -23,6 +23,11 @@
     "src/catalog/index.ts",
     "src/catalog/limits.ts",
     "src/catalog/nc-catalog.ts",
+    "src/compute/index.ts",
+    "src/compute/limits.ts",
+    "src/compute/python-repl.ts",
+    "src/compute/types.ts",
+    "src/compute/worker-path.ts",
     "src/memory/projection.ts",
     "src/observer/nc-headless-components.ts",
     "src/observer/nc-observer.ts",
@@ -78,6 +83,21 @@
       "src/orchestrator/handle-intent.test.ts",
       "src/renderer/nc-renderer.test.tsx",
       "src/runtime/context.test.ts"
+    ],
+    "src/compute/index.ts": [
+      "src/compute/python-repl.test.ts"
+    ],
+    "src/compute/limits.ts": [
+      "src/compute/python-repl.test.ts"
+    ],
+    "src/compute/python-repl.ts": [
+      "src/compute/python-repl.test.ts"
+    ],
+    "src/compute/types.ts": [
+      "src/compute/python-repl.test.ts"
+    ],
+    "src/compute/worker-path.ts": [
+      "src/compute/python-repl.test.ts"
     ],
     "src/core.ts": [],
     "src/index.ts": [],
@@ -169,6 +189,14 @@
     ],
     "src/catalog/nc-catalog.test.ts": [
       "src/catalog/nc-catalog.ts"
+    ],
+    "src/compute/isolation.test.ts": [],
+    "src/compute/python-repl.test.ts": [
+      "src/compute/index.ts",
+      "src/compute/limits.ts",
+      "src/compute/types.ts",
+      "src/compute/python-repl.ts",
+      "src/compute/worker-path.ts"
     ],
     "src/integration/path-c.test.tsx": [
       "src/runtime/index.ts",
