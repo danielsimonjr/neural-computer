@@ -280,6 +280,49 @@ describe("createLlmIntentHandler", () => {
     runtime.destroy();
   });
 
+  it("falls back to durableStore.set when write is absent", async () => {
+    const inner = createObservableDataModel({});
+    const store = {
+      get: inner.get.bind(inner),
+      set: inner.set.bind(inner),
+      delete: inner.delete.bind(inner),
+      snapshot: inner.snapshot.bind(inner),
+      subscribe: inner.subscribe.bind(inner),
+    };
+    const runtime = createNCRuntime({
+      durableStore: store,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
+    const transport = scripted([
+      {
+        content: [
+          {
+            type: "tool_use",
+            id: "d",
+            name: "durable_write",
+            input: { path: "note", value: "via-set" },
+          },
+        ],
+      },
+      { content: [commitUse("c", validTree)] },
+    ]);
+    const handler = createLlmIntentHandler({
+      runtime,
+      catalog: ncStarterCatalog,
+      onTreeCommit: vi.fn(),
+      transport,
+    });
+    await handler({
+      action_name: "submit_form",
+      action_params: {},
+      staging_snapshot: {},
+      timestamp: 0,
+    });
+    expect(store.get("note")).toBe("via-set");
+    runtime.destroy();
+  });
+
   it("calls python_load_context and python_reset then commits", async () => {
     const runtime = createNCRuntime({
       durableStore: createObservableDataModel({}),

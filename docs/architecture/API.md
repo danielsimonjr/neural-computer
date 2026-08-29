@@ -26,7 +26,7 @@ React 19 is a **peer dependency**. Host applications must dedupe React so `@json
 
 Catalog: `ncStarterCatalog`, `NC_CATALOG_VERSION`, `NC_LLM_ACCEPTANCE_CONTRACT`, `ncFieldIdSchema`, `isSafeFieldId`, `NC_FIELD_ID_MAX_LENGTH`, `NC_STRING_MAX_LENGTH`, `NC_STARTER_ACTIONS`.
 
-Types: `NCIntentHandler`, `NCCatalogVersion`, `NCObserver`, `NCRuntime`, `AnyCatalog`. Values: `asNCCatalogVersion`, `isNCCatalogVersion`. `AnyCatalog` is NC's alias for `Catalog<any, any, any>` (JSON-UI method variance). JSON-UI will export the same name; until CI pins that SHA, NC owns the alias.
+Types: `NCIntentHandler`, `NCCatalogVersion`, `NCObserver`, `NCRuntime`, `AnyCatalog`. Values: `asNCCatalogVersion`, `isNCCatalogVersion`. `AnyCatalog` is re-exported from `@json-ui/core` (method variance; a specific `Catalog<MyComponents>` is not assignable to `Catalog`).
 
 Runtime: `createNCRuntime`, `CreateNCRuntimeOptions`.
 
@@ -261,7 +261,7 @@ function createLlmIntentHandler(
 ): NCIntentHandler;
 ```
 
-Same signature as the stub. Requires `runtime`, `catalog`, `onTreeCommit`, and an `NCLlmTransport`. Optional `repl` advertises Python tools. Optional `onDurableWrite` advertises `durable_write`. The model must call `commit_ui_tree` with a catalog-valid tree within `maxRounds` (default 8). Invalid trees come back as tool errors. Spec: `docs/specs/2026-08-29-llm-intent-handler-design.md`.
+Same signature as the stub. Requires `runtime`, `catalog`, `onTreeCommit`, and an `NCLlmTransport`. Optional `repl` advertises Python tools. `durable_write` is always advertised; optional `onDurableWrite` overrides the store. The model must call `commit_ui_tree` with a catalog-valid tree within `maxRounds` (default 8). Invalid trees come back as tool errors. Spec: `docs/specs/2026-08-29-llm-intent-handler-design.md`.
 
 `createAnthropicIntentHandler` / `createAnthropicTransport` map this onto Anthropic Messages. Inject `send` in tests. This handler commits complete trees; it does not POST JSON patches to `useCommittedTree`.
 

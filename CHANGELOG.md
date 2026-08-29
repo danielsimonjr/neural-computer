@@ -19,8 +19,8 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 ### Added
 
 - **Python REPL compute arm (`src/compute/`).** `createPythonRepl()` spawns a persistent CPython worker (`python3 -u -I -X utf8`) and speaks JSON lines. `exec` / `set` / `get` / `loadContext` / `reset` / `isBusy` / `destroy`. One operation at a time; timeout kills the worker and respawns empty. Optional `llmQuery` implements in-REPL `llm_query`. Not attached to `NCRuntime`. Exported from `neural-computer/core` and the root barrel, not from `/react`. Spec: `docs/specs/2026-08-29-compute-rlm-repl-design.md`.
-- **LLM intent handler (`src/orchestrator/llm-handler.ts`).** `createLlmIntentHandler` composes an observation (catalog prompt, acceptance contract, intent, durable snapshot, observer JSON), runs a tool loop (`commit_ui_tree`, optional `python_*`, `durable_write`), and commits one catalog-valid tree. `durable_write` uses `onDurableWrite` if supplied, otherwise `ObservableDataModel.write` (when present) or `set`. `createAnthropicIntentHandler` / `createAnthropicTransport` adapt Anthropic Messages. Tests inject a fake transport (no network). Spec: `docs/specs/2026-08-29-llm-intent-handler-design.md`. Not HTTP streaming into `useCommittedTree` (that hook remains for hosts with a patch endpoint).
-- **`AnyCatalog` alias.** Catalog props use one named type instead of repeating `Catalog<any, any, any>`.
+- **LLM intent handler (`src/orchestrator/llm-handler.ts`).** `createLlmIntentHandler` composes an observation (catalog prompt, acceptance contract, intent, durable snapshot, observer JSON), runs a tool loop (`commit_ui_tree`, optional `python_*`, `durable_write`), and commits one catalog-valid tree. `durable_write` uses `onDurableWrite` if supplied, otherwise `ObservableDataModel.write` or `set`. `createAnthropicIntentHandler` / `createAnthropicTransport` adapt Anthropic Messages. Tests inject a fake transport (no network). Spec: `docs/specs/2026-08-29-llm-intent-handler-design.md`. Not HTTP streaming into `useCommittedTree` (that hook remains for hosts with a patch endpoint).
+- **`AnyCatalog`.** Re-exported from `@json-ui/core` (JSON-UI v0.2.0). Catalog props use that type instead of repeating `Catalog<any, any, any>`.
 
 ### Fixed
 
@@ -32,7 +32,7 @@ Audit `docs/audits/2026-08-29-full-codebase-audit.md` (NC-001–NC-092). Highlig
 - `emitIntent` contract: drops resolve; handler failures reject; in-flight flag always clears.
 - `cancel` discards the staging buffer after the IntentEvent snapshot is built.
 - `Button.action.name` is `submit_form | cancel`. Observer cache is frozen. Projection uses null-prototype maps and emits relations.
-- CI pins JSON-UI and memoryjs SHAs. `format:check` runs in CI. Zod is pinned to `4.4.3` so `skipLibCheck` can stay `false`.
+- CI pins JSON-UI `6fa0f69` (v0.2.0: `AnyCatalog`, `store.write`, registry context) and memoryjs `af11456` (v3.4.0: `adapter.write` / `onWrite`). `format:check` runs in CI. Zod is pinned to `4.4.3` so `skipLibCheck` can stay `false`. `NCRenderer` passes `registry` only to `JSONUIProvider`.
 - Intent payloads are capped (`NC_STAGING_MAX_FIELDS`, `NC_SNAPSHOT_MAX_BYTES`). Mismatched renderer catalog/version throws. `destroy()` bumps a generation and clears the in-flight flag.
 - Path C integration tests live at `src/integration/path-c.test.tsx`. Vitest `setupFiles` cleans up the Testing Library DOM between tests.
 - Architecture docs (`docs/architecture/`) rewritten to match this tree: seven state surfaces, catalog `nc-starter-0.3`, validation during render, public `isIntentInFlight`, `neural-computer/core` and `/react`. Plan files no longer contain author-machine Dropbox paths.

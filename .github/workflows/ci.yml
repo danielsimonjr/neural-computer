@@ -24,12 +24,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: danielsimonjr/memoryjs
-          ref: 541d42dd0af46340a582f63d43b64b6e6d09aaab
+          # v3.4.0 + adapter.write / onWrite (#114)
+          ref: af11456d07c0710bf3c4751cd592b3fd896df770
           path: memoryjs
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: danielsimonjr/JSON-UI
-          ref: 0a81ae8cff1267eea8ef449097418f17d78de4cd
+          # v0.2.0 + AnyCatalog, store.write, registry context (#3)
+          ref: 6fa0f6966988db3cff8c726743028ae338a94976
           path: JSON-UI
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0

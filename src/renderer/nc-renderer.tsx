@@ -7,7 +7,6 @@ import {
   JSONUIProvider,
   Renderer,
   type ComponentRegistry,
-  type ComponentRenderer,
 } from "@json-ui/react";
 import { collectFieldIds, type IntentEvent, type UITree } from "@json-ui/core";
 import {
@@ -41,12 +40,12 @@ const BUILTIN_REGISTRY_KEYS = [
 
 function buildDefaultRegistry(): ComponentRegistry {
   return {
-    Container: NCContainer as ComponentRenderer,
-    Text: NCText as ComponentRenderer,
-    TextField: NCTextField as ComponentRenderer,
-    Checkbox: NCCheckbox as ComponentRenderer,
-    Select: NCSelect as ComponentRenderer,
-    Button: NCButton as ComponentRenderer,
+    Container: NCContainer,
+    Text: NCText,
+    TextField: NCTextField,
+    Checkbox: NCCheckbox,
+    Select: NCSelect,
+    Button: NCButton,
   };
 }
 
@@ -218,9 +217,6 @@ export function NCRenderer({
       <IntentFlightContext.Provider value={inFlight}>
         <FocusFieldContext.Provider value={focusApi}>
           <JSONUIProvider
-            // Pinned JSON-UI still requires registry on both sides.
-            // JSON-UI cursor/nc-api-surface-1bce publishes it via context
-            // so Renderer can omit the prop; keep both until CI pins that SHA.
             registry={registry}
             store={runtime.durableStore}
             stagingStore={runtime.stagingBuffer}
@@ -235,9 +231,7 @@ export function NCRenderer({
               }}
               noValidate
             >
-              {renderTree ? (
-                <Renderer tree={renderTree} registry={registry} />
-              ) : null}
+              {renderTree ? <Renderer tree={renderTree} /> : null}
             </form>
           </JSONUIProvider>
         </FocusFieldContext.Provider>

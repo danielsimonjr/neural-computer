@@ -113,7 +113,7 @@ Barrel.
 
 ### `src/orchestrator/llm-handler.ts`
 
-`createLlmIntentHandler` is the production `NCIntentHandler`. Tool loop: always `commit_ui_tree`; optional `python_exec` / `python_load_context` / `python_reset` when `repl` is passed; optional `durable_write` when `onDurableWrite` is passed. Invalid trees come back as tool errors until `maxRounds`. Commits one catalog-valid tree via `onTreeCommit`. Does not stream patches into `useCommittedTree`.
+`createLlmIntentHandler` is the production `NCIntentHandler`. Tool loop: always `commit_ui_tree` and `durable_write`; optional `python_exec` / `python_load_context` / `python_reset` when `repl` is passed. `durable_write` prefers `onDurableWrite`, then `store.write`, then `store.set`. Invalid trees come back as tool errors until `maxRounds`. Commits one catalog-valid tree via `onTreeCommit`. Does not stream patches into `useCommittedTree`.
 
 **Tests**: `llm-handler.test.ts` (fake transport; no network).
 
@@ -196,7 +196,7 @@ Three id namespaces: React `key`, `data-key` (`element.key`), `data-field-id` (s
 | `NCRendererProps` | Interface          | `tree`, `runtime`, `catalog`, `catalogVersion`, optional `extraRegistry`, `onValidationError`, `onRenderError` |
 | `NCRenderer`      | Function component | Validates during render; last-good tree to `<Renderer>`                                                        |
 
-`extraRegistry` cannot override builtin names (`Container`, `Text`, `TextField`, `Checkbox`, `Select`, `Button`) so a host cannot drop `action.params` by replacing `Button`. Registry is still passed to both `JSONUIProvider` and `Renderer` until CI pins the JSON-UI registry-context change.
+`extraRegistry` cannot override builtin names (`Container`, `Text`, `TextField`, `Checkbox`, `Select`, `Button`) so a host cannot drop `action.params` by replacing `Button`. Registry is passed to `JSONUIProvider`; `Renderer` reads it from context.
 
 After a successful commit, `useLayoutEffect` reconciles and calls `observer.render` on the **same Zod-stripped tree** the Renderer received. That effect is not validation.
 
