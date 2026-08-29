@@ -1,8 +1,10 @@
 # neural-computer - Dependency Graph
 
-**Version**: 0.1.0 | **Last Updated**: 2026-04-16
+Stale graph; run `npm run docs:deps` after install.
 
-This document provides a comprehensive dependency graph of all files, components, imports, functions, and variables in the codebase.
+**Version**: 0.1.0 | **Last Updated**: 2026-08-29 (file lists hand-updated; Mermaid edges below are the 2026-04-16 generation and omit later files)
+
+The Mermaid diagram and per-file import tables below were generated 2026-04-16 and do not include `src/observer/`, `src/core.ts`, `src/react.ts`, `field-id.ts`, `limits.ts`, `freeze.ts`, `error-boundary.tsx`, `field-id-stability.ts`, or `intent-flight-context.ts`. Use the inventory in Overview for current files.
 
 ---
 
@@ -26,16 +28,19 @@ This document provides a comprehensive dependency graph of all files, components
 
 ## Overview
 
-The codebase is organized into the following modules:
+28 non-test source files, 15 test files, 43 `src/**/*.ts{,x}` total (counted 2026-08-29). Modules:
 
-- **app**: 2 files
-- **catalog**: 2 files
-- **entry**: 1 file
-- **memory**: 2 files
-- **orchestrator**: 2 files
-- **renderer**: 4 files
-- **runtime**: 2 files
-- **types**: 2 files
+- **app**: `index.ts`, `nc-app.tsx` (2)
+- **catalog**: `index.ts`, `nc-catalog.ts`, `field-id.ts`, `limits.ts` (4)
+- **entry**: `index.ts`, `core.ts`, `react.ts` (3)
+- **memory**: `index.ts`, `projection.ts` (2)
+- **observer**: `index.ts`, `nc-observer.ts`, `nc-headless-components.ts` (3)
+- **orchestrator**: `index.ts`, `handle-intent.ts` (2)
+- **renderer**: `index.ts`, `nc-renderer.tsx`, `input-components.tsx`, `use-committed-tree.ts`, `error-boundary.tsx`, `field-id-stability.ts`, `intent-flight-context.ts` (7)
+- **runtime**: `index.ts`, `context.ts`, `freeze.ts` (3)
+- **types**: `index.ts`, `nc-types.ts` (2)
+
+Test files: `nc-app.test.tsx`, `field-id.test.ts`, `nc-catalog.test.ts`, `projection.test.ts`, `nc-headless-components.test.ts`, `nc-observer.test.ts`, `buffer-isolation.test.ts`, `handle-intent.test.ts`, `field-id-stability.test.ts`, `input-components.test.tsx`, `nc-renderer.test.tsx`, `use-committed-tree.test.tsx`, `context.test.ts`, `nc-types.test.ts`, `integration.test.tsx`.
 
 ---
 
@@ -397,23 +402,18 @@ graph TD
 
 ## Summary Statistics
 
+Hand-updated 2026-08-29. The generated Mermaid counts above this section are stale.
+
 | Category | Count |
 |----------|-------|
-| Total TypeScript Files | 17 |
-| Total Modules | 8 |
-| Total Lines of Code | 844 |
-| Total Exports | 55 |
-| Total Re-exports | 42 |
-| Total Classes | 0 |
-| Total Interfaces | 8 |
-| Total Functions | 10 |
-| Total Type Guards | 0 |
-| Total Enums | 0 |
-| Type-only Imports | 5 |
-| Runtime Circular Deps | 0 |
-| Type-only Circular Deps | 0 |
+| Non-test source files | 28 |
+| Test files | 15 |
+| All `src` TypeScript files | 43 |
+| Lines of non-test source | ~1799 |
+| Modules (including observer + split entries) | 9 |
+| Runtime circular deps | 0 (still true of the 2026-04-16 graph; regenerate to confirm) |
 
 ---
 
-*Last Updated*: 2026-04-16
+*Last Updated*: 2026-08-29
 *Version*: 0.1.0

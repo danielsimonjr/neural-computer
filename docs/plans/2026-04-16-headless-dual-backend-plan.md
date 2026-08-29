@@ -1412,9 +1412,9 @@ git commit -m "docs(changelog): Path C observer implementation notes"
 ## Task 10: Project memory + final push
 
 **Files:**
-- Modify: `C:\Users\danie\.claude\projects\C--Users-danie-Dropbox-Github-neural-computer\memory\project_state.md`
-- Modify: `C:\Users\danie\.claude\projects\C--Users-danie-Dropbox-Github-neural-computer\memory\MEMORY.md`
-- Create: `C:\Users\danie\.claude\projects\C--Users-danie-Dropbox-Github-neural-computer\memory\feedback_headless_component_signature.md`
+- Modify: `<agent-memory>/memory/project_state.md`
+- Modify: `<agent-memory>/memory/MEMORY.md`
+- Create: `<agent-memory>/memory/feedback_headless_component_signature.md`
 
 - [ ] **Step 1: Update project_state.md**
 

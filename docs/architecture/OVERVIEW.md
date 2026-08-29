@@ -1,25 +1,19 @@
 # Neural Computer - Project Overview
 
-**Version**: 0.1.0
-**Last Updated**: 2026-04-16
+**Version**: 0.1.0 (docs refreshed 2026-08-29)
+**Last Updated**: 2026-08-29
 
 ## What Is This?
 
-Neural Computer (NC) is an **LLM-driven application runtime** inspired by Zhuge et al., *Neural Computers* (arXiv:2604.04625, April 2026). The runtime treats the LLM as a background intent engine sitting between a constrained JSON UI layer and a Python REPL, with durable state held in a knowledge graph.
+Neural Computer (NC) is a **catalog-constrained React form runtime**. It owns a staging buffer for in-progress input, a one-at-a-time intent gate, a deterministic stub intent handler, and a headless observer cache that shadows successful tree commits. It is inspired by Zhuge et al., *Neural Computers* (arXiv:2604.04625), but **this package does not call an LLM and does not spawn a Python REPL**. Those remain follow-up specs.
 
-NC does not implement the paper's learned-video-model substrate. It takes the paper's update-and-render loop framing as inspiration and replaces it with an LLM orchestrator dispatching to real tools: JSON-UI for rendering, memoryjs for durable state, and (planned) a Python subprocess for computation.
+The runtime validates every UI tree against `ncStarterCatalog` (version `nc-starter-0.2`) before JSON-UI renders it. Invalid trees never reach `<Renderer>`; the last good validated tree stays on screen. A named catalog action (`submit_form` or `cancel`) flushes an `IntentEvent` to `NCIntentHandler`. The stub handler maps that event to the next tree. The observer (`@json-ui/headless`) produces a frozen `NormalizedNode` of the same Zod-stripped tree React just committed.
 
 ## Key Capabilities
 
-| Feature | Description |
-|---------|-------------|
-| **Catalog-Constrained UI** | LLM emits JSON trees validated against a Zod-typed component catalog |
-| **Staging Buffer** | In-progress user input accumulates in a shared buffer, flushed only on named intent actions |
-| **Intent-Event Architecture** | The LLM observes exactly (durable state + intent payloads) and nothing else |
-| **Backpressure Gate** | Rejects concurrent intents while one is in flight (NC Invariant 10) |
-| **Knowledge Graph State** | Durable state via memoryjs with projection into the React data model |
-| **DynamicValue Resolution** | Action params resolve against staging before reaching the orchestrator |
-| **13 Testable Invariants** | Spec-level guarantees verified by 66 tests across 13 files |
+NC ships a Zod-typed starter catalog, a shared staging buffer flushed only on named actions, a public in-flight flag (`isIntentInFlight` / `subscribeIntentFlight`) that disables buttons, a memoryjs projection into the React data model, and DynamicValue resolution of action params against staging before the orchestrator sees them. Thirteen spec invariants are covered by tests under `src/**/*.test.*`.
+
+What it does **not** ship: an Anthropic (or any) LLM handler, a Python subprocess, persistent staging across process restart, or a Select component.
 
 ## Quick Architecture Overview
 
@@ -31,8 +25,10 @@ NC does not implement the paper's learned-video-model substrate. It takes the pa
   +-----------------------+-----------------------+
   |                       |                       |
 NCApp              NCRenderer              NCButton/
-(tree state)    (validate + reconcile)    NCTextField/...
-  |                       |                  (staging)
+(tree state)    (validate in useMemo;     NCTextField/...
+  |              last-good to Renderer;      (staging)
+  |              reconcile + observer        |
+  |              after commit)               |
   |               StagingBuffer -----.           |
   |               (Map<FieldId, T>)   \          |
   |                       |            \         |
@@ -41,25 +37,33 @@ NCApp              NCRenderer              NCButton/
   +--- setIntentHandler --+               '---> ActionProvider
             |                                    |
       createNCRuntime                     IntentEvent
-      (backpressure gate)                        |
+      (sync; isIntentInFlight)                   |
             |                              Orchestrator
-      NCIntentHandler                    (stub / future LLM)
+      NCIntentHandler                    (stub only)
             |                                    |
       ObservableDataModel <--------- memoryjs transactions
       (durableStore)
+            |
+      runtime.observer (headless cache)
 ```
 
-## Three Components
+## Three sibling libraries
 
-NC is a consumer that composes three independently-developed libraries:
+NC is a composer, not a primary library.
 
-| Component | Package | Role |
-|-----------|---------|------|
-| **JSON-UI** | `@json-ui/core`, `@json-ui/react` | Catalog-constrained renderer. The LLM emits JSON; JSON-UI validates and renders it via a pluggable component registry. |
-| **memoryjs** | `@danielsimonjr/memoryjs` | Durable state. A TypeScript knowledge graph with transactions, audit, and governance. NC projects entity data into the React data model. |
-| **Python REPL** | (planned) | Computation arm via the RLM pattern. Invoked when the LLM decides a dispatch needs real code. Not in v1. |
+JSON-UI (`@json-ui/core`, `@json-ui/react`, `@json-ui/headless`) validates and renders catalog-constrained trees. memoryjs (`@danielsimonjr/memoryjs`) holds durable knowledge-graph state; NC projects entities and relations into the React data model. A Python REPL for computation is planned and is not in this package.
 
-All three are sibling repos consumed via `file:` deps until they publish to npm.
+All three JSON-UI packages and memoryjs are sibling repos consumed via `file:` deps until they publish to npm. React 19 is a **peer dependency**. Consumers must dedupe React themselves (`npm overrides` in this repo do not protect a host app that also depends on React). See NC-086.
+
+## Named state surfaces (seven)
+
+1. Durable state (memoryjs)
+2. Current UI tree
+3. Staging buffer
+4. In-flight intent flag (`runtime.isIntentInFlight`)
+5. Catalog version (`nc-starter-0.2`)
+6. LLM session state (future handler; not managed here)
+7. Observer cache (`runtime.observer`)
 
 ## Data Model
 
@@ -70,24 +74,26 @@ interface IntentEvent {
   action_name: string;                    // catalog-declared action
   action_params: Record<string, unknown>; // LLM-authored action params
   staging_snapshot: Record<FieldId, unknown>; // full staging buffer at flush
-  catalog_version?: string;               // optional in @json-ui/core's type; NC always populates it
+  catalog_version?: string;               // NC always populates this
   timestamp: number;
 }
 ```
 
-### UITree (the LLM's output)
+`cancel` snapshots staging onto the event, then clears the buffer. `submit_form` leaves the buffer for the next reconcile.
+
+### UITree (committed UI)
 
 ```typescript
 interface UITree {
-  root: string;                           // key of root element
-  elements: Record<string, UIElement>;    // flat element map
+  root: string;
+  elements: Record<string, UIElement>;
 }
 
 interface UIElement {
   key: string;
-  type: string;                           // catalog component name
-  props: Record<string, unknown>;         // Zod-validated props
-  children?: string[];                    // child element keys
+  type: string;
+  props: Record<string, unknown>;
+  children?: string[];
 }
 ```
 
@@ -95,88 +101,71 @@ interface UIElement {
 
 ```
 neural-computer/
-├── src/ (20 TypeScript files, ~1090 lines, 28 public exports)
-│   ├── index.ts              # public barrel — 15 runtime exports
-│   │
-│   ├── types/ (2 files)      # Core type definitions
-│   │   ├── nc-types.ts               # NCRuntime, NCIntentHandler, NCCatalogVersion, NCObserver
-│   │   └── index.ts                  # Barrel export
-│   │
-│   ├── catalog/ (2 files)    # Component + action catalog
-│   │   ├── nc-catalog.ts             # ncStarterCatalog + NC_CATALOG_VERSION
-│   │   └── index.ts                  # Barrel export
-│   │
-│   ├── runtime/ (2 files)    # Runtime factory
-│   │   ├── context.ts                # createNCRuntime (backpressure + handler slot + observer)
-│   │   └── index.ts                  # Barrel export
-│   │
-│   ├── orchestrator/ (2 files) # Intent handling — no React
-│   │   ├── handle-intent.ts          # createStubIntentHandler
-│   │   └── index.ts                  # Barrel export
-│   │
-│   ├── renderer/ (4 files)   # React surface
-│   │   ├── nc-renderer.tsx           # NCRenderer (validate + reconcile + onIntent + observer.render)
-│   │   ├── input-components.tsx      # NCContainer, NCText, NCTextField, NCCheckbox, NCButton
-│   │   ├── use-committed-tree.ts     # useCommittedTree (atomic commit mode)
-│   │   └── index.ts                  # Barrel export
-│   │
-│   ├── app/ (2 files)        # Top-level mounting
-│   │   ├── nc-app.tsx                # NCApp (tree state + handler wiring)
-│   │   └── index.ts                  # Barrel export
-│   │
-│   ├── memory/ (2 files)     # memoryjs projection
-│   │   ├── projection.ts            # defaultNCProjection
-│   │   └── index.ts                  # Barrel export
-│   │
-│   ├── observer/ (3 files)   # LLM observer (Path C)
-│   │   ├── nc-observer.ts            # createNCObserver (headless shadow renderer)
-│   │   ├── nc-headless-components.ts # ncHeadlessRegistry (Path C headless components)
-│   │   └── index.ts                  # Barrel export
-│   │
-│   └── integration.test.tsx  # End-to-end Path C test
+├── src/ (28 TypeScript source files, ~1799 lines, plus 15 test files)
+│   ├── index.ts              # public barrel (React + core)
+│   ├── core.ts               # neural-computer/core — no React
+│   ├── react.ts              # neural-computer/react — "use client"
+│   ├── types/                # NCRuntime, NCIntentHandler, NCCatalogVersion, NCObserver
+│   ├── catalog/              # ncStarterCatalog, field-id.ts, limits.ts
+│   ├── runtime/              # createNCRuntime (sync), freeze.ts
+│   ├── orchestrator/         # createStubIntentHandler + buffer-isolation test
+│   ├── renderer/             # NCRenderer, inputs, error-boundary, field-id-stability, intent-flight-context
+│   ├── app/                  # NCApp
+│   ├── memory/               # defaultNCProjection
+│   ├── observer/             # createNCObserver + ncHeadlessRegistry
+│   └── integration.test.tsx  # Path C end-to-end
 │
 ├── docs/
-│   ├── specs/                # Design specs (read before touching code)
-│   ├── plans/                # Implementation plans
-│   └── architecture/         # Generated + hand-authored architecture docs
+│   ├── specs/
+│   ├── plans/
+│   ├── audits/               # 2026-08-29 review (remediated on this branch)
+│   └── architecture/
 │
-├── tools/
-│   └── create-dependency-graph/  # Codebase inventory tool
-│
-├── vitest.config.ts          # jsdom + React dedup aliases
-├── tsup.config.ts            # ESM + CJS + dts build
-├── tsconfig.json
+├── examples/
+├── tools/create-dependency-graph/
+├── vitest.config.ts
+├── tsup.config.ts
+├── tsconfig.json             # skipLibCheck is still true
 └── package.json
 ```
 
+`compute/` (Python subprocess via the RLM pattern) is not implemented.
+
 ## Key Design Principles
 
-1. **Access Discipline**: The LLM orchestrator's observation surface is exactly (durable state + intent event payloads). Staging buffer reads are constrained to a single well-defined boundary: intent events.
-2. **Mechanical Reconciliation**: The staging buffer reconciles itself against each committed tree. No imperative "clear form" or "keep input" instructions exist. Same ID = preserve. Missing ID = drop.
-3. **Mutable Handler Slot**: The runtime is created synchronously; the intent handler is installed later via `setIntentHandler` to bridge React's `useEffect` lifecycle.
-4. **Buffer Isolation (Invariant 7)**: The orchestrator module never imports from the renderer or React. Enforced structurally by a meta-test.
-5. **Atomic Commits (Invariant 9)**: Reconciliation runs only on successful tree commits, never on partial streams.
-6. **Backpressure (Invariant 10)**: One intent at a time. New intents are rejected (and logged) while one is in flight.
+Access discipline: the future LLM orchestrator sees exactly durable state plus intent payloads. Staging reads happen only at intent flush. Mechanical reconciliation: same field id preserves the value; a missing id drops it. Validation happens **during render** (`useMemo`), so invalid trees never reach JSON-UI's `Renderer`. The last good Zod-stripped tree is what both React and the observer walk. The runtime is created synchronously; the intent handler is installed later via `setIntentHandler`. Buffer isolation (Invariant 7) forbids the orchestrator from importing the renderer, React, headless, or `../observer`. Backpressure is a public flag, not a silent drop: buttons disable while `isIntentInFlight()` is true.
 
-## Key Statistics (v1)
+## Key Statistics (after 2026-08-29 remediation)
 
 | Metric | Value |
 |--------|-------|
-| Source Files | 20 TypeScript files (.ts + .tsx) |
-| Lines of Code | ~1091 |
-| Public Exports | 15 value + 13 type = 28 from `src/index.ts` |
-| Tests | 66 across 13 test files |
-| Interfaces | 9 |
-| Functions | 11 |
-| Circular Dependencies | 0 |
+| Source files | 28 TypeScript files (`.ts` + `.tsx`, excluding tests) |
+| Test files | 15 under `src/**/*.test.*` (including `integration.test.tsx`) |
+| All `src/**/*.ts{,x}` | 43 |
+| Lines of source (non-test) | ~1799 |
+| Test cases (`it` / `test`) | 84 |
+| Catalog version | `nc-starter-0.2` |
+| Named state surfaces | 7 |
+| Spec invariants | 13 |
+| Circular dependencies | 0 |
+
+`tsconfig.json` still sets `"skipLibCheck": true`. That hides some sibling-type drift (NC-042 / NC-066); it has not been flipped.
+
+Install with Bun (`bun install`) to match CI. Node 20+.
+
+## Starter catalog (honest v1)
+
+Five components, two actions. There is no Select (out of the v1 catalog).
+
+Container is a minimal flex wrapper (`direction` column or row, optional `visible`). TextField is a staging-bound input; `multiline` renders a textarea. Checkbox is a boolean. Button forwards `action.name` and `action.params` to `execute()` and disables while an intent is in flight. Actions are `submit_form` and `cancel` only.
 
 ## Getting Started
 
 ```bash
 # Requires sibling repos: ../JSON-UI and ../memoryjs
-npm install
-npm run typecheck
-npm test
+bun install
+bun run typecheck
+bun test
 ```
 
 ```tsx
@@ -189,18 +178,20 @@ import {
   NC_CATALOG_VERSION,
 } from "neural-computer";
 
-// See README.md for full quickstart example
+// See README.md for the full quickstart. Host apps must dedupe React 19.
 ```
+
+Node / orchestrator processes should import `neural-computer/core` so they do not pull the React graph. Client Components should import `neural-computer/react` (or the root barrel from a Client Component).
 
 ## Related Documentation
 
-- **[Architecture Details](./ARCHITECTURE.md)** — system layers, design decisions, the 13 invariants
+- **[Architecture Details](./ARCHITECTURE.md)** — layers, seven surfaces, backpressure public API
 - **[Component Reference](./COMPONENTS.md)** — per-file documentation
 - **[Data Flow](./DATAFLOW.md)** — type-click-intent-commit-render loop
-- **[API Reference](./API.md)** — public barrel surface with signatures
+- **[API Reference](./API.md)** — public exports including `neural-computer/core` and `/react`
 - **[Invariants Reference](./INVARIANTS.md)** — all 13 NC spec invariants
-- **[Dependency Graph](./DEPENDENCY_GRAPH.md)** — auto-generated file-level dependency map
-- **[Test Coverage](./TEST_COVERAGE.md)** — auto-generated test coverage analysis
+- **[Dependency Graph](./DEPENDENCY_GRAPH.md)** — file-level map (regenerate after install)
+- **[Test Coverage](./TEST_COVERAGE.md)** — test file inventory
 
 ---
 

@@ -1,37 +1,38 @@
 # Neural Computer - Data Flow
 
-**Version**: 0.1.0
-**Last Updated**: 2026-04-16
+**Version**: 0.1.0 (docs refreshed 2026-08-29)
+**Last Updated**: 2026-08-29
 
----
-
-This document traces how data flows through the NC runtime, from user input to LLM response to re-render.
+This document traces data from user input through intent dispatch, tree commit, validation during render, last-good display, reconcile, and observer shadow.
 
 ---
 
 ## The Intent Loop
 
-NC's core loop is: **type → click → intent → dispatch → commit → reconcile → render**. Each step has a single owner and a well-defined data shape.
+NC's core loop is: **type → click → intent → dispatch → commit → validate (render) → last-good to Renderer → reconcile + observer.render**. Each step has a single owner.
 
 ```
   User types      User clicks       Runtime gates      Handler runs
-  into field      Button action     backpressure       (stub or LLM)
+  into field      Button action     isIntentInFlight   (stub only)
       │                │                 │                  │
       ▼                ▼                 ▼                  ▼
 ┌──────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐
 │ Staging  │    │ ActionProv │    │ emitIntent │    │ nextTree() │
-│ Buffer   │───▶│ builds     │───▶│ checks     │───▶│ produces   │
-│ .set()   │    │ IntentEvent│    │ in-flight  │    │ new UITree │
+│ Buffer   │───▶│ builds     │───▶│ drops or   │───▶│ + validate │
+│ .set()   │    │ IntentEvent│    │ awaits     │    │ then commit│
 └──────────┘    └────────────┘    └────────────┘    └─────┬──────┘
                                                           │
       ┌───────────────────────────────────────────────────┘
       ▼
-┌──────────┐    ┌────────────┐    ┌────────────┐
-│ setTree  │    │ NCRenderer │    │ Renderer   │
-│ (React)  │───▶│ validate + │───▶│ re-renders │
-│          │    │ reconcile  │    │ new tree   │
-└──────────┘    └────────────┘    └────────────┘
+┌──────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐
+│ setTree  │    │ useMemo    │    │ <Renderer  │    │ layout fx  │
+│ (React)  │───▶│ validate;  │───▶│ tree=      │───▶│ reconcile  │
+│          │    │ last-good  │    │ renderTree>│    │ observer.  │
+└──────────┘    └────────────┘    └────────────┘    │ render()   │
+                                                    └────────────┘
 ```
+
+Validation is **not** in `useLayoutEffect`. `useMemo` decides `renderTree`. The layout effect mutates the staging buffer and the observer cache after a successful commit.
 
 ---
 
@@ -41,197 +42,101 @@ NC's core loop is: **type → click → intent → dispatch → commit → recon
 
 **Owner**: `NCTextField` / `NCCheckbox` via `useStagingField`
 
-```
-onChange(e) → setValue(e.target.value)
-                    │
-                    ▼
-          StagingBuffer.set(fieldId, value)
-```
-
-The staging buffer is a `Map<FieldId, unknown>` wrapped in `@json-ui/core`'s `createStagingBuffer`. Every `set()` invalidates the cached snapshot and fires subscribers synchronously. The orchestrator never observes these writes.
+`onChange` writes into `StagingBuffer.set(fieldId, value)` with a 8192-character cap on strings. The orchestrator never observes these writes. `multiline` TextFields use a textarea; there is no Select component.
 
 ### 2. User Clicks a Button (Action Dispatch)
 
 **Owner**: `NCButton` → `useActions().execute` → `ActionProvider`
 
-```
-NCButton.onClick()
-    │
-    ▼
-execute({ name: "submit_form", params: action.params })
-    │
-    ▼
-ActionProvider processes:
-  1. resolveActionWithStaging(action, staging, data)
-     ├── DynamicValue {path: "email"} → staging["email"]  (single segment, staging wins)
-     └── DynamicValue {path: "user/name"} → data["user"]["name"]  (multi-segment, data wins)
-  2. Build IntentEvent:
-     {
-       action_name: "submit_form",
-       action_params: { to: "resolved-email@..." },  // resolved params
-       staging_snapshot: { email: "alice@...", agree: true },  // full buffer snapshot
-       catalog_version: "nc-starter-0.1",
-       timestamp: Date.now()
-     }
-  3. Call onIntent(event) → NCRenderer's callback
-```
+`NCButton` passes `{ name, params }` (params must not be dropped). While `IntentFlightContext` is true the button is disabled (`isIntentInFlight`).
 
-**Key point**: `action_params` and `staging_snapshot` are SEPARATE fields that are NEVER merged, even on key collision (Invariant 6). The LLM interprets both.
+ActionProvider resolves DynamicValue params (`resolveActionWithStaging`), snapshots the full buffer, stamps `catalog_version`, and calls `onIntent`. `action_params` and `staging_snapshot` stay separate even on key collision (Invariant 6).
 
 ### 3. Intent Emission (Backpressure Gate)
 
 **Owner**: `createNCRuntime.emitIntent`
 
-```
-NCRenderer.onIntent(event)
-    │
-    ▼
-runtime.emitIntent(event)
-    │
-    ├── destroyed? → warn, return
-    ├── no handler? → warn, return
-    ├── intentInFlight? → warn "Rejected in-flight intent", return
-    │
-    ▼
-intentInFlight = true
-const currentHandler = intentHandler  // capture BEFORE await
-try {
-  await currentHandler(event)
-} finally {
-  intentInFlight = false
-}
-```
-
-The handler is captured before `await` so that if `setIntentHandler` is called during the handler's execution, the in-flight call still runs against its original handler. Swaps take effect on the next emit.
+Destroyed, missing handler, or already in flight: warn and **resolve** (drop). Otherwise set `isIntentInFlight` true, capture the handler, and if `action_name === "cancel"` reconcile staging to empty (the snapshot is already on the event). Await the handler; `finally` always clears the flag and notifies `subscribeIntentFlight` listeners.
 
 ### 4. Handler Execution (Tree Production)
 
-**Owner**: `createStubIntentHandler` (v1) / future LLM-backed handler
+**Owner**: `createStubIntentHandler`
 
-```
-Stub handler:
-  const tree = options.nextTree(event)  // pure function
-  await options.onTreeCommit(tree)      // typically setTree(tree)
-
-Future LLM handler:
-  const observation = compose(event, durableState)
-  const response = await anthropic.messages.create(...)
-  const tree = parseUITree(response)
-  await onTreeCommit(tree)
-```
+`nextTree(event)` must produce a catalog-valid tree or the handler rejects and `onTreeCommit` is not called. Typical `onTreeCommit` is `setTree`.
 
 ### 5. Tree Commit (React State Update)
 
-**Owner**: `NCApp.setTree` (via React's `useState`)
+**Owner**: `NCApp.setTree`
+
+`setTree(newTree)` re-renders `NCRenderer` with the new `tree` prop. Changing `initialTree` by reference also resets.
+
+### 6. Validation During Render
+
+**Owner**: `NCRenderer` via `useMemo` (not `useLayoutEffect`)
 
 ```
-onTreeCommit(newTree) → setTree(newTree) → React re-render
+renderTree = useMemo(() => {
+  const result = activeCatalog.validateTree(tree)
+  if (!result.success) return lastGoodRef.current   // may be null on first paint
+  const data = result.data ?? tree
+  if (field-id type changed) return lastGoodRef.current
+  lastGoodRef.current = data
+  return data
+}, [tree, activeCatalog])
 ```
 
-This triggers NCRenderer to re-render with the new `tree` prop.
+`<Renderer tree={renderTree} />` mounts only when `renderTree` is non-null. Invalid incoming trees never reach JSON-UI. `onValidationError` fires from the subsequent layout effect when a pending error is set.
 
-### 6. Validation + Reconciliation
+### 7. Reconcile + Observer After Commit
 
-**Owner**: `NCRenderer` (via `useLayoutEffect`)
+**Owner**: `NCRenderer` `useLayoutEffect`
 
-```
-useLayoutEffect(() => {
-  const result = catalog.validateTree(tree)
-  │
-  ├── !result.success → warn, SKIP reconcile (buffer untouched)
-  │
-  ▼
-  const liveIds = collectFieldIds(result.data!)  // walk VALIDATED tree
-  runtime.stagingBuffer.reconcile(liveIds)
-      │
-      ├── field "email" in liveIds → PRESERVE
-      ├── field "name" NOT in liveIds → DROP
-      └── field "orphan" NOT in liveIds → DROP
-}, [tree, catalog, runtime.stagingBuffer])
-```
+If validation failed, skip reconcile (buffer untouched) and return. If `renderTree` is null, return. If this `tree` reference was already shadowed for this runtime (Strict Mode), skip. Otherwise `collectFieldIds(renderTree)`, `stagingBuffer.reconcile(liveIds)`, then `runtime.observer.render(renderTree)` — the same stripped tree React has. Optionally restore focus to `data-field-id`.
 
-**Critical**: walks `result.data` (Zod-validated/stripped), NOT the raw `tree` prop. This prevents phantom staging entries from stray props that Zod strips.
+### 8. Re-Render of Inputs
 
-**Timing**: `useLayoutEffect` runs synchronously after DOM mutations but before paint, closing the one-frame window where orphan staging values would be visible.
-
-### 7. Re-Render
-
-**Owner**: `@json-ui/react`'s `Renderer`
-
-The `Renderer` walks the tree, looks up each element's `type` in the component registry, and renders the corresponding NC component. Input components bind to the staging buffer via `useStagingField`, which reads from the (now-reconciled) buffer. The cycle is ready to repeat.
+`Renderer` walks `renderTree`, looks up types in the registry (builtins always win over `extraRegistry`), and mounts NC components. Inputs read the reconciled buffer via `useStagingField`.
 
 ---
 
 ## DynamicValue Resolution Path
 
-When a Button's action includes `DynamicValue` params like `{ to: { path: "email" } }`, the resolution follows a specific rule:
+When a Button's action includes `DynamicValue` params like `{ to: { path: "email" } }`:
 
-```
-DynamicValue { path: "email" }
-    │
-    ▼
-Is path single-segment (no "/")?
-    ├── YES → Does staging have key "email"?
-    │         ├── YES → Use staging["email"]  ✓
-    │         └── NO  → Fall through to data model
-    │
-    └── NO  → Walk data model via getByPath("user/name")
-```
-
-This rule lives in `@json-ui/core`'s `resolveActionWithStaging` (`packages/core/src/resolve-with-staging.ts`) and is upstream behavior — NC consumes it but does not implement it. Both `@json-ui/headless` and NC's React-side action handler use the same implementation. Do NOT reimplement the rule inline. If the upstream rule changes, this documentation section must be updated to match.
+A single-segment path with no `/` prefers staging if that key exists, otherwise the data model. A multi-segment path walks the data model via `getByPath`. The rule lives in `@json-ui/core`'s `resolveActionWithStaging`. NC must not reimplement it. Values copied into `action_params` from durable paths are visible to a future LLM; do not put secrets on those paths.
 
 ---
 
 ## Reconciliation Decision Tree
 
 ```
-New tree committed
+New tree prop arrives
     │
     ▼
-catalog.validateTree(tree)
+useMemo: catalog.validateTree(tree)
     │
-    ├── success: false (Zod error)
-    │   └── SKIP reconcile, log warning, buffer UNTOUCHED
+    ├── success: false
+    │   └── render last-good (or null); skip reconcile
     │
-    ├── success: false (fieldIdError — duplicates)
-    │   └── SKIP reconcile, log warning, buffer UNTOUCHED
+    ├── field-id type change
+    │   └── render last-good; skip reconcile
     │
     └── success: true
         │
         ▼
-    collectFieldIds(result.data!)
+    <Renderer tree={stripped data}>
         │
         ▼
-    For each staging entry:
-        ├── ID in liveIds → PRESERVE (user's value stays)
-        └── ID not in liveIds → DROP (orphan removed)
+    useLayoutEffect:
+        collectFieldIds(renderTree)
+        reconcile; observer.render(renderTree)
 ```
 
 ---
 
 ## Backpressure Sequence
 
-```
-Click 1:
-  emitIntent(event1)
-  intentInFlight = true
-  currentHandler = handler
-  await handler(event1)  ← takes time (LLM call)
-
-Click 2 (while Click 1 in flight):
-  emitIntent(event2)
-  intentInFlight === true → REJECT
-  console.warn("Rejected in-flight intent: submit_form")
-  return (no handler call)
-
-Click 1 completes:
-  finally { intentInFlight = false }
-
-Click 3 (after Click 1 done):
-  emitIntent(event3)
-  intentInFlight = false → ACCEPT
-  handler(event3) ← runs normally
-```
+Click 1 sets `isIntentInFlight` true; subscribers re-render; buttons disable. Click 2 is a drop (promise resolves, warning logged, handler not called). When click 1's handler settles, the flag clears even if the handler threw. Click 3 is accepted.
 
 ---
 
@@ -239,11 +144,14 @@ Click 3 (after Click 1 done):
 
 | # | Guarantee | Enforced By |
 |---|-----------|-------------|
-| Orchestrator sees only IntentEvent | Buffer isolation (Invariant 7) |
-| Staging survives failed validation | Reconcile skips on `!result.success` (Invariant 9) |
-| Staging survives partial streams | `useCommittedTree` atomic mode (Invariant 9) |
-| No phantom staging entries | Walk `result.data`, not raw tree |
-| One intent at a time | `intentInFlight` flag (Invariant 10) |
-| Full snapshot on every intent | ActionProvider includes all buffer entries (Invariant 5) |
-| Params and snapshot unmerged | Separate fields on IntentEvent (Invariant 6) |
+| Orchestrator sees only IntentEvent | Buffer isolation including `../observer` (Invariant 7) |
+| Invalid trees never reach Renderer | `useMemo` last-good (Invariant 8) |
+| Staging survives failed validation | Reconcile skipped when pending error is set (Invariant 9) |
+| Staging survives partial streams | `useCommittedTree` atomic mode + stub `validateTree` (Invariant 9) |
+| No phantom staging entries | Walk stripped `renderTree` |
+| React and observer see the same data | Both walk stripped `renderTree` (Invariant 12) |
+| One intent at a time, visible | `isIntentInFlight` / `subscribeIntentFlight` (Invariant 10) |
+| Full snapshot on every intent | ActionProvider (Invariant 5) |
+| `cancel` discards staging | `emitIntent` reconciles to empty after snapshot is on the event |
+| Params and snapshot unmerged | Separate fields (Invariant 6) |
 | DynamicValue resolves from staging | Single-segment paths prefer staging (Invariant 11) |

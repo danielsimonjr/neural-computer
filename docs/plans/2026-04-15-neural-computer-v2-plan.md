@@ -116,7 +116,7 @@ Edit `package.json`:
 
 - [ ] **Step 3: Run `npm install` to pull the new versions**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npm install`
+Run: `cd "<workspace>" && npm install`
 Expected: exits 0. `node_modules/@danielsimonjr/memoryjs/dist/index.d.ts` contains `createObservableDataModelFromGraph`.
 
 Verify: `grep "createObservableDataModelFromGraph" node_modules/@danielsimonjr/memoryjs/dist/index.d.ts`
@@ -179,16 +179,16 @@ module.exports = {
 
 - [ ] **Step 7: Verify typecheck and test run cleanly on the placeholder src/index.ts**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npm run typecheck`
+Run: `cd "<workspace>" && npm run typecheck`
 Expected: exits 0, no output.
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npm test`
+Run: `cd "<workspace>" && npm test`
 Expected: exits 0. "No test files found" is acceptable for the placeholder state.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-cd "C:/Users/danie/Dropbox/Github/neural-computer"
+cd "<workspace>"
 git add package.json package-lock.json vitest.config.ts tsup.config.ts .eslintrc.cjs
 git commit -m "chore: scaffold vitest, tsup, eslint configs + bump memoryjs to 1.10.0"
 ```
@@ -244,7 +244,7 @@ describe("NC core types", () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/types/nc-types.test.ts`
+Run: `cd "<workspace>" && npx vitest run src/types/nc-types.test.ts`
 Expected: FAIL with "Cannot find module './nc-types'".
 
 - [ ] **Step 3: Create `src/types/nc-types.ts`**
@@ -332,13 +332,13 @@ export type {
 
 - [ ] **Step 5: Run tests**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/types/nc-types.test.ts`
+Run: `cd "<workspace>" && npx vitest run src/types/nc-types.test.ts`
 Expected: PASS (3 tests).
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd "C:/Users/danie/Dropbox/Github/neural-computer"
+cd "<workspace>"
 git add src/types/nc-types.ts src/types/index.ts src/types/nc-types.test.ts
 git commit -m "feat(types): add NC core type definitions (NCRuntime, NCIntentHandler, NCCatalogVersion)"
 ```
@@ -450,7 +450,7 @@ describe("ncStarterCatalog", () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/catalog/nc-catalog.test.ts`
+Run: `cd "<workspace>" && npx vitest run src/catalog/nc-catalog.test.ts`
 Expected: FAIL with "Cannot find module './nc-catalog'".
 
 - [ ] **Step 3: Create `src/catalog/nc-catalog.ts`**
@@ -560,13 +560,13 @@ export { ncStarterCatalog, NC_CATALOG_VERSION } from "./nc-catalog";
 
 - [ ] **Step 5: Run tests**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/catalog/nc-catalog.test.ts`
+Run: `cd "<workspace>" && npx vitest run src/catalog/nc-catalog.test.ts`
 Expected: PASS (6 tests).
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd "C:/Users/danie/Dropbox/Github/neural-computer"
+cd "<workspace>"
 git add src/catalog/nc-catalog.ts src/catalog/index.ts src/catalog/nc-catalog.test.ts
 git commit -m "feat(catalog): add NC starter catalog with id-required input schemas"
 ```
@@ -721,7 +721,7 @@ describe("NCButton", () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/renderer/input-components.test.tsx`
+Run: `cd "<workspace>" && npx vitest run src/renderer/input-components.test.tsx`
 Expected: FAIL with "Cannot find module './input-components'".
 
 - [ ] **Step 3: Create `src/renderer/input-components.tsx`**
@@ -826,13 +826,13 @@ export {
 
 - [ ] **Step 5: Run tests**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/renderer/input-components.test.tsx`
+Run: `cd "<workspace>" && npx vitest run src/renderer/input-components.test.tsx`
 Expected: PASS (6 tests).
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd "C:/Users/danie/Dropbox/Github/neural-computer"
+cd "<workspace>"
 git add src/renderer/input-components.tsx src/renderer/index.ts src/renderer/input-components.test.tsx
 git commit -m "feat(renderer): add NC input components wired to staging buffer"
 ```
@@ -930,7 +930,7 @@ describe("defaultNCProjection", () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/memory/projection.test.ts`
+Run: `cd "<workspace>" && npx vitest run src/memory/projection.test.ts`
 Expected: FAIL with "Cannot find module './projection'".
 
 - [ ] **Step 3: Create `src/memory/projection.ts`**
@@ -1030,13 +1030,13 @@ export {
 
 - [ ] **Step 5: Run tests**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/memory/projection.test.ts`
+Run: `cd "<workspace>" && npx vitest run src/memory/projection.test.ts`
 Expected: PASS (5 tests).
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd "C:/Users/danie/Dropbox/Github/neural-computer"
+cd "<workspace>"
 git add src/memory/projection.ts src/memory/index.ts src/memory/projection.test.ts
 git commit -m "feat(memory): add defaultNCProjection — entities-by-type + entities-by-name"
 ```
@@ -1196,7 +1196,7 @@ describe("createNCRuntime", () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/runtime/context.test.ts`
+Run: `cd "<workspace>" && npx vitest run src/runtime/context.test.ts`
 Expected: FAIL with "Cannot find module './context'".
 
 - [ ] **Step 3: Create `src/runtime/context.ts`**
@@ -1333,13 +1333,13 @@ export {
 
 - [ ] **Step 5: Run tests**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/runtime/context.test.ts`
+Run: `cd "<workspace>" && npx vitest run src/runtime/context.test.ts`
 Expected: PASS (4 tests).
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd "C:/Users/danie/Dropbox/Github/neural-computer"
+cd "<workspace>"
 git add src/runtime/context.ts src/runtime/index.ts src/runtime/context.test.ts
 git commit -m "feat(runtime): add createNCRuntime with staging buffer + backpressure gate"
 ```
@@ -1419,7 +1419,7 @@ describe("createStubIntentHandler", () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/orchestrator/handle-intent.test.ts`
+Run: `cd "<workspace>" && npx vitest run src/orchestrator/handle-intent.test.ts`
 Expected: FAIL with "Cannot find module './handle-intent'".
 
 - [ ] **Step 3: Create `src/orchestrator/handle-intent.ts`**
@@ -1488,13 +1488,13 @@ export {
 
 - [ ] **Step 5: Run tests**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/orchestrator/handle-intent.test.ts`
+Run: `cd "<workspace>" && npx vitest run src/orchestrator/handle-intent.test.ts`
 Expected: PASS (2 tests).
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd "C:/Users/danie/Dropbox/Github/neural-computer"
+cd "<workspace>"
 git add src/orchestrator/handle-intent.ts src/orchestrator/index.ts src/orchestrator/handle-intent.test.ts
 git commit -m "feat(orchestrator): add createStubIntentHandler for deterministic testing"
 ```
@@ -1698,7 +1698,7 @@ describe("NCRenderer", () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/renderer/nc-renderer.test.tsx`
+Run: `cd "<workspace>" && npx vitest run src/renderer/nc-renderer.test.tsx`
 Expected: FAIL with "Cannot find module './nc-renderer'".
 
 - [ ] **Step 3: Create `src/renderer/nc-renderer.tsx`**
@@ -1861,13 +1861,13 @@ export { NCRenderer, type NCRendererProps } from "./nc-renderer";
 
 - [ ] **Step 5: Run tests**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/renderer/nc-renderer.test.tsx`
+Run: `cd "<workspace>" && npx vitest run src/renderer/nc-renderer.test.tsx`
 Expected: PASS (4 tests).
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd "C:/Users/danie/Dropbox/Github/neural-computer"
+cd "<workspace>"
 git add src/renderer/nc-renderer.tsx src/renderer/index.ts src/renderer/nc-renderer.test.tsx
 git commit -m "feat(renderer): add NCRenderer wrapping JSONUIProvider with validate+reconcile"
 ```
@@ -1960,7 +1960,7 @@ describe("useCommittedTree", () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/renderer/use-committed-tree.test.tsx`
+Run: `cd "<workspace>" && npx vitest run src/renderer/use-committed-tree.test.tsx`
 Expected: FAIL with "Cannot find module './use-committed-tree'".
 
 - [ ] **Step 3: Create `src/renderer/use-committed-tree.ts`**
@@ -2003,13 +2003,13 @@ export {
 
 - [ ] **Step 5: Run tests**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/renderer/use-committed-tree.test.tsx`
+Run: `cd "<workspace>" && npx vitest run src/renderer/use-committed-tree.test.tsx`
 Expected: PASS (3 tests).
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd "C:/Users/danie/Dropbox/Github/neural-computer"
+cd "<workspace>"
 git add src/renderer/use-committed-tree.ts src/renderer/index.ts src/renderer/use-committed-tree.test.tsx
 git commit -m "feat(renderer): add useCommittedTree atomic-mode useUIStream wrapper"
 ```
@@ -2168,7 +2168,7 @@ describe("NCApp", () => {
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/app/nc-app.test.tsx`
+Run: `cd "<workspace>" && npx vitest run src/app/nc-app.test.tsx`
 Expected: FAIL with "Cannot find module './nc-app'".
 
 - [ ] **Step 3: Create `src/app/nc-app.tsx`**
@@ -2257,13 +2257,13 @@ export { NCApp, type NCAppProps } from "./nc-app";
 
 - [ ] **Step 5: Run tests**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/app/nc-app.test.tsx`
+Run: `cd "<workspace>" && npx vitest run src/app/nc-app.test.tsx`
 Expected: PASS (2 tests).
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd "C:/Users/danie/Dropbox/Github/neural-computer"
+cd "<workspace>"
 git add src/app/nc-app.tsx src/app/index.ts src/app/nc-app.test.tsx
 git commit -m "feat(app): add NCApp React mounting component"
 ```
@@ -2496,18 +2496,18 @@ describe("NC Path C end-to-end integration", () => {
 
 - [ ] **Step 2: Run to verify it passes**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/integration.test.tsx`
+Run: `cd "<workspace>" && npx vitest run src/integration.test.tsx`
 Expected: PASS (3 tests).
 
 - [ ] **Step 3: Run the full test suite to catch cross-task regressions**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npm test`
+Run: `cd "<workspace>" && npm test`
 Expected: all tests pass across every file created in Tasks 2-11.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd "C:/Users/danie/Dropbox/Github/neural-computer"
+cd "<workspace>"
 git add src/integration.test.tsx
 git commit -m "test: add NC Path C end-to-end integration test"
 ```
@@ -2586,13 +2586,13 @@ describe("NC Invariant 7: orchestrator buffer isolation", () => {
 
 - [ ] **Step 2: Run the test**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npx vitest run src/orchestrator/buffer-isolation.test.ts`
+Run: `cd "<workspace>" && npx vitest run src/orchestrator/buffer-isolation.test.ts`
 Expected: PASS (1 test). Task 10 put `nc-app.tsx` under `src/app/`, so `src/orchestrator/` contains only `handle-intent.ts` + `index.ts`, neither of which imports React.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-cd "C:/Users/danie/Dropbox/Github/neural-computer"
+cd "<workspace>"
 git add src/orchestrator/buffer-isolation.test.ts
 git commit -m "test(orchestrator): add NC Invariant 7 buffer-isolation meta-test"
 ```
@@ -2737,13 +2737,13 @@ createRoot(document.getElementById("app")!).render(<App />);
 
 - [ ] **Step 3: Run the full verification suite**
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npm run typecheck`
+Run: `cd "<workspace>" && npm run typecheck`
 Expected: exits 0.
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npm test`
+Run: `cd "<workspace>" && npm test`
 Expected: every test in every file created in Tasks 2-12 passes.
 
-Run: `cd "C:/Users/danie/Dropbox/Github/neural-computer" && npm run build`
+Run: `cd "<workspace>" && npm run build`
 Expected: `dist/` contains `index.js`, `index.mjs`, `index.d.ts`, `index.d.mts`, with sourcemaps.
 
 - [ ] **Step 4: Verify the built barrel exports the full public surface**
@@ -2771,7 +2771,7 @@ useCommittedTree
 - [ ] **Step 5: Commit**
 
 ```bash
-cd "C:/Users/danie/Dropbox/Github/neural-computer"
+cd "<workspace>"
 git add src/index.ts README.md
 git commit -m "feat: public barrel + README quickstart + v2 plan complete"
 ```
@@ -2779,7 +2779,7 @@ git commit -m "feat: public barrel + README quickstart + v2 plan complete"
 - [ ] **Step 6: Push to origin/main**
 
 ```bash
-cd "C:/Users/danie/Dropbox/Github/neural-computer"
+cd "<workspace>"
 git push origin main
 ```
 

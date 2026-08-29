@@ -1,48 +1,13 @@
 # Unused Files and Exports Analysis
 
-**Generated**: 2026-04-16
+Stale graph; run `npm run docs:deps` after install.
 
-## Summary
+**Hand-updated**: 2026-08-29. The 2026-04-16 generator marked public barrel types as unused because it did not follow `src/index.ts` re-exports, and it claimed `src/types/nc-types.ts` was an unused file. That file is imported by the types barrel and is the source of `NCRuntime`.
 
-- **Potentially unused files**: 1
-- **Potentially unused exports**: 8
+## Current tree (not unused)
 
-## Potentially Unused Files
+Every non-test file under `src/` is reachable from `src/index.ts`, `src/core.ts`, or `src/react.ts`, except that `field-id-stability.ts` helpers are also imported by `NCRenderer` directly. Public types (`NCAppProps`, `NCProjectedData`, `CreateNCRuntimeOptions`, and so on) are part of the package API even when no other module in `src/` imports them by name.
 
-These files are not imported by any other file in the codebase:
+## What the generator used to report (historical)
 
-- `src/types/nc-types.ts`
-
-## Potentially Unused Exports
-
-These exports are not imported by any other file in the codebase:
-
-### `src/app/nc-app.tsx`
-
-- `NCAppProps` (interface)
-
-### `src/memory/projection.ts`
-
-- `NCProjectedData` (interface)
-- `NCProjectedEntity` (interface)
-
-### `src/orchestrator/handle-intent.ts`
-
-- `CreateStubIntentHandlerOptions` (interface)
-
-### `src/renderer/input-components.tsx`
-
-- `NCComponentProps` (interface)
-
-### `src/renderer/nc-renderer.tsx`
-
-- `NCRendererProps` (interface)
-
-### `src/renderer/use-committed-tree.ts`
-
-- `UseCommittedTreeOptions` (type)
-
-### `src/runtime/context.ts`
-
-- `CreateNCRuntimeOptions` (interface)
-
+On 2026-04-16 it listed one "unused file" (`src/types/nc-types.ts`) and eight "unused exports" that were all public interface types. Treat that list as a false-positive of the graph tool, not as a deletion candidate.

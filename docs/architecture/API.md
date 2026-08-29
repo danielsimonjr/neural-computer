@@ -1,59 +1,46 @@
 # Neural Computer - API Reference
 
-**Version**: 0.1.0
-**Last Updated**: 2026-04-16
+**Version**: 0.1.0 (docs refreshed 2026-08-29)
+**Last Updated**: 2026-08-29
+
+The package exposes three entry points via `exports` in `package.json`.
+
+```typescript
+// Client Components / tests (pulls React)
+import { NCApp, createNCRuntime, /* ... */ } from "neural-computer";
+import { NCApp, NCRenderer } from "neural-computer/react";
+
+// Node / orchestrator (no React, no @json-ui/react)
+import { createNCRuntime, createStubIntentHandler } from "neural-computer/core";
+```
+
+`src/react.ts` is marked `"use client"`. Import `neural-computer/react` (or the root barrel) from a Client Component in Next.js App Router. Import `neural-computer/core` from Server Components and Node processes.
+
+React 19 is a **peer dependency**. Host applications must dedupe React so `@json-ui/react` and NC share one dispatcher. This package's npm `overrides` apply only to its own install, not to consumers (NC-086). Pin `react` / `react-dom` in the host, or add host-level overrides.
+
+`tsconfig.json` still sets `"skipLibCheck": true`.
 
 ---
 
-The public API is exposed via `src/index.ts`. The barrel exports 15 value symbols and 13 type symbols (28 total). All are documented below with their signatures, options, and return types.
+## Root barrel (`neural-computer` / `src/index.ts`)
 
-```typescript
-import {
-  // Catalog
-  ncStarterCatalog,
-  NC_CATALOG_VERSION,
+Catalog: `ncStarterCatalog`, `NC_CATALOG_VERSION`, `NC_LLM_ACCEPTANCE_CONTRACT`, `ncFieldIdSchema`, `isSafeFieldId`, `NC_FIELD_ID_MAX_LENGTH`, `NC_STRING_MAX_LENGTH`, `NC_STARTER_ACTIONS`.
 
-  // Types
-  type NCIntentHandler,
-  type NCCatalogVersion,
-  type NCRuntime,
-  type NCObserver,
+Types: `NCIntentHandler`, `NCCatalogVersion`, `NCObserver`, `NCRuntime`. Values: `asNCCatalogVersion`, `isNCCatalogVersion`.
 
-  // Runtime
-  createNCRuntime,
-  type CreateNCRuntimeOptions,
+Runtime: `createNCRuntime`, `CreateNCRuntimeOptions`.
 
-  // Memory
-  defaultNCProjection,
-  type NCProjectedData,
-  type NCProjectedEntity,
+Memory: `defaultNCProjection`, `NCProjectedData`, `NCProjectedEntity`, `NCProjectedRelation`.
 
-  // Renderer (React surface)
-  NCRenderer,
-  NCContainer,
-  NCText,
-  NCTextField,
-  NCCheckbox,
-  NCButton,
-  useCommittedTree,
-  type NCRendererProps,
-  type NCComponentProps,
-  type UseCommittedTreeOptions,
+Renderer: `NCRenderer`, `NCContainer`, `NCText`, `NCTextField`, `NCCheckbox`, `NCButton`, `useCommittedTree`, `NCErrorBoundary`, plus `NCRendererProps`, `NCComponentProps`, `UseCommittedTreeOptions`.
 
-  // Orchestrator (intent handling — no React)
-  createStubIntentHandler,
-  type CreateStubIntentHandlerOptions,
+Orchestrator: `createStubIntentHandler`, `CreateStubIntentHandlerOptions`.
 
-  // App (top-level React mounting)
-  NCApp,
-  type NCAppProps,
+App: `NCApp`, `NCAppProps`.
 
-  // Observer (LLM observer for Path C)
-  createNCObserver,
-  ncHeadlessRegistry,
-  type CreateNCObserverOptions,
-} from "neural-computer";
-```
+Observer: `createNCObserver`, `ncHeadlessRegistry`, `CreateNCObserverOptions`.
+
+`neural-computer/core` is the same list minus renderer and app. `neural-computer/react` is renderer and app only.
 
 ---
 
@@ -61,21 +48,15 @@ import {
 
 ### `ncStarterCatalog`
 
-```typescript
-const ncStarterCatalog: Catalog<...>
-```
+Five components (`Container`, `Text`, `TextField`, `Checkbox`, `Button`) and two actions (`submit_form`, `cancel`). Version string `NC_CATALOG_VERSION` is `"nc-starter-0.2"`.
 
-The NC starter catalog. 5 components (`Container`, `Text`, `TextField`, `Checkbox`, `Button`) and 2 actions (`submit_form`, `cancel`). Built via `@json-ui/core`'s `createCatalog` with Zod-typed props schemas.
+Container is a minimal flex wrapper (`direction` column or row). TextField supports `multiline` (textarea) and `inputType`. There is no Select. `Button.action.name` is the enum `submit_form | cancel`. `NCButton` forwards `action.params` to `execute()`.
 
-Every input component declares `id: z.string()` for staging-buffer keying. `Button.action.params` accepts `z.record(z.string(), z.unknown()).optional()` so LLM-emitted `DynamicValue` literals pass through.
+Field ids use `ncFieldIdSchema`. Strings cap at `NC_STRING_MAX_LENGTH` (8192). `NC_LLM_ACCEPTANCE_CONTRACT` is the prompt-facing accept/reject rule.
 
-### `NC_CATALOG_VERSION`
+### `asNCCatalogVersion` / `isNCCatalogVersion`
 
-```typescript
-const NC_CATALOG_VERSION: NCCatalogVersion  // "nc-starter-0.1"
-```
-
-Branded string threaded through every emitted `IntentEvent.catalog_version`. Bump this string when the catalog's public shape changes.
+Runtime-checked constructor for the `NCCatalogVersion` brand. Throws on empty or >64 character strings. Prefer this over a TypeScript `as` cast.
 
 ---
 
@@ -87,15 +68,7 @@ Branded string threaded through every emitted `IntentEvent.catalog_version`. Bum
 type NCIntentHandler = (event: IntentEvent) => Promise<void>
 ```
 
-The handler signature the runtime dispatches to. The promise resolves when the intent has been fully processed. Rejections propagate through `emitIntent` and are caught by NCRenderer's `.catch`.
-
-### `NCCatalogVersion`
-
-```typescript
-type NCCatalogVersion = string & { readonly __brand: "NCCatalogVersion" }
-```
-
-Nominal brand that prevents accidental string assignments.
+Rejections propagate through `emitIntent` and are caught by NCRenderer's `.catch`.
 
 ### `NCRuntime`
 
@@ -104,19 +77,21 @@ interface NCRuntime {
   stagingBuffer: StagingBuffer;
   durableStore: ObservableDataModel;
   observer: NCObserver;
+  catalog: Catalog<any, any, any>;
+  catalogVersion: NCCatalogVersion;
   emitIntent: (event: IntentEvent) => Promise<void>;
   setIntentHandler: (handler: NCIntentHandler) => void;
+  isIntentInFlight: () => boolean;
+  subscribeIntentFlight: (listener: () => void) => () => void;
   destroy: () => void;
 }
 ```
 
-The runtime handle. Created once per process via `createNCRuntime`. Passed to `NCRenderer` and the orchestrator loop.
+`emitIntent` **resolves** when the event is dropped (no handler, already in flight, after destroy). It **rejects** when a bound handler rejects or throws. The in-flight flag always clears in `finally`.
 
-| Method | Behavior |
-|--------|----------|
-| `emitIntent` | Gates through backpressure. Warns (resolves, does not reject) if no handler or already in flight. Handler rejections propagate. |
-| `setIntentHandler` | Installs or replaces the handler. In-flight intents continue with the old handler. |
-| `destroy` | Idempotent. Clears the handler and rejects future calls. Does NOT dispose `durableStore` (caller-owned). |
+`isIntentInFlight` / `subscribeIntentFlight` are the public backpressure API. NCRenderer uses them via `useSyncExternalStore` so buttons disable.
+
+`destroy` is idempotent. In-flight handlers still run to completion but cannot emit further intents. `setIntentHandler` is ignored after destroy. Unmount of `NCApp` installs a no-op handler so a late completion cannot call `setTree`.
 
 ---
 
@@ -125,39 +100,29 @@ The runtime handle. Created once per process via `createNCRuntime`. Passed to `N
 ### `createNCRuntime(options)`
 
 ```typescript
-async function createNCRuntime(
-  options: CreateNCRuntimeOptions
-): Promise<NCRuntime>
+function createNCRuntime(options: CreateNCRuntimeOptions): NCRuntime
 ```
 
-Creates an NC runtime handle with a fresh `StagingBuffer`, a mutable intent-handler slot, and a backpressure gate.
-
-**Options**:
+**Synchronous.** There is no I/O. `await createNCRuntime(...)` still works because a non-Promise value is awaitable.
 
 ```typescript
 interface CreateNCRuntimeOptions {
   durableStore: ObservableDataModel;
   catalog: Catalog<any, any, any>;
   catalogVersion?: NCCatalogVersion;
+  extraHeadlessRegistry?: HeadlessRegistry;
+  onObserverStale?: (consecutiveFailures: number, lastPassId: number) => void;
 }
 ```
 
-The `durableStore` is caller-owned. For production use, build it from memoryjs via `createObservableDataModelFromGraph(ctx.storage, { projection: defaultNCProjection })`. For tests, use `@json-ui/core`'s `createObservableDataModel({})`.
+`catalog` is required (the observer binds it at construction). `NCRenderer` must pass the same catalog and version references; identity mismatches log and the runtime's copies win.
 
-The `catalog` is required because the runtime owns an `NCObserver` whose headless renderer binds the catalog at construction. It MUST match the catalog passed to `NCRenderer`, otherwise the observer renders a different post-Zod-strip tree than React does.
-
-The factory is async to leave room for future initialization steps (persisted buffer hydration, remote handshake). The current implementation returns synchronously-available data.
-
-### NCObserver
-
-The runtime-owned LLM observer. Shadows every successful React tree commit by running `@json-ui/headless` on the same tree + shared stores, caching the `NormalizedNode` output for the orchestrator to read when composing an LLM observation. Owned by `NCRuntime`; never null.
-
-**Interface:**
+### `NCObserver`
 
 ```typescript
 interface NCObserver {
   render: (tree: UITree) => void;
-  getLastRender: () => NormalizedNode | null;
+  getLastRender: () => NormalizedNode | null; // deeply frozen
   getLastRenderPassId: () => number;
   getConsecutiveFailures: () => number;
   serialize: (format: "json-string" | "html") => string | null;
@@ -165,16 +130,7 @@ interface NCObserver {
 }
 ```
 
-**Methods:**
-
-- `render(tree)` — called by NCRenderer after every successful tree commit. Runs the headless renderer synchronously; caches the result on success, leaves the previous cache intact on failure.
-- `getLastRender()` — returns the cached NormalizedNode from the most recent successful render, or null before any render has completed.
-- `getLastRenderPassId()` — monotonic counter advanced only on successful renders. Zero before the first render. Pairs with `getConsecutiveFailures` so callers can detect runaway staleness.
-- `getConsecutiveFailures()` — number of consecutive render() calls that have thrown since the last successful render. Resets to 0 on each successful render.
-- `serialize(format)` — serialize the last render via `@json-ui/headless` built-in serializers. `"json-string"` for LLM prompts; `"html"` for fallback-only diagnostic preview. Returns null if no render has completed.
-- `destroy()` — release resources. Idempotent. Called by `runtime.destroy()`.
-
-**Behavioral contract:** Per NC Invariant 13, a render failure does not propagate to React, does not corrupt the staging buffer, and does not clear the previous cached render. Per spec line 367, the observer reflects the last *tree* commit, not the last keystroke — intent events carry up-to-the-click `staging_snapshot` separately.
+`serialize("html")` is diagnostic. Do not assign it to `innerHTML`. `createNCObserver` is exported for tests; production code should use `runtime.observer`.
 
 ---
 
@@ -184,28 +140,9 @@ interface NCObserver {
 
 ```typescript
 const defaultNCProjection: GraphProjection
-// (entities: Entity[], relations: Relation[]) => Record<string, JSONValue>
 ```
 
-Projection function for memoryjs's `createObservableDataModelFromGraph`. Groups entities by `entityType`, indexes by name for O(1) lookup, and counts relations.
-
-**Output shape** (`NCProjectedData`):
-
-```typescript
-interface NCProjectedData {
-  entitiesByType: Record<string, NCProjectedEntity[]>;
-  entities: Record<string, NCProjectedEntity>;
-  relationCount: number;
-}
-
-interface NCProjectedEntity {
-  name: string;
-  entityType: string;
-  observations: string[];
-  createdAt: string;
-  lastModified: string;
-}
-```
+Output (`NCProjectedData`): `entitiesByType`, `entities` (by name), `relations` (`NCProjectedRelation`: from, to, relationType), `relationCount`. Null-prototype maps. Duplicate names: last write wins, with a warning. Missing timestamps are `null`.
 
 ---
 
@@ -214,61 +151,30 @@ interface NCProjectedEntity {
 ### `NCRenderer`
 
 ```typescript
-function NCRenderer(props: NCRendererProps): JSX.Element
-```
-
-The NC React wrapper. Mounts `JSONUIProvider` + `Renderer` with NC's shared stores, validates + reconciles on every committed tree, and dispatches intents to the runtime.
-
-```typescript
 interface NCRendererProps {
   tree: UITree;
   runtime: NCRuntime;
   catalog: Catalog<any, any, any>;
   catalogVersion: NCCatalogVersion;
   extraRegistry?: ComponentRegistry;
+  onValidationError?: (error: unknown) => void;
+  onRenderError?: (error: Error) => void;
 }
 ```
 
-| Prop | Required | Description |
-|------|----------|-------------|
-| `tree` | Yes | The committed tree to render. Must come from a successful stream commit. |
-| `runtime` | Yes | NC runtime handle (staging buffer, durable store, emitIntent). |
-| `catalog` | Yes | Catalog used to validate the tree before reconciliation. |
-| `catalogVersion` | Yes | Version string threaded through emitted IntentEvents. |
-| `extraRegistry` | No | Additional component registry entries merged with defaults. |
+Invalid trees are not passed to JSON-UI. Built-in registry keys cannot be overridden. `NCErrorBoundary` wraps the tree.
 
-### Input Components
+### Input components
 
-All five components accept `NCComponentProps`:
-
-```typescript
-interface NCComponentProps {
-  element: UIElement;
-  children?: React.ReactNode;
-}
-```
-
-| Component | Staging-Bound | Action | Notes |
-|-----------|---------------|--------|-------|
-| `NCContainer` | No | — | Renders `<div data-key={element.key}>` with children |
-| `NCText` | No | — | Renders `<p>` with `props.content` |
-| `NCTextField` | Yes (`useStagingField<string>`) | — | `<input type="text">` with label and optional error |
-| `NCCheckbox` | Yes (`useStagingField<boolean>`) | — | `<input type="checkbox">` with label |
-| `NCButton` | No | Fires `execute({name, params})` | Forwards action.params; `.catch` on rejection |
+All five accept `NCComponentProps` (`element`, optional `children`). `NCContainer` is flex, not a general layout system. `NCTextField` may render a textarea. `NCButton` forwards `{name, params}` and disables while `isIntentInFlight`.
 
 ### `useCommittedTree`
 
-```typescript
-function useCommittedTree(
-  options: UseCommittedTreeOptions
-): ReturnType<typeof useUIStream>
-```
+Thin wrapper around `useUIStream` with `commitMode: "atomic"`. Required for streamed trees. `NCApp` + the stub handler validate complete trees instead.
 
-Thin wrapper around `@json-ui/react`'s `useUIStream` that pre-selects `commitMode: "atomic"`. NC consumers that reconcile on tree identity MUST use this hook — `useUIStream` directly would allow partial trees to trigger reconciliation.
+### `NCErrorBoundary`
 
-```typescript
-type UseCommittedTreeOptions = Omit<UseUIStreamOptions, "commitMode">
-```
+Class boundary. Optional `onError`. Exported from the React entries.
 
 ---
 
@@ -277,24 +183,14 @@ type UseCommittedTreeOptions = Omit<UseUIStreamOptions, "commitMode">
 ### `createStubIntentHandler(options)`
 
 ```typescript
-function createStubIntentHandler(
-  options: CreateStubIntentHandlerOptions
-): NCIntentHandler
-```
-
-Builds a deterministic intent handler for testing.
-
-```typescript
 interface CreateStubIntentHandlerOptions {
+  catalog: Catalog<any, any, any>; // required; nextTree is validated
   nextTree: (event: IntentEvent) => UITree;
   onTreeCommit: (tree: UITree) => Promise<void> | void;
 }
 ```
 
-| Option | Description |
-|--------|-------------|
-| `nextTree` | Pure function mapping an IntentEvent to the next UITree. Throwing propagates through the handler. |
-| `onTreeCommit` | Callback fired with the committed tree. Typically `setTree` from `useState`. May return a promise. |
+Invalid `nextTree` rejects; `onTreeCommit` is not called.
 
 ---
 
@@ -303,30 +199,19 @@ interface CreateStubIntentHandlerOptions {
 ### `NCApp`
 
 ```typescript
-function NCApp(props: NCAppProps): JSX.Element
-```
-
-Top-level React mounting point. Owns tree state and wires the intent handler.
-
-```typescript
 interface NCAppProps {
   runtime: NCRuntime;
   catalog: Catalog<any, any, any>;
   catalogVersion: NCCatalogVersion;
   initialTree: UITree;
   buildIntentHandler: (setTree: (tree: UITree) => void) => NCIntentHandler;
+  extraRegistry?: ComponentRegistry;
+  onValidationError?: (error: unknown) => void;
+  onRenderError?: (error: Error) => void;
 }
 ```
 
-| Prop | Description |
-|------|-------------|
-| `runtime` | NC runtime handle. |
-| `catalog` | Catalog for validation. |
-| `catalogVersion` | Version constant. |
-| `initialTree` | The tree to render before any intent fires. |
-| `buildIntentHandler` | Factory that takes `setTree` and returns a handler. SHOULD be memoized or hoisted — inline arrows re-run the install `useEffect` every render. |
-
-**Typical usage**:
+Changing `initialTree` by reference resets the current tree. `buildIntentHandler` should be memoized or hoisted. Typical usage:
 
 ```tsx
 <NCApp
@@ -334,11 +219,6 @@ interface NCAppProps {
   catalog={ncStarterCatalog}
   catalogVersion={NC_CATALOG_VERSION}
   initialTree={initialTree}
-  buildIntentHandler={(setTree) =>
-    createStubIntentHandler({
-      nextTree: (event) => computeNextTree(event),
-      onTreeCommit: setTree,
-    })
-  }
+  buildIntentHandler={buildIntentHandler}
 />
 ```
