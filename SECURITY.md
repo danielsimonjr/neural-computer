@@ -16,11 +16,15 @@ Treat every `UITree` as untrusted structured data. The starter catalog does not 
 
 ## Action allowlist
 
-`ncStarterCatalog` only permits `submit_form` and `cancel` as `Button.action.name`. Custom catalogs must constrain `action.name` the same way. The runtime does not execute shell commands; a future LLM handler must still allowlist `action_name` against the catalog.
+`ncStarterCatalog` only permits `submit_form` and `cancel` as `Button.action.name`. Custom catalogs must constrain `action.name` the same way. The runtime does not execute shell commands. A future LLM handler must still allowlist `action_name` against the catalog. The Python REPL is a separate subprocess (`createPythonRepl`); it is not invoked by catalog actions.
 
 ## Staging payload size
 
 Text inputs are capped at 8192 characters (`NC_STRING_MAX_LENGTH`). Field ids cannot be empty, path-like, or `__proto__` / `constructor` / `prototype`.
+
+## Python REPL
+
+`createPythonRepl` spawns a CPython subprocess. Restricted `__builtins__` (no `eval`, `exec`, `open`, `__import__`) reduce accidents. They are **not** a jail. User code can still reach surprising objects through the remaining graph. The hard boundary is the host timeout: the worker is SIGKILL'd and replaced with an empty process. Production deployments that need isolation wrap `pythonPath` (container, seccomp, nsjail). Do not `set()` secrets into the REPL. `llm_query` sends the prompt to the host callback; treat that path like any other orchestrator-to-model channel.
 
 ## Prototype pollution
 

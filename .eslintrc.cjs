@@ -14,7 +14,7 @@ module.exports = {
   ignorePatterns: ["dist", "node_modules", "coverage", "docs", "tools"],
   overrides: [
     {
-      files: ["src/orchestrator/**/*.ts"],
+      files: ["src/orchestrator/**/*.ts", "src/compute/**/*.ts"],
       excludedFiles: ["**/*.test.ts", "**/*.test.tsx"],
       rules: {
         "no-restricted-imports": [

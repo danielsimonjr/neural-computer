@@ -155,3 +155,5 @@ Click 1 sets `isIntentInFlight` true; subscribers re-render; buttons disable. Cl
 | `cancel` discards staging            | `emitIntent` reconciles to empty after snapshot is on the event    |
 | Params and snapshot unmerged         | Separate fields (Invariant 6)                                      |
 | DynamicValue resolves from staging   | Single-segment paths prefer staging (Invariant 11)                 |
+
+The Python REPL is outside this loop. A future intent handler may call `createPythonRepl` while handling an `IntentEvent`. `NCRenderer` does not spawn Python.

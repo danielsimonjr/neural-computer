@@ -50,9 +50,11 @@ jobs:
       - name: neural-computer typecheck / lint / test / build
         working-directory: neural-computer
         run: |
+          python3 --version
           bun install --frozen-lockfile
-      bun run typecheck
-      bun run lint
-      bun run format:check
-      bun run test
-      bun run build
+          bun run typecheck
+          bun run lint
+          bun run format:check
+          bun run test
+          bun run build
+          test -f dist/worker.py

@@ -49,4 +49,19 @@ export function App() {
 }
 ```
 
-Orchestrator-only (no React): `import { createNCRuntime } from "neural-computer/core"`.
+Orchestrator-only (no React): `import { createNCRuntime, createPythonRepl } from "neural-computer/core"`.
+
+Python REPL (RLM pattern; requires `python3`):
+
+```ts
+import { createPythonRepl } from "neural-computer/core";
+
+const repl = await createPythonRepl();
+try {
+  await repl.loadContext("a long prompt...");
+  const { stdout } = await repl.exec("print(len(context))");
+  console.log(stdout);
+} finally {
+  await repl.destroy();
+}
+```

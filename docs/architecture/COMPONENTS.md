@@ -213,15 +213,25 @@ Re-exports components, NCRenderer, useCommittedTree, NCErrorBoundary, and field-
 
 ### `src/index.ts`
 
-Root package export: catalog, types, runtime, memory, renderer, orchestrator, app, observer. Pulls React. See [API.md](./API.md).
+Root package export: catalog, types, runtime, memory, renderer, orchestrator, app, observer, compute. Pulls React. See [API.md](./API.md).
 
 ### `src/core.ts`
 
-`neural-computer/core`. Same as the root barrel minus React renderer/app. Safe for Node / orchestrator processes.
+`neural-computer/core`. Same as the root barrel minus React renderer/app, including `createPythonRepl`. Safe for Node / orchestrator processes.
 
 ### `src/react.ts`
 
-`neural-computer/react`. `"use client"`. NCRenderer, input components, useCommittedTree, NCErrorBoundary, NCApp.
+`neural-computer/react`. `"use client"`. NCRenderer, input components, useCommittedTree, NCErrorBoundary, NCApp. Does not export compute.
+
+---
+
+## Compute (`src/compute/`)
+
+### `src/compute/python-repl.ts`
+
+`createPythonRepl` owns one CPython child. JSON-lines protocol. Caps in `limits.ts`. Worker script `worker.py` is copied to `dist/worker.py` by tsup.
+
+**Tests**: `python-repl.test.ts`, `isolation.test.ts`.
 
 ---
 

@@ -2,7 +2,7 @@
   "name": "neural-computer",
   "version": "0.1.0",
   "private": true,
-  "description": "Catalog-constrained React UI runtime with a staging buffer, one-at-a-time intent gate, stub intent handler, and headless observer cache. LLM-backed dispatch and Python REPL are not in this package yet.",
+  "description": "Catalog-constrained React UI runtime with a staging buffer, one-at-a-time intent gate, stub intent handler, headless observer cache, and a Python REPL compute arm. LLM-backed dispatch is not in this package yet.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",

@@ -20,6 +20,7 @@ All design decisions live in `docs/`. Read the relevant spec before implementing
 
 - **Active spec:** `docs/specs/2026-04-11-ephemeral-ui-state-design.md` (shipped) — staging buffer, named state surfaces, four staging-buffer rules, `DynamicValue`. Read this before touching `src/renderer/`.
 - **Path C spec:** `docs/specs/2026-04-16-headless-dual-backend-design.md` (shipped) — LLM observer.
+- **Compute spec:** `docs/specs/2026-08-29-compute-rlm-repl-design.md` — Python REPL (RLM pattern). Read this before touching `src/compute/`.
 - **v1 implementation plan:** `docs/plans/2026-04-15-neural-computer-v2-plan.md` — supersedes the April-11 plan (which is marked SUPERSEDED).
 - **CHANGELOG.md** — behavior changes and traps not to re-introduce.
 - **docs/audits/** — 2026-08-29 full-repo audit; do not re-introduce NC-001–NC-092.
@@ -50,3 +51,4 @@ Durable state, current UI tree, staging buffer, in-flight intent flag, catalog v
 - Do not modify JSON-UI from this repo.
 - Do not invent new state categories beyond the seven named above.
 - Do not call the LLM on every keystroke. Intents are the only flush boundary.
+- Do not attach the Python REPL to `NCRuntime` or import compute from the renderer. Compute is a tool for a future handler, not an eighth UI state surface.

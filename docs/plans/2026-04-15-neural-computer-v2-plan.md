@@ -2850,7 +2850,7 @@ git push origin main
 ## Out of scope (follow-up specs)
 
 - **Real Anthropic LLM integration** — `createStubIntentHandler` is v1. A follow-up task will add `createAnthropicIntentHandler` that calls `@anthropic-ai/sdk`, streams the response, feeds patches through `useCommittedTree`'s atomic mode, and parses the final tree.
-- **Python REPL subprocess dispatch** — the RLM-pattern computation arm. Independent subsystem; separate spec.
+- **Python REPL subprocess dispatch** — shipped 2026-08-29 as `src/compute/` / `createPythonRepl`. See `docs/specs/2026-08-29-compute-rlm-repl-design.md`. The RLM _loop_ (model writes code until a final answer) still belongs to a future LLM handler.
 - **LLM Observer headless-renderer session** — Path C's dual-backend second half. Mounted alongside `NCRenderer` with the same runtime references. Separate spec because the LLM Observer's serialization format and subscription semantics need their own design pass.
 - **Persistent staging buffer across process restart** — explicit non-goal in the April 11 spec (Risk 3 + Open Question 3). A future opt-in would route through memoryjs rather than parallel storage.
 - **Backpressure UX** — the runtime rejects and logs, but the visual treatment of rejected intents (disabled Submit button, toast, silent) is a UX decision load-bearing enough to warrant its own spec.

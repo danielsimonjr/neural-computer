@@ -11,18 +11,19 @@ This document provides a comprehensive dependency graph of all files, components
 1. [Overview](#overview)
 2. [App Dependencies](#app-dependencies)
 3. [Catalog Dependencies](#catalog-dependencies)
-4. [Root Dependencies](#root-dependencies)
-5. [Entry Dependencies](#entry-dependencies)
-6. [Memory Dependencies](#memory-dependencies)
-7. [Observer Dependencies](#observer-dependencies)
-8. [Orchestrator Dependencies](#orchestrator-dependencies)
-9. [Renderer Dependencies](#renderer-dependencies)
-10. [Runtime Dependencies](#runtime-dependencies)
-11. [Types Dependencies](#types-dependencies)
-12. [Dependency Matrix](#dependency-matrix)
-13. [Circular Dependency Analysis](#circular-dependency-analysis)
-14. [Visual Dependency Graph](#visual-dependency-graph)
-15. [Summary Statistics](#summary-statistics)
+4. [Compute Dependencies](#compute-dependencies)
+5. [Root Dependencies](#root-dependencies)
+6. [Entry Dependencies](#entry-dependencies)
+7. [Memory Dependencies](#memory-dependencies)
+8. [Observer Dependencies](#observer-dependencies)
+9. [Orchestrator Dependencies](#orchestrator-dependencies)
+10. [Renderer Dependencies](#renderer-dependencies)
+11. [Runtime Dependencies](#runtime-dependencies)
+12. [Types Dependencies](#types-dependencies)
+13. [Dependency Matrix](#dependency-matrix)
+14. [Circular Dependency Analysis](#circular-dependency-analysis)
+15. [Visual Dependency Graph](#visual-dependency-graph)
+16. [Summary Statistics](#summary-statistics)
 
 ---
 
@@ -32,6 +33,7 @@ The codebase is organized into the following modules:
 
 - **app**: 2 files
 - **catalog**: 4 files
+- **compute**: 5 files
 - **root**: 3 files
 - **entry**: 1 file
 - **memory**: 2 files
@@ -153,24 +155,107 @@ The codebase is organized into the following modules:
 
 ---
 
+## Compute Dependencies
+
+### `src/compute/index.ts` - SPDX-License-Identifier: Apache-2.0
+
+**Internal Dependencies:**
+
+| File            | Imports                                                                                                                                                                                                   | Type      |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| `./limits`      | `NC_REPL_CONTEXT_NAME, NC_REPL_DEFAULT_PYTHON, NC_REPL_DEFAULT_TIMEOUT_MS, NC_REPL_MAX_CODE_BYTES, NC_REPL_MAX_IDENT_LENGTH, NC_REPL_MAX_STDOUT_BYTES, NC_REPL_MAX_VALUE_BYTES, NC_REPL_PROTOCOL_VERSION` | Re-export |
+| `./types`       | `NCReplError, type NCReplErrorCode`                                                                                                                                                                       | Re-export |
+| `./python-repl` | `createPythonRepl`                                                                                                                                                                                        | Re-export |
+| `./worker-path` | `resolveWorkerPath`                                                                                                                                                                                       | Re-export |
+
+**Exports:**
+
+- Re-exports: `NC_REPL_CONTEXT_NAME`, `NC_REPL_DEFAULT_PYTHON`, `NC_REPL_DEFAULT_TIMEOUT_MS`, `NC_REPL_MAX_CODE_BYTES`, `NC_REPL_MAX_IDENT_LENGTH`, `NC_REPL_MAX_STDOUT_BYTES`, `NC_REPL_MAX_VALUE_BYTES`, `NC_REPL_PROTOCOL_VERSION`, `NCReplError`, `type NCReplErrorCode`, `createPythonRepl`, `resolveWorkerPath`
+
+---
+
+### `src/compute/limits.ts` - Caps for the Python REPL worker. Unbounded snippets and prints would
+
+**Exports:**
+
+- Constants: `NC_REPL_DEFAULT_TIMEOUT_MS`, `NC_REPL_MAX_CODE_BYTES`, `NC_REPL_MAX_STDOUT_BYTES`, `NC_REPL_MAX_VALUE_BYTES`, `NC_REPL_MAX_IDENT_LENGTH`, `NC_REPL_PROTOCOL_VERSION`, `NC_REPL_CONTEXT_NAME`, `NC_REPL_DEFAULT_PYTHON`
+
+---
+
+### `src/compute/python-repl.ts` - SPDX-License-Identifier: Apache-2.0
+
+**Node.js Built-in Dependencies:**
+
+| Module          | Import                |
+| --------------- | --------------------- |
+| `child_process` | `spawn, ChildProcess` |
+| `crypto`        | `randomUUID`          |
+
+**Internal Dependencies:**
+
+| File            | Imports                                                                                                                                                                                                   | Type   |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `./limits`      | `NC_REPL_CONTEXT_NAME, NC_REPL_DEFAULT_PYTHON, NC_REPL_DEFAULT_TIMEOUT_MS, NC_REPL_MAX_CODE_BYTES, NC_REPL_MAX_IDENT_LENGTH, NC_REPL_MAX_STDOUT_BYTES, NC_REPL_MAX_VALUE_BYTES, NC_REPL_PROTOCOL_VERSION` | Import |
+| `./types`       | `NCReplError, CreatePythonReplOptions, NCPythonRepl, NCReplExecResult`                                                                                                                                    | Import |
+| `./worker-path` | `resolveWorkerPath`                                                                                                                                                                                       | Import |
+
+**Exports:**
+
+- Classes: `PythonRepl`
+- Functions: `createPythonRepl`
+
+---
+
+### `src/compute/types.ts` - Host implementation of the in-REPL `llm_query(prompt)` helper.
+
+**Exports:**
+
+- Classes: `NCReplError`
+- Interfaces: `CreatePythonReplOptions`, `NCReplExecResult`, `NCPythonRepl`
+
+---
+
+### `src/compute/worker-path.ts` - Locate worker.py next to this module (source tree) or next to the
+
+**Node.js Built-in Dependencies:**
+
+| Module | Import          |
+| ------ | --------------- |
+| `fs`   | `existsSync`    |
+| `path` | `dirname, join` |
+| `url`  | `fileURLToPath` |
+
+**Internal Dependencies:**
+
+| File      | Imports       | Type   |
+| --------- | ------------- | ------ |
+| `./types` | `NCReplError` | Import |
+
+**Exports:**
+
+- Functions: `resolveWorkerPath`
+
+---
+
 ## Root Dependencies
 
 ### `src/core.ts` - React-free entry for Node / orchestrator processes.
 
 **Internal Dependencies:**
 
-| File             | Imports                                                                                                                                                                                                            | Type      |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
-| `./catalog`      | `ncStarterCatalog, NC_CATALOG_VERSION, NC_LLM_ACCEPTANCE_CONTRACT, ncFieldIdSchema, isSafeFieldId, NC_FIELD_ID_MAX_LENGTH, NC_STRING_MAX_LENGTH, NC_STAGING_MAX_FIELDS, NC_SNAPSHOT_MAX_BYTES, NC_STARTER_ACTIONS` | Re-export |
-| `./types`        | `asNCCatalogVersion, isNCCatalogVersion`                                                                                                                                                                           | Re-export |
-| `./runtime`      | `createNCRuntime, type CreateNCRuntimeOptions`                                                                                                                                                                     | Re-export |
-| `./memory`       | `defaultNCProjection, type NCProjectedData, type NCProjectedEntity, type NCProjectedRelation`                                                                                                                      | Re-export |
-| `./orchestrator` | `createStubIntentHandler, submittedFieldsStillPresent, type CreateStubIntentHandlerOptions`                                                                                                                        | Re-export |
-| `./observer`     | `createNCObserver, ncHeadlessRegistry, type CreateNCObserverOptions`                                                                                                                                               | Re-export |
+| File             | Imports                                                                                                                                                                                                                                                                                                                                                   | Type      |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| `./catalog`      | `ncStarterCatalog, NC_CATALOG_VERSION, NC_LLM_ACCEPTANCE_CONTRACT, ncFieldIdSchema, isSafeFieldId, NC_FIELD_ID_MAX_LENGTH, NC_STRING_MAX_LENGTH, NC_STAGING_MAX_FIELDS, NC_SNAPSHOT_MAX_BYTES, NC_STARTER_ACTIONS`                                                                                                                                        | Re-export |
+| `./types`        | `asNCCatalogVersion, isNCCatalogVersion`                                                                                                                                                                                                                                                                                                                  | Re-export |
+| `./runtime`      | `createNCRuntime, type CreateNCRuntimeOptions`                                                                                                                                                                                                                                                                                                            | Re-export |
+| `./memory`       | `defaultNCProjection, type NCProjectedData, type NCProjectedEntity, type NCProjectedRelation`                                                                                                                                                                                                                                                             | Re-export |
+| `./orchestrator` | `createStubIntentHandler, submittedFieldsStillPresent, type CreateStubIntentHandlerOptions`                                                                                                                                                                                                                                                               | Re-export |
+| `./observer`     | `createNCObserver, ncHeadlessRegistry, type CreateNCObserverOptions`                                                                                                                                                                                                                                                                                      | Re-export |
+| `./compute`      | `createPythonRepl, resolveWorkerPath, NCReplError, NC_REPL_CONTEXT_NAME, NC_REPL_DEFAULT_PYTHON, NC_REPL_DEFAULT_TIMEOUT_MS, NC_REPL_MAX_CODE_BYTES, NC_REPL_MAX_IDENT_LENGTH, NC_REPL_MAX_STDOUT_BYTES, NC_REPL_MAX_VALUE_BYTES, NC_REPL_PROTOCOL_VERSION, type CreatePythonReplOptions, type NCPythonRepl, type NCReplExecResult, type NCReplErrorCode` | Re-export |
 
 **Exports:**
 
-- Re-exports: `ncStarterCatalog`, `NC_CATALOG_VERSION`, `NC_LLM_ACCEPTANCE_CONTRACT`, `ncFieldIdSchema`, `isSafeFieldId`, `NC_FIELD_ID_MAX_LENGTH`, `NC_STRING_MAX_LENGTH`, `NC_STAGING_MAX_FIELDS`, `NC_SNAPSHOT_MAX_BYTES`, `NC_STARTER_ACTIONS`, `asNCCatalogVersion`, `isNCCatalogVersion`, `createNCRuntime`, `type CreateNCRuntimeOptions`, `defaultNCProjection`, `type NCProjectedData`, `type NCProjectedEntity`, `type NCProjectedRelation`, `createStubIntentHandler`, `submittedFieldsStillPresent`, `type CreateStubIntentHandlerOptions`, `createNCObserver`, `ncHeadlessRegistry`, `type CreateNCObserverOptions`
+- Re-exports: `ncStarterCatalog`, `NC_CATALOG_VERSION`, `NC_LLM_ACCEPTANCE_CONTRACT`, `ncFieldIdSchema`, `isSafeFieldId`, `NC_FIELD_ID_MAX_LENGTH`, `NC_STRING_MAX_LENGTH`, `NC_STAGING_MAX_FIELDS`, `NC_SNAPSHOT_MAX_BYTES`, `NC_STARTER_ACTIONS`, `asNCCatalogVersion`, `isNCCatalogVersion`, `createNCRuntime`, `type CreateNCRuntimeOptions`, `defaultNCProjection`, `type NCProjectedData`, `type NCProjectedEntity`, `type NCProjectedRelation`, `createStubIntentHandler`, `submittedFieldsStillPresent`, `type CreateStubIntentHandlerOptions`, `createNCObserver`, `ncHeadlessRegistry`, `type CreateNCObserverOptions`, `createPythonRepl`, `resolveWorkerPath`, `NCReplError`, `NC_REPL_CONTEXT_NAME`, `NC_REPL_DEFAULT_PYTHON`, `NC_REPL_DEFAULT_TIMEOUT_MS`, `NC_REPL_MAX_CODE_BYTES`, `NC_REPL_MAX_IDENT_LENGTH`, `NC_REPL_MAX_STDOUT_BYTES`, `NC_REPL_MAX_VALUE_BYTES`, `NC_REPL_PROTOCOL_VERSION`, `type CreatePythonReplOptions`, `type NCPythonRepl`, `type NCReplExecResult`, `type NCReplErrorCode`
 
 ---
 
@@ -206,20 +291,21 @@ The codebase is organized into the following modules:
 
 **Internal Dependencies:**
 
-| File             | Imports                                                                                                                                                                                                            | Type      |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
-| `./catalog`      | `ncStarterCatalog, NC_CATALOG_VERSION, NC_LLM_ACCEPTANCE_CONTRACT, ncFieldIdSchema, isSafeFieldId, NC_FIELD_ID_MAX_LENGTH, NC_STRING_MAX_LENGTH, NC_STAGING_MAX_FIELDS, NC_SNAPSHOT_MAX_BYTES, NC_STARTER_ACTIONS` | Re-export |
-| `./types`        | `asNCCatalogVersion, isNCCatalogVersion`                                                                                                                                                                           | Re-export |
-| `./runtime`      | `createNCRuntime, type CreateNCRuntimeOptions`                                                                                                                                                                     | Re-export |
-| `./memory`       | `defaultNCProjection, type NCProjectedData, type NCProjectedEntity, type NCProjectedRelation`                                                                                                                      | Re-export |
-| `./renderer`     | `NCRenderer, NCContainer, NCText, NCTextField, NCCheckbox, NCSelect, NCButton, useCommittedTree, NCErrorBoundary, type NCRendererProps, type NCComponentProps, type UseCommittedTreeOptions`                       | Re-export |
-| `./orchestrator` | `createStubIntentHandler, submittedFieldsStillPresent, type CreateStubIntentHandlerOptions`                                                                                                                        | Re-export |
-| `./app`          | `NCApp, type NCAppProps`                                                                                                                                                                                           | Re-export |
-| `./observer`     | `createNCObserver, ncHeadlessRegistry, type CreateNCObserverOptions`                                                                                                                                               | Re-export |
+| File             | Imports                                                                                                                                                                                                                                                                                                                                                   | Type      |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| `./catalog`      | `ncStarterCatalog, NC_CATALOG_VERSION, NC_LLM_ACCEPTANCE_CONTRACT, ncFieldIdSchema, isSafeFieldId, NC_FIELD_ID_MAX_LENGTH, NC_STRING_MAX_LENGTH, NC_STAGING_MAX_FIELDS, NC_SNAPSHOT_MAX_BYTES, NC_STARTER_ACTIONS`                                                                                                                                        | Re-export |
+| `./types`        | `asNCCatalogVersion, isNCCatalogVersion`                                                                                                                                                                                                                                                                                                                  | Re-export |
+| `./runtime`      | `createNCRuntime, type CreateNCRuntimeOptions`                                                                                                                                                                                                                                                                                                            | Re-export |
+| `./memory`       | `defaultNCProjection, type NCProjectedData, type NCProjectedEntity, type NCProjectedRelation`                                                                                                                                                                                                                                                             | Re-export |
+| `./renderer`     | `NCRenderer, NCContainer, NCText, NCTextField, NCCheckbox, NCSelect, NCButton, useCommittedTree, NCErrorBoundary, type NCRendererProps, type NCComponentProps, type UseCommittedTreeOptions`                                                                                                                                                              | Re-export |
+| `./orchestrator` | `createStubIntentHandler, submittedFieldsStillPresent, type CreateStubIntentHandlerOptions`                                                                                                                                                                                                                                                               | Re-export |
+| `./app`          | `NCApp, type NCAppProps`                                                                                                                                                                                                                                                                                                                                  | Re-export |
+| `./observer`     | `createNCObserver, ncHeadlessRegistry, type CreateNCObserverOptions`                                                                                                                                                                                                                                                                                      | Re-export |
+| `./compute`      | `createPythonRepl, resolveWorkerPath, NCReplError, NC_REPL_CONTEXT_NAME, NC_REPL_DEFAULT_PYTHON, NC_REPL_DEFAULT_TIMEOUT_MS, NC_REPL_MAX_CODE_BYTES, NC_REPL_MAX_IDENT_LENGTH, NC_REPL_MAX_STDOUT_BYTES, NC_REPL_MAX_VALUE_BYTES, NC_REPL_PROTOCOL_VERSION, type CreatePythonReplOptions, type NCPythonRepl, type NCReplExecResult, type NCReplErrorCode` | Re-export |
 
 **Exports:**
 
-- Re-exports: `ncStarterCatalog`, `NC_CATALOG_VERSION`, `NC_LLM_ACCEPTANCE_CONTRACT`, `ncFieldIdSchema`, `isSafeFieldId`, `NC_FIELD_ID_MAX_LENGTH`, `NC_STRING_MAX_LENGTH`, `NC_STAGING_MAX_FIELDS`, `NC_SNAPSHOT_MAX_BYTES`, `NC_STARTER_ACTIONS`, `asNCCatalogVersion`, `isNCCatalogVersion`, `createNCRuntime`, `type CreateNCRuntimeOptions`, `defaultNCProjection`, `type NCProjectedData`, `type NCProjectedEntity`, `type NCProjectedRelation`, `NCRenderer`, `NCContainer`, `NCText`, `NCTextField`, `NCCheckbox`, `NCSelect`, `NCButton`, `useCommittedTree`, `NCErrorBoundary`, `type NCRendererProps`, `type NCComponentProps`, `type UseCommittedTreeOptions`, `createStubIntentHandler`, `submittedFieldsStillPresent`, `type CreateStubIntentHandlerOptions`, `NCApp`, `type NCAppProps`, `createNCObserver`, `ncHeadlessRegistry`, `type CreateNCObserverOptions`
+- Re-exports: `ncStarterCatalog`, `NC_CATALOG_VERSION`, `NC_LLM_ACCEPTANCE_CONTRACT`, `ncFieldIdSchema`, `isSafeFieldId`, `NC_FIELD_ID_MAX_LENGTH`, `NC_STRING_MAX_LENGTH`, `NC_STAGING_MAX_FIELDS`, `NC_SNAPSHOT_MAX_BYTES`, `NC_STARTER_ACTIONS`, `asNCCatalogVersion`, `isNCCatalogVersion`, `createNCRuntime`, `type CreateNCRuntimeOptions`, `defaultNCProjection`, `type NCProjectedData`, `type NCProjectedEntity`, `type NCProjectedRelation`, `NCRenderer`, `NCContainer`, `NCText`, `NCTextField`, `NCCheckbox`, `NCSelect`, `NCButton`, `useCommittedTree`, `NCErrorBoundary`, `type NCRendererProps`, `type NCComponentProps`, `type UseCommittedTreeOptions`, `createStubIntentHandler`, `submittedFieldsStillPresent`, `type CreateStubIntentHandlerOptions`, `NCApp`, `type NCAppProps`, `createNCObserver`, `ncHeadlessRegistry`, `type CreateNCObserverOptions`, `createPythonRepl`, `resolveWorkerPath`, `NCReplError`, `NC_REPL_CONTEXT_NAME`, `NC_REPL_DEFAULT_PYTHON`, `NC_REPL_DEFAULT_TIMEOUT_MS`, `NC_REPL_MAX_CODE_BYTES`, `NC_REPL_MAX_IDENT_LENGTH`, `NC_REPL_MAX_STDOUT_BYTES`, `NC_REPL_MAX_VALUE_BYTES`, `NC_REPL_PROTOCOL_VERSION`, `type CreatePythonReplOptions`, `type NCPythonRepl`, `type NCReplExecResult`, `type NCReplErrorCode`
 
 ---
 
@@ -577,8 +663,13 @@ The codebase is organized into the following modules:
 | `index`                  | 3 files      | 3 files    |
 | `limits`                 | 0 files      | 6 files    |
 | `nc-catalog`             | 3 files      | 1 files    |
-| `core`                   | 6 files      | 0 files    |
-| `index`                  | 8 files      | 0 files    |
+| `index`                  | 4 files      | 2 files    |
+| `limits`                 | 0 files      | 2 files    |
+| `python-repl`            | 3 files      | 1 files    |
+| `types`                  | 0 files      | 3 files    |
+| `worker-path`            | 1 files      | 2 files    |
+| `core`                   | 7 files      | 0 files    |
+| `index`                  | 9 files      | 0 files    |
 | `index`                  | 1 files      | 2 files    |
 | `projection`             | 1 files      | 1 files    |
 | `index`                  | 2 files      | 3 files    |
@@ -596,10 +687,6 @@ The codebase is organized into the following modules:
 | `use-committed-tree`     | 0 files      | 1 files    |
 | `context`                | 4 files      | 1 files    |
 | `freeze`                 | 0 files      | 3 files    |
-| `index`                  | 2 files      | 2 files    |
-| `test-setup`             | 0 files      | 0 files    |
-| `index`                  | 1 files      | 8 files    |
-| `nc-types`               | 0 files      | 1 files    |
 
 ---
 
@@ -624,82 +711,90 @@ graph TD
         N5[nc-catalog]
     end
 
+    subgraph Compute
+        N6[index]
+        N7[limits]
+        N8[python-repl]
+        N9[types]
+        N10[worker-path]
+    end
+
     subgraph Root
-        N6[core]
-        N7[react]
-        N8[test-setup]
+        N11[core]
+        N12[react]
+        N13[test-setup]
     end
 
     subgraph Entry
-        N9[index]
+        N14[index]
     end
 
     subgraph Memory
-        N10[index]
-        N11[projection]
+        N15[index]
+        N16[projection]
     end
 
     subgraph Observer
-        N12[index]
-        N13[nc-headless-components]
-        N14[nc-observer]
+        N17[index]
+        N18[nc-headless-components]
+        N19[nc-observer]
     end
 
     subgraph Orchestrator
-        N15[handle-intent]
-        N16[index]
+        N20[handle-intent]
+        N21[index]
     end
 
     subgraph Renderer
-        N17[error-boundary]
-        N18[field-id-stability]
-        N19[index]
-        N20[input-components]
-        N21[intent-flight-context]
-        N22[...2 more]
+        N22[error-boundary]
+        N23[field-id-stability]
+        N24[index]
+        N25[input-components]
+        N26[intent-flight-context]
+        N27[...2 more]
     end
 
     subgraph Runtime
-        N23[context]
-        N24[freeze]
-        N25[index]
+        N28[context]
+        N29[freeze]
+        N30[index]
     end
 
     subgraph Types
-        N26[index]
-        N27[nc-types]
+        N31[index]
+        N32[nc-types]
     end
 
     N0 --> N1
-    N1 --> N26
+    N1 --> N31
     N2 --> N4
     N3 --> N5
     N3 --> N2
     N3 --> N4
-    N5 --> N26
+    N5 --> N31
     N5 --> N2
     N5 --> N4
-    N6 --> N3
-    N6 --> N26
-    N6 --> N25
+    N6 --> N7
+    N6 --> N9
+    N6 --> N8
     N6 --> N10
-    N6 --> N16
-    N6 --> N12
-    N9 --> N3
-    N9 --> N26
-    N9 --> N25
-    N9 --> N10
-    N9 --> N19
-    N9 --> N16
-    N9 --> N0
-    N9 --> N12
-    N10 --> N11
-    N11 --> N24
-    N12 --> N14
-    N12 --> N13
-    N14 --> N13
-    N14 --> N4
+    N8 --> N7
+    N8 --> N9
+    N8 --> N10
+    N10 --> N9
+    N11 --> N3
+    N11 --> N31
+    N11 --> N30
+    N11 --> N15
+    N11 --> N21
+    N11 --> N17
+    N11 --> N6
+    N14 --> N3
+    N14 --> N31
+    N14 --> N30
+    N14 --> N15
     N14 --> N24
+    N14 --> N21
 ```
 
 ---
@@ -708,14 +803,14 @@ graph TD
 
 | Category                | Count |
 | ----------------------- | ----- |
-| Total TypeScript Files  | 29    |
-| Total Modules           | 10    |
-| Total Lines of Code     | 2014  |
-| Total Exports           | 164   |
-| Total Re-exports        | 124   |
-| Total Classes           | 2     |
-| Total Interfaces        | 11    |
-| Total Functions         | 15    |
+| Total TypeScript Files  | 34    |
+| Total Modules           | 11    |
+| Total Lines of Code     | 2694  |
+| Total Exports           | 218   |
+| Total Re-exports        | 166   |
+| Total Classes           | 4     |
+| Total Interfaces        | 14    |
+| Total Functions         | 17    |
 | Total Type Guards       | 2     |
 | Total Enums             | 0     |
 | Type-only Imports       | 5     |
