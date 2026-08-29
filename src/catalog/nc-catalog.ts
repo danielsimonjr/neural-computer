@@ -46,7 +46,7 @@ const visibleProp = z.boolean().optional();
 /**
  * Prompt-facing contract the LLM must keep: "accepting" input means
  * emitting a tree that no longer contains those field IDs. Anchored
- * here so generateCatalogPrompt / a future Anthropic handler can
+ * here so generateCatalogPrompt / createLlmIntentHandler can
  * include it without a second source of truth (spec Risk 1).
  */
 export const NC_LLM_ACCEPTANCE_CONTRACT =

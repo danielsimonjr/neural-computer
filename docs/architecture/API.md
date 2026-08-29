@@ -18,7 +18,7 @@ import { createNCRuntime, createStubIntentHandler } from "neural-computer/core";
 
 React 19 is a **peer dependency**. Host applications must dedupe React so `@json-ui/react` and NC share one dispatcher. This package's npm `overrides` apply only to its own install, not to consumers (NC-086). Pin `react` / `react-dom` in the host, or add host-level overrides.
 
-`tsconfig.json` still sets `"skipLibCheck": true`.
+`tsconfig.json` sets `"skipLibCheck": false`.
 
 ---
 
@@ -32,9 +32,9 @@ Runtime: `createNCRuntime`, `CreateNCRuntimeOptions`.
 
 Memory: `defaultNCProjection`, `NCProjectedData`, `NCProjectedEntity`, `NCProjectedRelation`.
 
-Renderer: `NCRenderer`, `NCContainer`, `NCText`, `NCTextField`, `NCCheckbox`, `NCButton`, `useCommittedTree`, `NCErrorBoundary`, plus `NCRendererProps`, `NCComponentProps`, `UseCommittedTreeOptions`.
+Renderer: `NCRenderer`, `NCContainer`, `NCText`, `NCTextField`, `NCCheckbox`, `NCSelect`, `NCButton`, `useCommittedTree`, `NCErrorBoundary`, plus `NCRendererProps`, `NCComponentProps`, `UseCommittedTreeOptions`.
 
-Orchestrator: `createStubIntentHandler`, `CreateStubIntentHandlerOptions`.
+Orchestrator: `createStubIntentHandler`, `createLlmIntentHandler`, `createAnthropicIntentHandler`, `composeNcObservation`.
 
 App: `NCApp`, `NCAppProps`.
 
@@ -52,7 +52,7 @@ Compute: `createPythonRepl`, `NCReplError`, `NC_REPL_CONTEXT_NAME`, caps, `NCPyt
 
 Six components (`Container`, `Text`, `TextField`, `Checkbox`, `Select`, `Button`) and two actions (`submit_form`, `cancel`). Version string `NC_CATALOG_VERSION` is `"nc-starter-0.3"`.
 
-Container is a minimal flex wrapper (`direction` column or row). TextField supports `multiline` (textarea) and `inputType`. There is no Select. `Button.action.name` is the enum `submit_form | cancel`. `NCButton` forwards `action.params` to `execute()`.
+Container is a minimal flex wrapper (`direction` column or row). TextField supports `multiline` (textarea) and `inputType`. Select is a native list of string options. `Button.action.name` is the enum `submit_form | cancel`. `NCButton` forwards `action.params` to `execute()`.
 
 Field ids use `ncFieldIdSchema`. Strings cap at `NC_STRING_MAX_LENGTH` (8192). `NC_LLM_ACCEPTANCE_CONTRACT` is the prompt-facing accept/reject rule.
 
@@ -168,11 +168,11 @@ Invalid trees are not passed to JSON-UI. Built-in registry keys cannot be overri
 
 ### Input components
 
-All five accept `NCComponentProps` (`element`, optional `children`). `NCContainer` is flex, not a general layout system. `NCTextField` may render a textarea. `NCButton` forwards `{name, params}` and disables while `isIntentInFlight`.
+The six built-ins accept `NCComponentProps` (`element`, optional `children`). `NCContainer` is flex, not a general layout system. `NCTextField` may render a textarea. `NCSelect` is a native `<select>`. `NCButton` forwards `{name, params}` and disables while `isIntentInFlight`.
 
 ### `useCommittedTree`
 
-Thin wrapper around `useUIStream` with `commitMode: "atomic"`. Required for streamed trees. `NCApp` + the stub handler validate complete trees instead.
+Thin wrapper around `useUIStream` with `commitMode: "atomic"`. Required for streamed trees. `NCApp` plus the stub or LLM handler validate complete trees instead. The LLM handler does not POST patches to this hook.
 
 ### `NCErrorBoundary`
 
@@ -248,3 +248,19 @@ interface NCPythonRepl {
 ```
 
 **Async** (spawn + handshake). Default interpreter `python3`. One operation at a time; a second call throws `NCReplError("busy")`. `exec` fulfills with `{ok, stdout, stderr, truncated, error?}` for user-code failures. Infrastructure failures (timeout, spawn, destroyed, limit) throw `NCReplError`. Timeout kills the worker and respawns empty. `loadContext` is `set("context", text)`. Optional `llmQuery` implements in-REPL `llm_query`. Spec: `docs/specs/2026-08-29-compute-rlm-repl-design.md`. Not a field on `NCRuntime`.
+
+---
+
+## LLM handler
+
+### `createLlmIntentHandler(options)`
+
+```typescript
+function createLlmIntentHandler(
+  options: CreateLlmIntentHandlerOptions,
+): NCIntentHandler;
+```
+
+Same signature as the stub. Requires `runtime`, `catalog`, `onTreeCommit`, and an `NCLlmTransport`. Optional `repl` advertises Python tools. Optional `onDurableWrite` advertises `durable_write`. The model must call `commit_ui_tree` with a catalog-valid tree within `maxRounds` (default 8). Invalid trees come back as tool errors. Spec: `docs/specs/2026-08-29-llm-intent-handler-design.md`.
+
+`createAnthropicIntentHandler` / `createAnthropicTransport` map this onto Anthropic Messages. Inject `send` in tests. This handler commits complete trees; it does not POST JSON patches to `useCommittedTree`.

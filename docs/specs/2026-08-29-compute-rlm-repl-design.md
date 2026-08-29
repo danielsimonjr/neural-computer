@@ -2,18 +2,18 @@
 
 **Status:** Active (implementation 2026-08-29).
 **Date:** 2026-08-29
-**Scope:** A persistent Python subprocess the orchestrator can drive. The Recursive Language Model _loop_ (model writes code until a final answer) belongs with a future LLM intent handler, not this module.
+**Scope:** A persistent Python subprocess the orchestrator can drive. The Recursive Language Model _loop_ (model writes code until a final answer) belongs with the LLM intent handler (`createLlmIntentHandler`), not this module.
 **Supersedes:** Deferred item "Python REPL subprocess dispatch" on the README roadmap and in `docs/plans/2026-04-15-neural-computer-v2-plan.md`.
 
 ## Context
 
 Zhang, Kraska, and Khattab (MIT CSAIL), _Recursive Language Models_, treat a large prompt as a variable in a Python REPL. The model writes code against that variable; stdout is the next observation; an optional `llm_query` helper issues a recursive sub-call. NC's architecture paragraph has named this the computation arm since v1, but `src/compute/` did not exist.
 
-This package still does not call an LLM. Compute is the subprocess and the JSON-lines protocol. A later Anthropic (or other) handler will sit in `src/orchestrator/` and call `createPythonRepl`.
+This module does not call an LLM. Compute is the subprocess and the JSON-lines protocol. `createLlmIntentHandler` sits in `src/orchestrator/` and may pass a REPL as `repl`.
 
 ## Decision
 
-Ship an independent, React-free factory `createPythonRepl()` that owns one long-lived CPython worker. Do not attach the REPL to `NCRuntime`. The seven named UI state surfaces stay seven. Compute is a tool, like a database client, that a future handler may hold.
+Ship an independent, React-free factory `createPythonRepl()` that owns one long-lived CPython worker. Do not attach the REPL to `NCRuntime`. The seven named UI state surfaces stay seven. Compute is a tool, like a database client, that the LLM handler may hold.
 
 Four options were considered:
 
@@ -113,7 +113,7 @@ This is not an LLM. `llm_query` is a hole the host fills. If `llmQuery` is omitt
 
 This is not a new named UI state surface. Staging, the tree, the observer cache, and the in-flight intent flag are unchanged.
 
-This is not attached to `emitIntent`. A future handler may call `exec` while handling an intent; the runtime does not.
+This is not attached to `emitIntent`. `createLlmIntentHandler` may call `exec` while handling an intent when the host passed `repl`; the runtime does not.
 
 JSON-UI is not modified.
 

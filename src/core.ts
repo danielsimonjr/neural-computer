@@ -41,6 +41,23 @@ export {
   createStubIntentHandler,
   submittedFieldsStillPresent,
   type CreateStubIntentHandlerOptions,
+  createLlmIntentHandler,
+  composeNcObservation,
+  createAnthropicTransport,
+  createAnthropicIntentHandler,
+  NCLlmError,
+  NC_OBSERVATION_MAX_BYTES,
+  NC_LLM_DEFAULT_MAX_ROUNDS,
+  NC_LLM_DEFAULT_MAX_TOKENS,
+  NC_DEFAULT_ANTHROPIC_MODEL,
+  type CreateLlmIntentHandlerOptions,
+  type DurableWrite,
+  type NCLlmTransport,
+  type NCLlmMessage,
+  type NCLlmContent,
+  type NCLlmTool,
+  type CreateAnthropicTransportOptions,
+  type NCLlmErrorCode,
 } from "./orchestrator";
 
 export {

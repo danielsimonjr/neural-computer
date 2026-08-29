@@ -22,7 +22,7 @@
 
 ## System Overview
 
-Neural Computer is a TypeScript runtime that ships a catalog-constrained form widget, a stub intent handler, a headless observer cache, and a Python REPL compute arm (`createPythonRepl`). It is **not** yet an LLM-driven application runtime. The shipped UI loop is: user types into staging, a named action emits an `IntentEvent`, the stub (or a future handler) commits a new `UITree`, NCRenderer validates during render and keeps the last-good tree on screen, then reconcile and `observer.render` run after a successful commit. A future handler may also `exec` Python against a loaded `context` variable; the renderer never does.
+Neural Computer is a TypeScript runtime that ships a catalog-constrained form widget, a stub or LLM-backed intent handler, a headless observer cache, and a Python REPL compute arm (`createPythonRepl`). The shipped UI loop is: user types into staging, a named action emits an `IntentEvent`, the stub or `createLlmIntentHandler` commits a new `UITree`, NCRenderer validates during render and keeps the last-good tree on screen, then reconcile and `observer.render` run after a successful commit. The LLM handler may `exec` Python against a loaded `context` variable; the renderer never does.
 
 Key properties: every tree is validated against a Zod-typed catalog before JSON-UI renders it; staging is flushed only on named intents; concurrent intents are rejected and the in-flight flag is public; memoryjs entities are projected into the React data model.
 
@@ -30,13 +30,13 @@ Key properties: every tree is validated against a Zod-typed catalog before JSON-
 
 | Metric                | Value                                         |
 | --------------------- | --------------------------------------------- |
-| Test files            | 17 under `src/**/*.test.*`                    |
+| Test files            | 20 under `src/**/*.test.*`                    |
 | Catalog version       | `nc-starter-0.3`                              |
 | Named state surfaces  | 7 (compute is a tool, not a surface)          |
 | Spec invariants       | 13 UI-runtime, all tested, plus compute rules |
 | Circular dependencies | 0                                             |
 
-`skipLibCheck` remains `true` in `tsconfig.json`. React 19 is a peer dependency; host apps must dedupe React (this package's `overrides` do not protect consumers).
+`tsconfig.json` sets `"skipLibCheck": false`. Zod is pinned to `4.4.3`. React 19 is a peer dependency; host apps must dedupe React (this package's `overrides` do not protect consumers).
 
 ---
 
@@ -44,7 +44,7 @@ Key properties: every tree is validated against a Zod-typed catalog before JSON-
 
 ### 1. Access Discipline Over Ontology
 
-The staging buffer is real state. The spec names it along with every other surface. The useful guarantee is that a future LLM orchestrator's observation surface is narrow: exactly `(durable state + intent event payloads)`. That is an access constraint, not an ontological claim.
+The staging buffer is real state. The spec names it along with every other surface. The useful guarantee is that the LLM orchestrator's observation surface is narrow: exactly `(durable state + intent event payloads)`. That is an access constraint, not an ontological claim.
 
 ### 2. Mechanical Reconciliation
 
@@ -134,7 +134,9 @@ Input components bind to staging via `useStagingField`. `NCButton` forwards `{na
 
 ### Layer 4: Orchestrator (`src/orchestrator/`)
 
-`createStubIntentHandler` requires `catalog`. It maps an `IntentEvent` to a `UITree` via `nextTree`, **validates** that tree, and calls `onTreeCommit` only on success. Invalid `nextTree` results reject; `onTreeCommit` is not called. There is no Anthropic handler in this package. The orchestrator may import `createPythonRepl` from `src/compute/` (or `neural-computer/core`); it still must not import the renderer, React, headless, or `../observer`.
+`createStubIntentHandler` requires `catalog`. It maps an `IntentEvent` to a `UITree` via `nextTree`, **validates** that tree, and calls `onTreeCommit` only on success. Invalid `nextTree` results reject; `onTreeCommit` is not called.
+
+`createLlmIntentHandler` is the production handler: it composes an observation, runs a tool loop against an injected `NCLlmTransport`, and commits one catalog-valid tree. `createAnthropicIntentHandler` wraps Anthropic Messages. The orchestrator may import `createPythonRepl`; it still must not import the renderer, React, headless, or `../observer`.
 
 ### Cross-Cutting: Compute (`src/compute/`)
 
@@ -144,13 +146,14 @@ Input components bind to staging via `useStagingField`. `NCButton` forwards `{na
 
 `ncStarterCatalog` declares six components and two actions. `NC_CATALOG_VERSION` is `nc-starter-0.3`. Field ids go through `ncFieldIdSchema` (non-empty, no path separators, not `__proto__` / `constructor` / `prototype`). Strings are capped at 8192 characters. `Button.action.name` is `z.enum(["submit_form", "cancel"])`.
 
-| Component   | Props (v0.2)                                                                    | Role                                                       |
-| ----------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| `Container` | `direction?: "column" \| "row"`, `visible?`                                     | Minimal flex wrapper. Not a layout system.                 |
-| `Text`      | `content`, `visible?`                                                           | Display text                                               |
-| `TextField` | `id`, `label`, `placeholder?`, `error?`, `multiline?`, `inputType?`, `visible?` | Staging-bound input; `multiline` is a textarea. No Select. |
-| `Checkbox`  | `id`, `label`, `visible?`                                                       | Boolean input                                              |
-| `Button`    | `label`, `visible?`, `action?: { name, params? }`                               | Forwards `params` to `execute()`                           |
+| Component   | Props (v0.2)                                                                    | Role                                            |
+| ----------- | ------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `Container` | `direction?: "column" \| "row"`, `visible?`                                     | Minimal flex wrapper. Not a layout system.      |
+| `Text`      | `content`, `visible?`                                                           | Display text                                    |
+| `TextField` | `id`, `label`, `placeholder?`, `error?`, `multiline?`, `inputType?`, `visible?` | Staging-bound input; `multiline` is a textarea. |
+| `Checkbox`  | `id`, `label`, `visible?`                                                       | Boolean input                                   |
+| `Select`    | `id`, `label`, `options`, `error?`, `visible?`                                  | Native select; option label is the value        |
+| `Button`    | `label`, `visible?`, `action?: { name, params? }`                               | Forwards `params` to `execute()`                |
 
 ### Cross-Cutting: Memory (`src/memory/`)
 
@@ -173,10 +176,10 @@ The runtime names **seven** surfaces. The April-11 spec originally named five; P
 | **Staging buffer**        | NCRenderer / runtime     | Read-only, on intent flush only | In-memory, dies on unmount |
 | **In-flight intent flag** | createNCRuntime          | Implicit; also public API       | In-memory                  |
 | **Catalog version**       | Config constant          | Read-only, on IntentEvent       | Constant per session       |
-| **LLM session state**     | Future Anthropic SDK     | Invisible to NC                 | Within session             |
+| **LLM session state**     | Transport (prompt cache) | Invisible to NCRuntime          | Within session             |
 | **Observer cache**        | createNCRuntime.observer | `getLastRender` / `serialize`   | In-memory, frozen          |
 
-LLM session state is acknowledged rather than managed. NC does not construct an SDK client.
+LLM session state is transport-owned (messages, prompt cache). `NCRuntime` does not hold an SDK client. Hosts that want Anthropic construct `createAnthropicTransport` (or pass `send`) themselves.
 
 ---
 
@@ -242,7 +245,7 @@ Path C (plan `2026-04-16-headless-dual-backend`) runs `@json-ui/headless` alongs
 
 `FORBIDDEN_IMPORTS` includes `@json-ui/headless` and `../observer` so the orchestrator consumes `NormalizedNode` output via `runtime.observer` without importing the observer module. Observer render is a second full tree walk on the layout path (NC-087); it is skipped when the same `tree` reference was already shadowed.
 
-Still deferred: real Anthropic-backed intent handler, persistent staging buffer, catalog migration from `nc-starter-0.1`. Python REPL dispatch shipped 2026-08-29 (`createPythonRepl`).
+Still deferred: catalog migration from `nc-starter-0.1`, persistent staging, a memoryjs graph mutation DSL. Python REPL and the LLM intent handler shipped 2026-08-29.
 
 ---
 

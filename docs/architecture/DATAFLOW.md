@@ -13,7 +13,7 @@ NC's core loop is: **type → click → intent → dispatch → commit → valid
 
 ```
   User types      User clicks       Runtime gates      Handler runs
-  into field      Button action     isIntentInFlight   (stub only)
+  into field      Button action     isIntentInFlight   (stub or LLM)
       │                │                 │                  │
       ▼                ▼                 ▼                  ▼
 ┌──────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐
@@ -42,7 +42,7 @@ Validation is **not** in `useLayoutEffect`. `useMemo` decides `renderTree`. The 
 
 **Owner**: `NCTextField` / `NCCheckbox` via `useStagingField`
 
-`onChange` writes into `StagingBuffer.set(fieldId, value)` with a 8192-character cap on strings. The orchestrator never observes these writes. `multiline` TextFields use a textarea; there is no Select component.
+`onChange` writes into `StagingBuffer.set(fieldId, value)` with a 8192-character cap on strings. The orchestrator never observes these writes. `multiline` TextFields use a textarea. Select is a native `<select>` of string options.
 
 ### 2. User Clicks a Button (Action Dispatch)
 
@@ -60,9 +60,9 @@ Destroyed, missing handler, or already in flight: warn and **resolve** (drop). O
 
 ### 4. Handler Execution (Tree Production)
 
-**Owner**: `createStubIntentHandler`
+**Owner**: `createStubIntentHandler` or `createLlmIntentHandler`
 
-`nextTree(event)` must produce a catalog-valid tree or the handler rejects and `onTreeCommit` is not called. Typical `onTreeCommit` is `setTree`.
+The stub's `nextTree(event)` must produce a catalog-valid tree or the handler rejects and `onTreeCommit` is not called. The LLM handler validates `commit_ui_tree` the same way. Typical `onTreeCommit` is `setTree`.
 
 ### 5. Tree Commit (React State Update)
 
@@ -103,7 +103,7 @@ If validation failed, skip reconcile (buffer untouched) and return. If `renderTr
 
 When a Button's action includes `DynamicValue` params like `{ to: { path: "email" } }`:
 
-A single-segment path with no `/` prefers staging if that key exists, otherwise the data model. A multi-segment path walks the data model via `getByPath`. The rule lives in `@json-ui/core`'s `resolveActionWithStaging`. NC must not reimplement it. Values copied into `action_params` from durable paths are visible to a future LLM; do not put secrets on those paths.
+A single-segment path with no `/` prefers staging if that key exists, otherwise the data model. A multi-segment path walks the data model via `getByPath`. The rule lives in `@json-ui/core`'s `resolveActionWithStaging`. NC must not reimplement it. Values copied into `action_params` from durable paths are visible to the LLM handler; do not put secrets on those paths.
 
 ---
 
@@ -142,18 +142,18 @@ Click 1 sets `isIntentInFlight` true; subscribers re-render; buttons disable. Cl
 
 ## Data Flow Invariants
 
-| #                                    | Guarantee                                                          | Enforced By |
-| ------------------------------------ | ------------------------------------------------------------------ | ----------- |
-| Orchestrator sees only IntentEvent   | Buffer isolation including `../observer` (Invariant 7)             |
-| Invalid trees never reach Renderer   | `useMemo` last-good (Invariant 8)                                  |
-| Staging survives failed validation   | Reconcile skipped when pending error is set (Invariant 9)          |
-| Staging survives partial streams     | `useCommittedTree` atomic mode + stub `validateTree` (Invariant 9) |
-| No phantom staging entries           | Walk stripped `renderTree`                                         |
-| React and observer see the same data | Both walk stripped `renderTree` (Invariant 12)                     |
-| One intent at a time, visible        | `isIntentInFlight` / `subscribeIntentFlight` (Invariant 10)        |
-| Full snapshot on every intent        | ActionProvider (Invariant 5)                                       |
-| `cancel` discards staging            | `emitIntent` reconciles to empty after snapshot is on the event    |
-| Params and snapshot unmerged         | Separate fields (Invariant 6)                                      |
-| DynamicValue resolves from staging   | Single-segment paths prefer staging (Invariant 11)                 |
+| #                                    | Guarantee                                                             | Enforced By |
+| ------------------------------------ | --------------------------------------------------------------------- | ----------- |
+| Orchestrator sees only IntentEvent   | Buffer isolation including `../observer` (Invariant 7)                |
+| Invalid trees never reach Renderer   | `useMemo` last-good (Invariant 8)                                     |
+| Staging survives failed validation   | Reconcile skipped when pending error is set (Invariant 9)             |
+| Staging survives partial streams     | `useCommittedTree` atomic mode + handler `validateTree` (Invariant 9) |
+| No phantom staging entries           | Walk stripped `renderTree`                                            |
+| React and observer see the same data | Both walk stripped `renderTree` (Invariant 12)                        |
+| One intent at a time, visible        | `isIntentInFlight` / `subscribeIntentFlight` (Invariant 10)           |
+| Full snapshot on every intent        | ActionProvider (Invariant 5)                                          |
+| `cancel` discards staging            | `emitIntent` reconciles to empty after snapshot is on the event       |
+| Params and snapshot unmerged         | Separate fields (Invariant 6)                                         |
+| DynamicValue resolves from staging   | Single-segment paths prefer staging (Invariant 11)                    |
 
-The Python REPL is outside this loop. A future intent handler may call `createPythonRepl` while handling an `IntentEvent`. `NCRenderer` does not spawn Python.
+The Python REPL is outside this loop. `createLlmIntentHandler` may call `repl.exec` via the `python_exec` tool while handling an `IntentEvent`. `NCRenderer` does not spawn Python.
