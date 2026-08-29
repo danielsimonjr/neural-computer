@@ -1,11 +1,16 @@
 import { describe, it, expect, vi } from "vitest";
 import type { IntentEvent, UITree } from "@json-ui/core";
-import { createStubIntentHandler } from "./handle-intent";
+import {
+  createStubIntentHandler,
+  submittedFieldsStillPresent,
+} from "./handle-intent";
+import { ncStarterCatalog } from "../catalog";
 
 describe("createStubIntentHandler", () => {
   it("calls the onTreeCommit callback with a tree derived from the event", async () => {
     const onTreeCommit = vi.fn();
     const handler = createStubIntentHandler({
+      catalog: ncStarterCatalog,
       nextTree: (event: IntentEvent): UITree => ({
         root: "r",
         elements: {
@@ -23,7 +28,7 @@ describe("createStubIntentHandler", () => {
       action_name: "submit_form",
       action_params: {},
       staging_snapshot: { email: "a@b.c" },
-      timestamp: Date.now(),
+      timestamp: 0,
     };
 
     await handler(event);
@@ -45,6 +50,7 @@ describe("createStubIntentHandler", () => {
     // defeat those diagnostics.
     const onTreeCommit = vi.fn();
     const handler = createStubIntentHandler({
+      catalog: ncStarterCatalog,
       nextTree: () => {
         throw new Error("LLM said no");
       },
@@ -56,14 +62,16 @@ describe("createStubIntentHandler", () => {
         action_name: "submit_form",
         action_params: {},
         staging_snapshot: {},
-        timestamp: Date.now(),
+        timestamp: 0,
       }),
     ).rejects.toThrow("LLM said no");
     expect(onTreeCommit).not.toHaveBeenCalled();
   });
 
   it("is async — caller can await the full handler cycle", async () => {
+    let finished = false;
     const handler = createStubIntentHandler({
+      catalog: ncStarterCatalog,
       nextTree: () => ({
         root: "r",
         elements: {
@@ -71,17 +79,66 @@ describe("createStubIntentHandler", () => {
         },
       }),
       onTreeCommit: async () => {
-        await new Promise((r) => setTimeout(r, 5));
+        await Promise.resolve();
+        finished = true;
       },
     });
-    const before = Date.now();
     await handler({
-      action_name: "x",
+      action_name: "submit_form",
       action_params: {},
       staging_snapshot: {},
-      timestamp: before,
+      timestamp: 0,
     });
-    const elapsed = Date.now() - before;
-    expect(elapsed).toBeGreaterThanOrEqual(5);
+    expect(finished).toBe(true);
+  });
+
+  it("rejects an invalid nextTree and does not call onTreeCommit", async () => {
+    const onTreeCommit = vi.fn();
+    const handler = createStubIntentHandler({
+      catalog: ncStarterCatalog,
+      nextTree: () => ({
+        root: "r",
+        elements: {
+          r: { key: "r", type: "TextField", props: { label: "no id" } },
+        },
+      }),
+      onTreeCommit,
+    });
+    await expect(
+      handler({
+        action_name: "submit_form",
+        action_params: {},
+        staging_snapshot: {},
+        timestamp: 0,
+      }),
+    ).rejects.toThrow(/catalog validation/);
+    expect(onTreeCommit).not.toHaveBeenCalled();
+  });
+
+  it("submittedFieldsStillPresent distinguishes accept vs reject trees (NC-051)", () => {
+    const event: IntentEvent = {
+      action_name: "submit_form",
+      action_params: {},
+      staging_snapshot: { email: "a@b.c" },
+      timestamp: 0,
+    };
+    const accepted: UITree = {
+      root: "r",
+      elements: {
+        r: { key: "r", type: "Text", props: { content: "thanks" } },
+      },
+    };
+    const rejected: UITree = {
+      root: "r",
+      elements: {
+        r: {
+          key: "r",
+          type: "TextField",
+          props: { id: "email", label: "Email", error: "bad" },
+        },
+      },
+    };
+    expect(submittedFieldsStillPresent(event, accepted)).toEqual([]);
+    expect(submittedFieldsStillPresent(event, rejected)).toEqual(["email"]);
   });
 });

@@ -28,15 +28,15 @@ Key properties: every tree is validated against a Zod-typed catalog before JSON-
 
 ### Key Statistics
 
-| Metric                | Value                                      |
-| --------------------- | ------------------------------------------ |
-| Source files          | 28 TypeScript files (excluding tests)      |
-| Test files            | 15 under `src/**/*.test.*`                 |
-| Lines of source       | ~1799                                      |
-| Catalog version       | `nc-starter-0.2`                           |
-| Named state surfaces  | 7                                          |
-| Spec invariants       | 13, all tested                             |
-| Circular dependencies | 0                                          |
+| Metric                | Value                                 |
+| --------------------- | ------------------------------------- |
+| Source files          | 28 TypeScript files (excluding tests) |
+| Test files            | 15 under `src/**/*.test.*`            |
+| Lines of source       | ~1799                                 |
+| Catalog version       | `nc-starter-0.3`                      |
+| Named state surfaces  | 7                                     |
+| Spec invariants       | 13, all tested                        |
+| Circular dependencies | 0                                     |
 
 `skipLibCheck` remains `true` in `tsconfig.json`. React 19 is a peer dependency; host apps must dedupe React (this package's `overrides` do not protect consumers).
 
@@ -81,7 +81,7 @@ The orchestrator module never imports from the renderer, React, `@json-ui/headle
 │  Layer 2: Renderer (NCRenderer + inputs + error boundary)│
 │  Layer 3: Runtime (createNCRuntime, observer, freeze)    │
 │  Layer 4: Orchestrator (createStubIntentHandler)         │
-│  Catalog: ncStarterCatalog (nc-starter-0.2)              │
+│  Catalog: ncStarterCatalog (nc-starter-0.3)              │
 │  Memory:  defaultNCProjection                            │
 └──────────────────────────────────────────────────────────┘
                          │
@@ -139,15 +139,15 @@ Input components bind to staging via `useStagingField`. `NCButton` forwards `{na
 
 ### Cross-Cutting: Catalog (`src/catalog/`)
 
-`ncStarterCatalog` declares five components and two actions. `NC_CATALOG_VERSION` is `nc-starter-0.2`. Field ids go through `ncFieldIdSchema` (non-empty, no path separators, not `__proto__` / `constructor` / `prototype`). Strings are capped at 8192 characters. `Button.action.name` is `z.enum(["submit_form", "cancel"])`.
+`ncStarterCatalog` declares six components and two actions. `NC_CATALOG_VERSION` is `nc-starter-0.3`. Field ids go through `ncFieldIdSchema` (non-empty, no path separators, not `__proto__` / `constructor` / `prototype`). Strings are capped at 8192 characters. `Button.action.name` is `z.enum(["submit_form", "cancel"])`.
 
-| Component   | Props (v0.2)                                                                 | Role |
-| ----------- | ---------------------------------------------------------------------------- | ---- |
-| `Container` | `direction?: "column" \| "row"`, `visible?`                                  | Minimal flex wrapper. Not a layout system. |
-| `Text`      | `content`, `visible?`                                                        | Display text |
+| Component   | Props (v0.2)                                                                    | Role                                                       |
+| ----------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `Container` | `direction?: "column" \| "row"`, `visible?`                                     | Minimal flex wrapper. Not a layout system.                 |
+| `Text`      | `content`, `visible?`                                                           | Display text                                               |
 | `TextField` | `id`, `label`, `placeholder?`, `error?`, `multiline?`, `inputType?`, `visible?` | Staging-bound input; `multiline` is a textarea. No Select. |
-| `Checkbox`  | `id`, `label`, `visible?`                                                    | Boolean input |
-| `Button`    | `label`, `visible?`, `action?: { name, params? }`                            | Forwards `params` to `execute()` |
+| `Checkbox`  | `id`, `label`, `visible?`                                                       | Boolean input                                              |
+| `Button`    | `label`, `visible?`, `action?: { name, params? }`                               | Forwards `params` to `execute()`                           |
 
 ### Cross-Cutting: Memory (`src/memory/`)
 
@@ -163,15 +163,15 @@ Input components bind to staging via `useStagingField`. `NCButton` forwards `{na
 
 The runtime names **seven** surfaces. The April-11 spec originally named five; Path C added the observer cache; the in-flight flag is a first-class public surface after the 2026-08-29 audit.
 
-| Surface                   | Owner                       | Orchestrator Access             | Persistence                |
-| ------------------------- | --------------------------- | ------------------------------- | -------------------------- |
-| **Durable state**         | memoryjs                    | Read/write freely               | Across sessions            |
-| **Current UI tree**       | Handler (re-emitted)        | None (pure derivation)          | None                       |
-| **Staging buffer**        | NCRenderer / runtime        | Read-only, on intent flush only | In-memory, dies on unmount |
-| **In-flight intent flag** | createNCRuntime             | Implicit; also public API       | In-memory                  |
-| **Catalog version**       | Config constant             | Read-only, on IntentEvent       | Constant per session       |
-| **LLM session state**     | Future Anthropic SDK        | Invisible to NC                 | Within session             |
-| **Observer cache**        | createNCRuntime.observer    | `getLastRender` / `serialize`   | In-memory, frozen          |
+| Surface                   | Owner                    | Orchestrator Access             | Persistence                |
+| ------------------------- | ------------------------ | ------------------------------- | -------------------------- |
+| **Durable state**         | memoryjs                 | Read/write freely               | Across sessions            |
+| **Current UI tree**       | Handler (re-emitted)     | None (pure derivation)          | None                       |
+| **Staging buffer**        | NCRenderer / runtime     | Read-only, on intent flush only | In-memory, dies on unmount |
+| **In-flight intent flag** | createNCRuntime          | Implicit; also public API       | In-memory                  |
+| **Catalog version**       | Config constant          | Read-only, on IntentEvent       | Constant per session       |
+| **LLM session state**     | Future Anthropic SDK     | Invisible to NC                 | Within session             |
+| **Observer cache**        | createNCRuntime.observer | `getLastRender` / `serialize`   | In-memory, frozen          |
 
 LLM session state is acknowledged rather than managed. NC does not construct an SDK client.
 
@@ -214,22 +214,22 @@ Derived from `docs/specs/2026-04-11-ephemeral-ui-state-design.md`:
 
 ## Failure Modes
 
-| Risk                         | Handling |
-| ---------------------------- | -------- |
-| Malformed tree               | `validateTree` fails during render; `<Renderer>` keeps last-good; reconcile skipped |
-| Same id, different type      | `detectFieldIdTypeChanges` rejects; last-good stays |
+| Risk                         | Handling                                                                                        |
+| ---------------------------- | ----------------------------------------------------------------------------------------------- |
+| Malformed tree               | `validateTree` fails during render; `<Renderer>` keeps last-good; reconcile skipped             |
+| Same id, different type      | `detectFieldIdTypeChanges` rejects; last-good stays                                             |
 | Streaming response times out | `useCommittedTree` atomic mode suppresses partial trees; stub handler also validates `nextTree` |
-| NCRenderer unmounts          | Buffer dies. Persistent drafts are a separate spec |
-| Handler throws               | `emitIntent` rejects; NCRenderer `.catch` logs; `isIntentInFlight` clears in `finally` |
-| Duplicate field ids          | `validateUniqueFieldIds` inside `validateTree`; last-good stays |
-| Observer throw               | Last cached render kept; `getConsecutiveFailures` advances (Invariant 13) |
-| Render throw in a component  | `NCErrorBoundary` shows an alert; `onRenderError` fires |
+| NCRenderer unmounts          | Buffer dies. Persistent drafts are a separate spec                                              |
+| Handler throws               | `emitIntent` rejects; NCRenderer `.catch` logs; `isIntentInFlight` clears in `finally`          |
+| Duplicate field ids          | `validateUniqueFieldIds` inside `validateTree`; last-good stays                                 |
+| Observer throw               | Last cached render kept; `getConsecutiveFailures` advances (Invariant 13)                       |
+| Render throw in a component  | `NCErrorBoundary` shows an alert; `onRenderError` fires                                         |
 
 ---
 
 ## Testing Strategy
 
-Unit tests live next to modules (catalog, runtime, orchestrator, renderer, app, memory, observer, types). The meta-test `buffer-isolation.test.ts` walks orchestrator source and asserts no forbidden imports, including `../observer`. `integration.test.tsx` covers type → submit → intent → reconcile → observer. Field-id stability and last-good-tree behavior live in `nc-renderer.test.tsx` and `field-id-stability.test.ts`. All 13 invariants have tests (see [INVARIANTS.md](./INVARIANTS.md)). There are 15 test files and 84 `it`/`test` cases.
+Unit tests live next to modules (catalog, runtime, orchestrator, renderer, app, memory, observer, types). The meta-test `buffer-isolation.test.ts` walks orchestrator source and asserts no forbidden imports, including `../observer`. `integration/path-c.test.tsx` covers type → submit → intent → reconcile → observer. Field-id stability and last-good-tree behavior live in `nc-renderer.test.tsx` and `field-id-stability.test.ts`. All 13 invariants have tests (see [INVARIANTS.md](./INVARIANTS.md)). There are 15 test files and 84 `it`/`test` cases.
 
 ---
 
@@ -243,5 +243,5 @@ Still deferred: real Anthropic-backed intent handler, Python REPL dispatch, pers
 
 ---
 
-*Last Updated*: 2026-08-29
-*Version*: 0.1.0
+_Last Updated_: 2026-08-29
+_Version_: 0.1.0

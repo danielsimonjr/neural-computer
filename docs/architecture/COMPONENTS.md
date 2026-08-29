@@ -3,7 +3,7 @@
 **Version**: 0.1.0 (docs refreshed 2026-08-29)
 **Last Updated**: 2026-08-29
 
-This document covers every source file in the NC runtime, grouped by module in dependency order (leaves first). Catalog version is `nc-starter-0.2`. `NCButton` forwards `action.params` to `execute()`. Validation of trees happens during render (`useMemo`), not in `useLayoutEffect`.
+This document covers every source file in the NC runtime, grouped by module in dependency order (leaves first). Catalog version is `nc-starter-0.3`. `NCButton` forwards `action.params` to `execute()`. Validation of trees happens during render (`useMemo`), not in `useLayoutEffect`.
 
 ---
 
@@ -13,14 +13,14 @@ This document covers every source file in the NC runtime, grouped by module in d
 
 Core type definitions plus the catalog-version constructor.
 
-| Export | Kind | Description |
-|--------|------|-------------|
-| `NCIntentHandler` | Type alias | `(event: IntentEvent) => Promise<void>` |
-| `NCCatalogVersion` | Type alias | Nominal brand. Construct with `asNCCatalogVersion`; a bare `as` at the runtime boundary is rejected by `asNCCatalogVersion`. |
-| `asNCCatalogVersion` | Function | Throws if the string is empty or longer than 64 characters |
-| `isNCCatalogVersion` | Type guard | Non-empty string, max 64 chars |
-| `NCObserver` | Interface | Headless shadow renderer API |
-| `NCRuntime` | Interface | Staging buffer, durable store, observer, catalog, catalogVersion, emitIntent, setIntentHandler, isIntentInFlight, subscribeIntentFlight, destroy |
+| Export               | Kind       | Description                                                                                                                                      |
+| -------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `NCIntentHandler`    | Type alias | `(event: IntentEvent) => Promise<void>`                                                                                                          |
+| `NCCatalogVersion`   | Type alias | Nominal brand. Construct with `asNCCatalogVersion`; a bare `as` at the runtime boundary is rejected by `asNCCatalogVersion`.                     |
+| `asNCCatalogVersion` | Function   | Throws if the string is empty or longer than 64 characters                                                                                       |
+| `isNCCatalogVersion` | Type guard | Non-empty string, max 64 chars                                                                                                                   |
+| `NCObserver`         | Interface  | Headless shadow renderer API                                                                                                                     |
+| `NCRuntime`          | Interface  | Staging buffer, durable store, observer, catalog, catalogVersion, emitIntent, setIntentHandler, isIntentInFlight, subscribeIntentFlight, destroy |
 
 **Tests**: `nc-types.test.ts` (includes `NCRuntime.observer` and the brand constructor).
 
@@ -44,21 +44,21 @@ Caps and the starter action allowlist. `NC_FIELD_ID_MAX_LENGTH` is 128, `NC_STRI
 
 ### `src/catalog/nc-catalog.ts`
 
-| Export | Kind | Description |
-|--------|------|-------------|
-| `ncStarterCatalog` | Constant | Five components, two actions |
-| `NC_CATALOG_VERSION` | Constant | `"nc-starter-0.2"` via `asNCCatalogVersion` |
+| Export                       | Kind     | Description                                                                                         |
+| ---------------------------- | -------- | --------------------------------------------------------------------------------------------------- |
+| `ncStarterCatalog`           | Constant | Five components, two actions                                                                        |
+| `NC_CATALOG_VERSION`         | Constant | `"nc-starter-0.3"` via `asNCCatalogVersion`                                                         |
 | `NC_LLM_ACCEPTANCE_CONTRACT` | Constant | Prompt-facing text: accept by omitting field ids; never reuse an id with a different component type |
 
 **Components**:
 
-| Name | Props | Has children | Role |
-|------|-------|--------------|------|
-| `Container` | `direction?`, `visible?` | Yes | Minimal flex (`column` default, `row` optional). Not a layout system. |
-| `Text` | `content`, `visible?` | No | Display text |
-| `TextField` | `id`, `label`, `placeholder?`, `error?`, `multiline?`, `inputType?`, `visible?` | No | Staging-bound; `multiline` is a textarea. No Select in v1. |
-| `Checkbox` | `id`, `label`, `visible?` | No | Boolean |
-| `Button` | `label`, `visible?`, `action?: { name: submit_form \| cancel, params? }` | No | Fires catalog actions |
+| Name        | Props                                                                           | Has children | Role                                                                  |
+| ----------- | ------------------------------------------------------------------------------- | ------------ | --------------------------------------------------------------------- |
+| `Container` | `direction?`, `visible?`                                                        | Yes          | Minimal flex (`column` default, `row` optional). Not a layout system. |
+| `Text`      | `content`, `visible?`                                                           | No           | Display text                                                          |
+| `TextField` | `id`, `label`, `placeholder?`, `error?`, `multiline?`, `inputType?`, `visible?` | No           | Staging-bound; `multiline` is a textarea. No Select in v1.            |
+| `Checkbox`  | `id`, `label`, `visible?`                                                       | No           | Boolean                                                               |
+| `Button`    | `label`, `visible?`, `action?: { name: submit_form \| cancel, params? }`        | No           | Fires catalog actions                                                 |
 
 **Tests**: `nc-catalog.test.ts`.
 
@@ -76,10 +76,10 @@ Re-exports catalog, version, contract, field-id helpers, and limits.
 
 ### `src/runtime/context.ts`
 
-| Export | Kind | Description |
-|--------|------|-------------|
-| `CreateNCRuntimeOptions` | Interface | `durableStore`, `catalog`, optional `catalogVersion`, `extraHeadlessRegistry`, `onObserverStale` |
-| `createNCRuntime` | **Synchronous** function | Returns `NCRuntime` |
+| Export                   | Kind                     | Description                                                                                      |
+| ------------------------ | ------------------------ | ------------------------------------------------------------------------------------------------ |
+| `CreateNCRuntimeOptions` | Interface                | `durableStore`, `catalog`, optional `catalogVersion`, `extraHeadlessRegistry`, `onObserverStale` |
+| `createNCRuntime`        | **Synchronous** function | Returns `NCRuntime`                                                                              |
 
 Internal state: staging buffer, observer, handler slot, `intentInFlight` plus a listener set, `destroyed`.
 
@@ -97,10 +97,10 @@ Barrel.
 
 ### `src/orchestrator/handle-intent.ts`
 
-| Export | Kind | Description |
-|--------|------|-------------|
-| `CreateStubIntentHandlerOptions` | Interface | `{ catalog, nextTree, onTreeCommit }` — `catalog` is required |
-| `createStubIntentHandler` | Function | Validates `nextTree` with `catalog.validateTree` before `onTreeCommit` |
+| Export                           | Kind      | Description                                                            |
+| -------------------------------- | --------- | ---------------------------------------------------------------------- |
+| `CreateStubIntentHandlerOptions` | Interface | `{ catalog, nextTree, onTreeCommit }` — `catalog` is required          |
+| `createStubIntentHandler`        | Function  | Validates `nextTree` with `catalog.validateTree` before `onTreeCommit` |
 
 **Tests**: `handle-intent.test.ts`.
 
@@ -156,14 +156,14 @@ Barrel.
 
 ### `src/renderer/input-components.tsx`
 
-| Export | Kind | Description |
-|--------|------|-------------|
-| `NCComponentProps` | Interface | `{ element, children? }` |
-| `NCContainer` | Component | Flex `div` with `data-key`; `direction` row/column; `visible === false` returns null |
-| `NCText` | Component | `<p>` with `props.content` |
-| `NCTextField` | Component | `<input>` or `<textarea>` when `multiline`; `maxLength` 8192; `aria-invalid` when `error` is set |
-| `NCCheckbox` | Component | Checkbox bound to staging |
-| `NCButton` | Component | `execute({ name, params })` — **params are forwarded**; disabled while in flight |
+| Export             | Kind      | Description                                                                                      |
+| ------------------ | --------- | ------------------------------------------------------------------------------------------------ |
+| `NCComponentProps` | Interface | `{ element, children? }`                                                                         |
+| `NCContainer`      | Component | Flex `div` with `data-key`; `direction` row/column; `visible === false` returns null             |
+| `NCText`           | Component | `<p>` with `props.content`                                                                       |
+| `NCTextField`      | Component | `<input>` or `<textarea>` when `multiline`; `maxLength` 8192; `aria-invalid` when `error` is set |
+| `NCCheckbox`       | Component | Checkbox bound to staging                                                                        |
+| `NCButton`         | Component | `execute({ name, params })` — **params are forwarded**; disabled while in flight                 |
 
 Three id namespaces: React `key`, `data-key` (`element.key`), `data-field-id` (staging id).
 
@@ -171,10 +171,10 @@ Three id namespaces: React `key`, `data-key` (`element.key`), `data-field-id` (s
 
 ### `src/renderer/nc-renderer.tsx`
 
-| Export | Kind | Description |
-|--------|------|-------------|
-| `NCRendererProps` | Interface | `tree`, `runtime`, `catalog`, `catalogVersion`, optional `extraRegistry`, `onValidationError`, `onRenderError` |
-| `NCRenderer` | Function component | Validates during render; last-good tree to `<Renderer>` |
+| Export            | Kind               | Description                                                                                                    |
+| ----------------- | ------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `NCRendererProps` | Interface          | `tree`, `runtime`, `catalog`, `catalogVersion`, optional `extraRegistry`, `onValidationError`, `onRenderError` |
+| `NCRenderer`      | Function component | Validates during render; last-good tree to `<Renderer>`                                                        |
 
 `extraRegistry` cannot override builtin names (`Container`, `Text`, `TextField`, `Checkbox`, `Button`) so a host cannot drop `action.params` by replacing `Button`.
 
@@ -198,10 +198,10 @@ Re-exports components, NCRenderer, useCommittedTree, NCErrorBoundary, and field-
 
 ### `src/app/nc-app.tsx`
 
-| Export | Kind | Description |
-|--------|------|-------------|
-| `NCAppProps` | Interface | runtime, catalog, catalogVersion, initialTree, buildIntentHandler, optional extraRegistry / onValidationError / onRenderError |
-| `NCApp` | Function component | Owns tree state, installs handler, renders NCRenderer |
+| Export       | Kind               | Description                                                                                                                   |
+| ------------ | ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `NCAppProps` | Interface          | runtime, catalog, catalogVersion, initialTree, buildIntentHandler, optional extraRegistry / onValidationError / onRenderError |
+| `NCApp`      | Function component | Owns tree state, installs handler, renders NCRenderer                                                                         |
 
 `buildIntentHandler` should be stable (`useCallback` or module scope). Unmount installs a no-op handler.
 
@@ -225,6 +225,6 @@ Root package export: catalog, types, runtime, memory, renderer, orchestrator, ap
 
 ---
 
-## Integration Test (`src/integration.test.tsx`)
+## Integration Test (`src/integration/path-c.test.tsx`)
 
 End-to-end Path C: type → submit → IntentEvent with snapshot + catalog_version; reconcile across trees; Invariant 6 key collision; Invariant 11 DynamicValue; Invariant 10 backpressure; observer populated after commit; cancel clears staging.

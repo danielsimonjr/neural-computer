@@ -2,6 +2,18 @@ import { describe, it, expect, vi } from "vitest";
 import { createObservableDataModel, type IntentEvent } from "@json-ui/core";
 import { createNCRuntime } from "./context";
 import { ncStarterCatalog, NC_CATALOG_VERSION } from "../catalog";
+import { NC_STAGING_MAX_FIELDS } from "../catalog/limits";
+
+function evt(partial: Partial<IntentEvent> = {}): IntentEvent {
+  return {
+    action_name: "submit_form",
+    action_params: {},
+    staging_snapshot: {},
+    catalog_version: NC_CATALOG_VERSION,
+    timestamp: 0,
+    ...partial,
+  };
+}
 
 // Uses core's in-memory createObservableDataModel rather than the memoryjs
 // adapter because this test verifies the NC runtime wrapper, not memoryjs
@@ -17,11 +29,11 @@ describe("createNCRuntime", () => {
       catalogVersion: NC_CATALOG_VERSION,
     });
 
-    expect(runtime.stagingBuffer).toBeDefined();
-    expect(runtime.durableStore).toBe(durableStore);
-    expect(typeof runtime.emitIntent).toBe("function");
-    expect(typeof runtime.setIntentHandler).toBe("function");
-    expect(typeof runtime.destroy).toBe("function");
+    expect(runtime.observer).toBeDefined();
+    expect(typeof runtime.isIntentInFlight).toBe("function");
+    expect(runtime.isIntentInFlight()).toBe(false);
+    expect(runtime.catalog).toBe(ncStarterCatalog);
+    expect(runtime.catalogVersion).toBe(NC_CATALOG_VERSION);
 
     runtime.destroy();
   });
@@ -36,12 +48,9 @@ describe("createNCRuntime", () => {
     const handler = vi.fn(async () => {});
     runtime.setIntentHandler(handler);
 
-    const event: IntentEvent = {
-      action_name: "submit_form",
-      action_params: {},
+    const event = evt({
       staging_snapshot: { email: "a@b.c" },
-      timestamp: Date.now(),
-    };
+    });
 
     await runtime.emitIntent(event);
 
@@ -60,12 +69,7 @@ describe("createNCRuntime", () => {
     });
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    const event: IntentEvent = {
-      action_name: "submit_form",
-      action_params: {},
-      staging_snapshot: {},
-      timestamp: Date.now(),
-    };
+    const event = evt();
 
     // No handler set yet — should warn and return, not throw.
     await expect(runtime.emitIntent(event)).resolves.toBeUndefined();
@@ -99,12 +103,7 @@ describe("createNCRuntime", () => {
     });
     runtime.setIntentHandler(handler);
 
-    const event: IntentEvent = {
-      action_name: "submit_form",
-      action_params: {},
-      staging_snapshot: {},
-      timestamp: Date.now(),
-    };
+    const event = evt();
 
     // Fire the first intent — it parks on the deferred.
     const firstPromise = runtime.emitIntent(event);
@@ -134,12 +133,7 @@ describe("createNCRuntime", () => {
     runtime.setIntentHandler(first);
     runtime.setIntentHandler(second);
 
-    const event: IntentEvent = {
-      action_name: "x",
-      action_params: {},
-      staging_snapshot: {},
-      timestamp: Date.now(),
-    };
+    const event = evt({ action_name: "x" });
     await runtime.emitIntent(event);
 
     expect(first).not.toHaveBeenCalled();
@@ -175,12 +169,11 @@ describe("createNCRuntime", () => {
     runtime.setIntentHandler(async (event) => {
       expect(event.staging_snapshot).toEqual({ email: "a@b.c", agree: true });
     });
-    await runtime.emitIntent({
-      action_name: "submit_form",
-      action_params: {},
-      staging_snapshot: runtime.stagingBuffer.snapshot(),
-      timestamp: Date.now(),
-    });
+    await runtime.emitIntent(
+      evt({
+        staging_snapshot: runtime.stagingBuffer.snapshot(),
+      }),
+    );
 
     // Read a few more times.
     runtime.stagingBuffer.snapshot();
@@ -223,5 +216,132 @@ describe("createNCRuntime", () => {
 
     // After destroy, observer.render should be a no-op (tested in
     // observer unit tests; here we just verify destroy didn't throw).
+  });
+
+  it("propagates handler rejections and clears intentInFlight (NC-005/035)", async () => {
+    const durableStore = createObservableDataModel({});
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
+    runtime.setIntentHandler(async () => {
+      throw new Error("handler boom");
+    });
+    const event = evt();
+    await expect(runtime.emitIntent(event)).rejects.toThrow("handler boom");
+    expect(runtime.isIntentInFlight()).toBe(false);
+    const second = vi.fn(async () => {});
+    runtime.setIntentHandler(second);
+    await runtime.emitIntent(event);
+    expect(second).toHaveBeenCalledTimes(1);
+    runtime.destroy();
+  });
+
+  it("drops emitIntent and setIntentHandler after destroy (NC-036)", async () => {
+    const durableStore = createObservableDataModel({});
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
+    runtime.destroy();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    runtime.setIntentHandler(async () => {});
+    await expect(runtime.emitIntent(evt())).resolves.toBeUndefined();
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("clears staging on cancel after the IntentEvent is accepted (NC-007)", async () => {
+    const durableStore = createObservableDataModel({});
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
+    runtime.stagingBuffer.set("email", "a@b.c");
+    const snapshots: unknown[] = [];
+    runtime.setIntentHandler(async (event) => {
+      snapshots.push(event.staging_snapshot);
+    });
+    await runtime.emitIntent(
+      evt({
+        action_name: "cancel",
+        staging_snapshot: runtime.stagingBuffer.snapshot(),
+      }),
+    );
+    expect(snapshots[0]).toEqual({ email: "a@b.c" });
+    expect(runtime.stagingBuffer.snapshot()).toEqual({});
+    runtime.destroy();
+  });
+
+  it("drops oversized staging snapshots (NC-016)", async () => {
+    const durableStore = createObservableDataModel({});
+    const runtime = createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
+    const handler = vi.fn(async () => {});
+    runtime.setIntentHandler(handler);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const staging_snapshot: Record<string, string> = {};
+    for (let i = 0; i < NC_STAGING_MAX_FIELDS + 1; i++) {
+      staging_snapshot[`f${i}`] = "x";
+    }
+    await runtime.emitIntent(evt({ staging_snapshot }));
+    expect(handler).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("Dropped oversized intent"),
+    );
+    warn.mockRestore();
+    runtime.destroy();
+  });
+
+  it("clears in-flight on destroy and ignores a late handler (NC-017)", async () => {
+    const durableStore = createObservableDataModel({});
+    const runtime = createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
+    let resolveFirst: () => void = () => {};
+    const firstDone = new Promise<void>((r) => {
+      resolveFirst = r;
+    });
+    const handler = vi.fn(async () => {
+      await firstDone;
+    });
+    runtime.setIntentHandler(handler);
+    const pending = runtime.emitIntent(evt());
+    expect(runtime.isIntentInFlight()).toBe(true);
+    runtime.destroy();
+    expect(runtime.isIntentInFlight()).toBe(false);
+    resolveFirst();
+    await pending;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await runtime.emitIntent(evt());
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("subscribeIntentFlight notifies on in-flight changes", async () => {
+    const durableStore = createObservableDataModel({});
+    const runtime = createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
+    const ticks: boolean[] = [];
+    const unsub = runtime.subscribeIntentFlight(() => {
+      ticks.push(runtime.isIntentInFlight());
+    });
+    runtime.setIntentHandler(async () => {});
+    await runtime.emitIntent(evt());
+    expect(ticks).toEqual([true, false]);
+    unsub();
+    runtime.destroy();
   });
 });

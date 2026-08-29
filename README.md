@@ -1,6 +1,6 @@
 # Neural Computer
 
-A catalog-constrained React UI runtime: staging buffer, one-at-a-time intent gate, stub intent handler, and a headless observer cache. Inspired by Zhuge et al., *Neural Computers* (arXiv:2604.04625). **This package does not yet call an LLM or spawn a Python REPL.**
+A catalog-constrained React UI runtime: staging buffer, one-at-a-time intent gate, stub intent handler, and a headless observer cache. Inspired by Zhuge et al., _Neural Computers_ (arXiv:2604.04625). **This package does not yet call an LLM or spawn a Python REPL.**
 
 **Status:** v1 + Path C shipped. Private unpublished package (`file:` siblings). React 19 is a **peer dependency**. Use Bun (`bun install`) to match CI. See [`CHANGELOG.md`](./CHANGELOG.md) and [`examples/README.md`](./examples/README.md).
 
@@ -23,7 +23,6 @@ Not shipped: Anthropic intent handler, Python REPL subprocess.
 6. LLM session state (future handler; not managed here)
 7. Observer cache (`runtime.observer`)
 
-
 ## Project layout (v1)
 
 ```
@@ -33,14 +32,14 @@ neural-computer/
 │   ├── core.ts               # neural-computer/core — no React
 │   ├── react.ts              # neural-computer/react — "use client"
 │   ├── types/                # NCRuntime, NCIntentHandler, NCCatalogVersion, NCObserver
-│   ├── catalog/              # ncStarterCatalog (nc-starter-0.2), field-id, limits
+│   ├── catalog/              # ncStarterCatalog (nc-starter-0.3), field-id, limits
 │   ├── runtime/              # createNCRuntime (sync; backpressure + observer)
 │   ├── orchestrator/         # createStubIntentHandler + buffer-isolation test
 │   ├── renderer/             # NCRenderer, inputs, error-boundary, field-id-stability
 │   ├── app/                  # NCApp React mounting component
 │   ├── memory/               # defaultNCProjection for memoryjs adapter
 │   ├── observer/             # createNCObserver + ncHeadlessRegistry (Path C)
-│   └── integration.test.tsx  # end-to-end Path C integration test
+│   └── integration/          # Path C end-to-end tests
 ├── docs/                     # Design specs, plans, architecture, audits
 ├── examples/
 ├── CHANGELOG.md
@@ -75,7 +74,10 @@ Starter catalog honesty: Container is minimal flex (`direction` column or row), 
 ## Quickstart
 
 ```tsx
-import { ManagerContext, createObservableDataModelFromGraph } from "@danielsimonjr/memoryjs";
+import {
+  ManagerContext,
+  createObservableDataModelFromGraph,
+} from "@danielsimonjr/memoryjs";
 import { createRoot } from "react-dom/client";
 import React from "react";
 import {
@@ -148,10 +150,10 @@ v1 shipped 2026-04-15. Path C (headless dual-backend LLM Observer) shipped 2026-
 
 ## Prior art
 
-- Zhuge et al., *Neural Computers*. arXiv:2604.04625. Meta AI / KAUST, April 2026. The update-and-render loop framing.
+- Zhuge et al., _Neural Computers_. arXiv:2604.04625. Meta AI / KAUST, April 2026. The update-and-render loop framing.
 - Vercel Labs, `json-render`. The constrained-catalog approach JSON-UI builds on.
 - Google, `a2ui`. The flat-tree-with-stable-IDs representation.
-- Zhang, Kraska, Khattab (MIT CSAIL), *Recursive Language Models*. The Python REPL dispatch pattern used for the runtime's computation arm.
+- Zhang, Kraska, Khattab (MIT CSAIL), _Recursive Language Models_. The Python REPL dispatch pattern used for the runtime's computation arm.
 
 ## License
 

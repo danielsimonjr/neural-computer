@@ -1,71 +1,77 @@
+// SPDX-License-Identifier: Apache-2.0
+
 "use client";
 
 import React from "react";
 import type { Catalog, UITree } from "@json-ui/core";
-import { NCRenderer } from "../renderer";
-import type {
-  NCRuntime,
-  NCCatalogVersion,
-  NCIntentHandler,
-} from "../types";
+import type { ComponentRegistry } from "@json-ui/react";
+import { NCRenderer } from "../renderer/nc-renderer";
+import type { NCRuntime, NCCatalogVersion, NCIntentHandler } from "../types";
 
 export interface NCAppProps {
   runtime: NCRuntime;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   catalog: Catalog<any, any, any>;
   catalogVersion: NCCatalogVersion;
+  /**
+   * Tree shown before any intent commits a replacement. Changing this
+   * *reference* resets the current tree (same as remounting with a
+   * new `key`). Prefer `key={...}` on NCApp when the host navigates.
+   */
   initialTree: UITree;
+  extraRegistry?: ComponentRegistry;
+  onValidationError?: (error: unknown) => void;
+  onRenderError?: (error: Error) => void;
   /**
    * Factory that takes the NCApp's internal `setTree` reference and
-   * returns the NCIntentHandler the runtime should use. The handler
-   * is responsible for calling `setTree(nextTree)` on every committed
-   * tree transition — typically by passing setTree as the
-   * `onTreeCommit` callback to `createStubIntentHandler` (or the real
-   * LLM-backed handler once that exists).
+   * returns the NCIntentHandler the runtime should use.
    *
-   * NCApp calls this factory in a useEffect with the current setTree,
-   * then installs the result via `runtime.setIntentHandler`. When
-   * `buildIntentHandler`'s identity changes across renders, NCApp
-   * re-installs the new handler so the runtime always dispatches to
-   * the latest one.
-   *
-   * STABILITY REQUIREMENT: callers SHOULD memoize this with useCallback
-   * (or hoist it to module scope). An inline arrow `buildIntentHandler={
-   * (setTree) => createStubIntentHandler({...})}` has a new identity on
-   * every parent render, which causes NCApp to re-run the install
-   * useEffect and rebuild the handler every commit. Not a correctness
-   * bug (the old handler is cleanly replaced), but wasteful — and
-   * react-strict-mode's double-invocation amplifies the churn during
-   * development. The integration tests pin the factory at module scope
-   * so they don't hit this path.
+   * STABILITY REQUIREMENT: memoize with useCallback or hoist to module
+   * scope. Inline arrows re-run the install effect every parent render.
    */
   buildIntentHandler: (setTree: (tree: UITree) => void) => NCIntentHandler;
 }
 
 /**
- * The top-level React mounting point for an NC app. Owns the current
- * UITree in a React state hook, installs the intent handler against
- * the runtime on mount, and renders NCRenderer.
+ * Top-level React mounting point. Owns UITree state, installs the
+ * intent handler, and renders NCRenderer. Unmount installs a no-op
+ * handler so a late intent cannot call setTree.
  *
- * NCApp is intentionally small — it exists so the caller does not
- * have to repeat the useState + useEffect + setIntentHandler dance
- * in every integration. For callers that need to own the tree state
- * themselves (e.g., because the tree comes from a useUIStream hook
- * running elsewhere), mount NCRenderer directly and call
- * runtime.setIntentHandler manually.
+ * Streaming LLM responses: pass trees through useCommittedTree (atomic
+ * mode) into a custom owner, or have buildIntentHandler only call
+ * setTree with complete catalog-valid trees. createStubIntentHandler
+ * validates nextTree against the catalog before onTreeCommit.
  */
 export function NCApp({
   runtime,
   catalog,
   catalogVersion,
   initialTree,
+  extraRegistry,
+  onValidationError,
+  onRenderError,
   buildIntentHandler,
 }: NCAppProps) {
   const [tree, setTree] = React.useState<UITree>(initialTree);
+  const prevInitial = React.useRef(initialTree);
+  if (initialTree !== prevInitial.current) {
+    prevInitial.current = initialTree;
+    setTree(initialTree);
+  }
+
+  const setTreeIfMounted = React.useRef(setTree);
+  setTreeIfMounted.current = setTree;
 
   React.useEffect(() => {
-    const handler = buildIntentHandler(setTree);
+    let mounted = true;
+    const handler = buildIntentHandler((next) => {
+      if (mounted) setTreeIfMounted.current(next);
+    });
     runtime.setIntentHandler(handler);
+    return () => {
+      mounted = false;
+      runtime.setIntentHandler(async () => {});
+    };
   }, [runtime, buildIntentHandler]);
 
   return (
@@ -74,6 +80,9 @@ export function NCApp({
       runtime={runtime}
       catalog={catalog}
       catalogVersion={catalogVersion}
+      extraRegistry={extraRegistry}
+      onValidationError={onValidationError}
+      onRenderError={onRenderError}
     />
   );
 }

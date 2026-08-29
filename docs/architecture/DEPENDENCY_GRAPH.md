@@ -1,10 +1,8 @@
 # neural-computer - Dependency Graph
 
-Stale graph; run `npm run docs:deps` after install.
+**Version**: 0.1.0 | **Last Updated**: 2026-08-29
 
-**Version**: 0.1.0 | **Last Updated**: 2026-08-29 (file lists hand-updated; Mermaid edges below are the 2026-04-16 generation and omit later files)
-
-The Mermaid diagram and per-file import tables below were generated 2026-04-16 and do not include `src/observer/`, `src/core.ts`, `src/react.ts`, `field-id.ts`, `limits.ts`, `freeze.ts`, `error-boundary.tsx`, `field-id-stability.ts`, or `intent-flight-context.ts`. Use the inventory in Overview for current files.
+This document provides a comprehensive dependency graph of all files, components, imports, functions, and variables in the codebase.
 
 ---
 
@@ -13,66 +11,73 @@ The Mermaid diagram and per-file import tables below were generated 2026-04-16 a
 1. [Overview](#overview)
 2. [App Dependencies](#app-dependencies)
 3. [Catalog Dependencies](#catalog-dependencies)
-4. [Entry Dependencies](#entry-dependencies)
-5. [Memory Dependencies](#memory-dependencies)
-6. [Orchestrator Dependencies](#orchestrator-dependencies)
-7. [Renderer Dependencies](#renderer-dependencies)
-8. [Runtime Dependencies](#runtime-dependencies)
-9. [Types Dependencies](#types-dependencies)
-10. [Dependency Matrix](#dependency-matrix)
-11. [Circular Dependency Analysis](#circular-dependency-analysis)
-12. [Visual Dependency Graph](#visual-dependency-graph)
-13. [Summary Statistics](#summary-statistics)
+4. [Root Dependencies](#root-dependencies)
+5. [Entry Dependencies](#entry-dependencies)
+6. [Memory Dependencies](#memory-dependencies)
+7. [Observer Dependencies](#observer-dependencies)
+8. [Orchestrator Dependencies](#orchestrator-dependencies)
+9. [Renderer Dependencies](#renderer-dependencies)
+10. [Runtime Dependencies](#runtime-dependencies)
+11. [Types Dependencies](#types-dependencies)
+12. [Dependency Matrix](#dependency-matrix)
+13. [Circular Dependency Analysis](#circular-dependency-analysis)
+14. [Visual Dependency Graph](#visual-dependency-graph)
+15. [Summary Statistics](#summary-statistics)
 
 ---
 
 ## Overview
 
-28 non-test source files, 15 test files, 43 `src/**/*.ts{,x}` total (counted 2026-08-29). Modules:
+The codebase is organized into the following modules:
 
-- **app**: `index.ts`, `nc-app.tsx` (2)
-- **catalog**: `index.ts`, `nc-catalog.ts`, `field-id.ts`, `limits.ts` (4)
-- **entry**: `index.ts`, `core.ts`, `react.ts` (3)
-- **memory**: `index.ts`, `projection.ts` (2)
-- **observer**: `index.ts`, `nc-observer.ts`, `nc-headless-components.ts` (3)
-- **orchestrator**: `index.ts`, `handle-intent.ts` (2)
-- **renderer**: `index.ts`, `nc-renderer.tsx`, `input-components.tsx`, `use-committed-tree.ts`, `error-boundary.tsx`, `field-id-stability.ts`, `intent-flight-context.ts` (7)
-- **runtime**: `index.ts`, `context.ts`, `freeze.ts` (3)
-- **types**: `index.ts`, `nc-types.ts` (2)
-
-Test files: `nc-app.test.tsx`, `field-id.test.ts`, `nc-catalog.test.ts`, `projection.test.ts`, `nc-headless-components.test.ts`, `nc-observer.test.ts`, `buffer-isolation.test.ts`, `handle-intent.test.ts`, `field-id-stability.test.ts`, `input-components.test.tsx`, `nc-renderer.test.tsx`, `use-committed-tree.test.tsx`, `context.test.ts`, `nc-types.test.ts`, `integration.test.tsx`.
+- **app**: 2 files
+- **catalog**: 4 files
+- **root**: 3 files
+- **entry**: 1 file
+- **memory**: 2 files
+- **observer**: 3 files
+- **orchestrator**: 2 files
+- **renderer**: 7 files
+- **runtime**: 3 files
+- **types**: 2 files
 
 ---
 
 ## App Dependencies
 
-### `src/app/index.ts` - index module
+### `src/app/index.ts` - SPDX-License-Identifier: Apache-2.0
 
 **Internal Dependencies:**
-| File | Imports | Type |
-|------|---------|------|
+
+| File       | Imports                  | Type      |
+| ---------- | ------------------------ | --------- |
 | `./nc-app` | `NCApp, type NCAppProps` | Re-export |
 
 **Exports:**
+
 - Re-exports: `NCApp`, `type NCAppProps`
 
 ---
 
-### `src/app/nc-app.tsx` - Factory that takes the NCApp's internal `setTree` reference and
+### `src/app/nc-app.tsx` - Tree shown before any intent commits a replacement. Changing this
 
 **External Dependencies:**
-| Package | Import |
-|---------|--------|
-| `react` | `React` |
-| `@json-ui/core` | `Catalog, UITree` |
+
+| Package          | Import              |
+| ---------------- | ------------------- |
+| `react`          | `React`             |
+| `@json-ui/core`  | `Catalog, UITree`   |
+| `@json-ui/react` | `ComponentRegistry` |
 
 **Internal Dependencies:**
-| File | Imports | Type |
-|------|---------|------|
-| `../renderer` | `NCRenderer` | Import |
-| `../types` | `NCRuntime, NCCatalogVersion, NCIntentHandler` | Import (type-only) |
+
+| File                      | Imports                                        | Type               |
+| ------------------------- | ---------------------------------------------- | ------------------ |
+| `../renderer/nc-renderer` | `NCRenderer`                                   | Import             |
+| `../types`                | `NCRuntime, NCCatalogVersion, NCIntentHandler` | Import (type-only) |
 
 **Exports:**
+
 - Interfaces: `NCAppProps`
 - Functions: `NCApp`
 
@@ -80,33 +85,118 @@ Test files: `nc-app.test.tsx`, `field-id.test.ts`, `nc-catalog.test.ts`, `projec
 
 ## Catalog Dependencies
 
-### `src/catalog/index.ts` - index module
+### `src/catalog/field-id.ts` - Field IDs key the staging buffer. They must be non-empty, not a
+
+**External Dependencies:**
+
+| Package | Import |
+| ------- | ------ |
+| `zod`   | `z`    |
 
 **Internal Dependencies:**
-| File | Imports | Type |
-|------|---------|------|
-| `./nc-catalog` | `ncStarterCatalog, NC_CATALOG_VERSION` | Re-export |
+
+| File       | Imports                                         | Type   |
+| ---------- | ----------------------------------------------- | ------ |
+| `./limits` | `NC_FIELD_ID_MAX_LENGTH, NC_RESERVED_FIELD_IDS` | Import |
 
 **Exports:**
-- Re-exports: `ncStarterCatalog`, `NC_CATALOG_VERSION`
+
+- Functions: `isSafeFieldId`
+- Constants: `ncFieldIdSchema`
+
+---
+
+### `src/catalog/index.ts` - SPDX-License-Identifier: Apache-2.0
+
+**Internal Dependencies:**
+
+| File           | Imports                                                                                                                                                                                                                                         | Type      |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| `./nc-catalog` | `ncStarterCatalog, NC_CATALOG_VERSION, NC_LLM_ACCEPTANCE_CONTRACT`                                                                                                                                                                              | Re-export |
+| `./field-id`   | `ncFieldIdSchema, isSafeFieldId`                                                                                                                                                                                                                | Re-export |
+| `./limits`     | `NC_FIELD_ID_MAX_LENGTH, NC_STRING_MAX_LENGTH, NC_ACTION_PARAM_MAX_KEYS, NC_STAGING_MAX_FIELDS, NC_SNAPSHOT_MAX_BYTES, NC_SELECT_MAX_OPTIONS, NC_OBSERVER_STALE_THRESHOLD, NC_STARTER_ACTIONS, NC_RESERVED_FIELD_IDS, type NCStarterActionName` | Re-export |
+
+**Exports:**
+
+- Re-exports: `ncStarterCatalog`, `NC_CATALOG_VERSION`, `NC_LLM_ACCEPTANCE_CONTRACT`, `ncFieldIdSchema`, `isSafeFieldId`, `NC_FIELD_ID_MAX_LENGTH`, `NC_STRING_MAX_LENGTH`, `NC_ACTION_PARAM_MAX_KEYS`, `NC_STAGING_MAX_FIELDS`, `NC_SNAPSHOT_MAX_BYTES`, `NC_SELECT_MAX_OPTIONS`, `NC_OBSERVER_STALE_THRESHOLD`, `NC_STARTER_ACTIONS`, `NC_RESERVED_FIELD_IDS`, `type NCStarterActionName`
+
+---
+
+### `src/catalog/limits.ts` - Caps for catalog strings and staging-bound input. Unbounded LLM-emitted
+
+**Exports:**
+
+- Constants: `NC_FIELD_ID_MAX_LENGTH`, `NC_STRING_MAX_LENGTH`, `NC_ACTION_PARAM_MAX_KEYS`, `NC_STAGING_MAX_FIELDS`, `NC_SNAPSHOT_MAX_BYTES`, `NC_SELECT_MAX_OPTIONS`, `NC_OBSERVER_STALE_THRESHOLD`, `NC_STARTER_ACTIONS`, `NC_RESERVED_FIELD_IDS`
 
 ---
 
 ### `src/catalog/nc-catalog.ts` - Version string threaded through every emitted IntentEvent.catalog_version
 
 **External Dependencies:**
-| Package | Import |
-|---------|--------|
+
+| Package         | Import          |
+| --------------- | --------------- |
 | `@json-ui/core` | `createCatalog` |
-| `zod` | `z` |
+| `zod`           | `z`             |
 
 **Internal Dependencies:**
-| File | Imports | Type |
-|------|---------|------|
-| `../types` | `NCCatalogVersion` | Import (type-only) |
+
+| File         | Imports                                                                                     | Type   |
+| ------------ | ------------------------------------------------------------------------------------------- | ------ |
+| `../types`   | `asNCCatalogVersion`                                                                        | Import |
+| `./field-id` | `ncFieldIdSchema`                                                                           | Import |
+| `./limits`   | `NC_ACTION_PARAM_MAX_KEYS, NC_SELECT_MAX_OPTIONS, NC_STRING_MAX_LENGTH, NC_STARTER_ACTIONS` | Import |
 
 **Exports:**
-- Constants: `NC_CATALOG_VERSION`, `ncStarterCatalog`
+
+- Constants: `NC_CATALOG_VERSION`, `NC_LLM_ACCEPTANCE_CONTRACT`, `ncStarterCatalog`
+
+---
+
+## Root Dependencies
+
+### `src/core.ts` - React-free entry for Node / orchestrator processes.
+
+**Internal Dependencies:**
+
+| File             | Imports                                                                                                                                                                                                            | Type      |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| `./catalog`      | `ncStarterCatalog, NC_CATALOG_VERSION, NC_LLM_ACCEPTANCE_CONTRACT, ncFieldIdSchema, isSafeFieldId, NC_FIELD_ID_MAX_LENGTH, NC_STRING_MAX_LENGTH, NC_STAGING_MAX_FIELDS, NC_SNAPSHOT_MAX_BYTES, NC_STARTER_ACTIONS` | Re-export |
+| `./types`        | `asNCCatalogVersion, isNCCatalogVersion`                                                                                                                                                                           | Re-export |
+| `./runtime`      | `createNCRuntime, type CreateNCRuntimeOptions`                                                                                                                                                                     | Re-export |
+| `./memory`       | `defaultNCProjection, type NCProjectedData, type NCProjectedEntity, type NCProjectedRelation`                                                                                                                      | Re-export |
+| `./orchestrator` | `createStubIntentHandler, submittedFieldsStillPresent, type CreateStubIntentHandlerOptions`                                                                                                                        | Re-export |
+| `./observer`     | `createNCObserver, ncHeadlessRegistry, type CreateNCObserverOptions`                                                                                                                                               | Re-export |
+
+**Exports:**
+
+- Re-exports: `ncStarterCatalog`, `NC_CATALOG_VERSION`, `NC_LLM_ACCEPTANCE_CONTRACT`, `ncFieldIdSchema`, `isSafeFieldId`, `NC_FIELD_ID_MAX_LENGTH`, `NC_STRING_MAX_LENGTH`, `NC_STAGING_MAX_FIELDS`, `NC_SNAPSHOT_MAX_BYTES`, `NC_STARTER_ACTIONS`, `asNCCatalogVersion`, `isNCCatalogVersion`, `createNCRuntime`, `type CreateNCRuntimeOptions`, `defaultNCProjection`, `type NCProjectedData`, `type NCProjectedEntity`, `type NCProjectedRelation`, `createStubIntentHandler`, `submittedFieldsStillPresent`, `type CreateStubIntentHandlerOptions`, `createNCObserver`, `ncHeadlessRegistry`, `type CreateNCObserverOptions`
+
+---
+
+### `src/react.ts` - SPDX-License-Identifier: Apache-2.0
+
+**Internal Dependencies:**
+
+| File         | Imports                                                                                                                                                                                      | Type      |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| `./renderer` | `NCRenderer, NCContainer, NCText, NCTextField, NCCheckbox, NCSelect, NCButton, useCommittedTree, NCErrorBoundary, type NCRendererProps, type NCComponentProps, type UseCommittedTreeOptions` | Re-export |
+| `./app`      | `NCApp, type NCAppProps`                                                                                                                                                                     | Re-export |
+
+**Exports:**
+
+- Re-exports: `NCRenderer`, `NCContainer`, `NCText`, `NCTextField`, `NCCheckbox`, `NCSelect`, `NCButton`, `useCommittedTree`, `NCErrorBoundary`, `type NCRendererProps`, `type NCComponentProps`, `type UseCommittedTreeOptions`, `NCApp`, `type NCAppProps`
+
+---
+
+### `src/test-setup.ts` - SPDX-License-Identifier: Apache-2.0
+
+**External Dependencies:**
+
+| Package                  | Import      |
+| ------------------------ | ----------- |
+| `vitest`                 | `afterEach` |
+| `@testing-library/react` | `cleanup`   |
 
 ---
 
@@ -115,44 +205,115 @@ Test files: `nc-app.test.tsx`, `field-id.test.ts`, `nc-catalog.test.ts`, `projec
 ### `src/index.ts` - Neural Computer — public entry point.
 
 **Internal Dependencies:**
-| File | Imports | Type |
-|------|---------|------|
-| `./catalog` | `ncStarterCatalog, NC_CATALOG_VERSION` | Re-export |
-| `./runtime` | `createNCRuntime, type CreateNCRuntimeOptions` | Re-export |
-| `./memory` | `defaultNCProjection, type NCProjectedData, type NCProjectedEntity` | Re-export |
-| `./renderer` | `NCRenderer, NCContainer, NCText, NCTextField, NCCheckbox, NCButton, useCommittedTree, type NCRendererProps, type NCComponentProps, type UseCommittedTreeOptions` | Re-export |
-| `./orchestrator` | `createStubIntentHandler, type CreateStubIntentHandlerOptions` | Re-export |
-| `./app` | `NCApp, type NCAppProps` | Re-export |
+
+| File             | Imports                                                                                                                                                                                                            | Type      |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| `./catalog`      | `ncStarterCatalog, NC_CATALOG_VERSION, NC_LLM_ACCEPTANCE_CONTRACT, ncFieldIdSchema, isSafeFieldId, NC_FIELD_ID_MAX_LENGTH, NC_STRING_MAX_LENGTH, NC_STAGING_MAX_FIELDS, NC_SNAPSHOT_MAX_BYTES, NC_STARTER_ACTIONS` | Re-export |
+| `./types`        | `asNCCatalogVersion, isNCCatalogVersion`                                                                                                                                                                           | Re-export |
+| `./runtime`      | `createNCRuntime, type CreateNCRuntimeOptions`                                                                                                                                                                     | Re-export |
+| `./memory`       | `defaultNCProjection, type NCProjectedData, type NCProjectedEntity, type NCProjectedRelation`                                                                                                                      | Re-export |
+| `./renderer`     | `NCRenderer, NCContainer, NCText, NCTextField, NCCheckbox, NCSelect, NCButton, useCommittedTree, NCErrorBoundary, type NCRendererProps, type NCComponentProps, type UseCommittedTreeOptions`                       | Re-export |
+| `./orchestrator` | `createStubIntentHandler, submittedFieldsStillPresent, type CreateStubIntentHandlerOptions`                                                                                                                        | Re-export |
+| `./app`          | `NCApp, type NCAppProps`                                                                                                                                                                                           | Re-export |
+| `./observer`     | `createNCObserver, ncHeadlessRegistry, type CreateNCObserverOptions`                                                                                                                                               | Re-export |
 
 **Exports:**
-- Re-exports: `ncStarterCatalog`, `NC_CATALOG_VERSION`, `createNCRuntime`, `type CreateNCRuntimeOptions`, `defaultNCProjection`, `type NCProjectedData`, `type NCProjectedEntity`, `NCRenderer`, `NCContainer`, `NCText`, `NCTextField`, `NCCheckbox`, `NCButton`, `useCommittedTree`, `type NCRendererProps`, `type NCComponentProps`, `type UseCommittedTreeOptions`, `createStubIntentHandler`, `type CreateStubIntentHandlerOptions`, `NCApp`, `type NCAppProps`
+
+- Re-exports: `ncStarterCatalog`, `NC_CATALOG_VERSION`, `NC_LLM_ACCEPTANCE_CONTRACT`, `ncFieldIdSchema`, `isSafeFieldId`, `NC_FIELD_ID_MAX_LENGTH`, `NC_STRING_MAX_LENGTH`, `NC_STAGING_MAX_FIELDS`, `NC_SNAPSHOT_MAX_BYTES`, `NC_STARTER_ACTIONS`, `asNCCatalogVersion`, `isNCCatalogVersion`, `createNCRuntime`, `type CreateNCRuntimeOptions`, `defaultNCProjection`, `type NCProjectedData`, `type NCProjectedEntity`, `type NCProjectedRelation`, `NCRenderer`, `NCContainer`, `NCText`, `NCTextField`, `NCCheckbox`, `NCSelect`, `NCButton`, `useCommittedTree`, `NCErrorBoundary`, `type NCRendererProps`, `type NCComponentProps`, `type UseCommittedTreeOptions`, `createStubIntentHandler`, `submittedFieldsStillPresent`, `type CreateStubIntentHandlerOptions`, `NCApp`, `type NCAppProps`, `createNCObserver`, `ncHeadlessRegistry`, `type CreateNCObserverOptions`
 
 ---
 
 ## Memory Dependencies
 
-### `src/memory/index.ts` - index module
+### `src/memory/index.ts` - SPDX-License-Identifier: Apache-2.0
 
 **Internal Dependencies:**
-| File | Imports | Type |
-|------|---------|------|
-| `./projection` | `defaultNCProjection, type NCProjectedData, type NCProjectedEntity` | Re-export |
+
+| File           | Imports                                                                                       | Type      |
+| -------------- | --------------------------------------------------------------------------------------------- | --------- |
+| `./projection` | `defaultNCProjection, type NCProjectedData, type NCProjectedEntity, type NCProjectedRelation` | Re-export |
 
 **Exports:**
-- Re-exports: `defaultNCProjection`, `type NCProjectedData`, `type NCProjectedEntity`
+
+- Re-exports: `defaultNCProjection`, `type NCProjectedData`, `type NCProjectedEntity`, `type NCProjectedRelation`
 
 ---
 
 ### `src/memory/projection.ts` - The flat view NC exposes to @json-ui/react's DataProvider via the
 
 **External Dependencies:**
-| Package | Import |
-|---------|--------|
+
+| Package                   | Import                                         |
+| ------------------------- | ---------------------------------------------- |
 | `@danielsimonjr/memoryjs` | `Entity, Relation, GraphProjection, JSONValue` |
 
+**Internal Dependencies:**
+
+| File                | Imports | Type   |
+| ------------------- | ------- | ------ |
+| `../runtime/freeze` | `dict`  | Import |
+
 **Exports:**
-- Interfaces: `NCProjectedData`, `NCProjectedEntity`
+
+- Interfaces: `NCProjectedRelation`, `NCProjectedData`, `NCProjectedEntity`
 - Constants: `defaultNCProjection`
+
+---
+
+## Observer Dependencies
+
+### `src/observer/index.ts` - SPDX-License-Identifier: Apache-2.0
+
+**Internal Dependencies:**
+
+| File                       | Imports                                          | Type      |
+| -------------------------- | ------------------------------------------------ | --------- |
+| `./nc-observer`            | `createNCObserver, type CreateNCObserverOptions` | Re-export |
+| `./nc-headless-components` | `ncHeadlessRegistry`                             | Re-export |
+
+**Exports:**
+
+- Re-exports: `createNCObserver`, `type CreateNCObserverOptions`, `ncHeadlessRegistry`
+
+---
+
+### `src/observer/nc-headless-components.ts` - Six headless components mirroring NC's React input-components surface.
+
+**External Dependencies:**
+
+| Package             | Import                                |
+| ------------------- | ------------------------------------- |
+| `@json-ui/headless` | `HeadlessComponent, HeadlessRegistry` |
+| `@json-ui/core`     | `JSONValue, UIElement`                |
+
+**Exports:**
+
+- Constants: `ncHeadlessRegistry`
+
+---
+
+### `src/observer/nc-observer.ts` - Additional headless components merged under ncHeadlessRegistry.
+
+**External Dependencies:**
+
+| Package             | Import                                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------------------------ |
+| `@json-ui/headless` | `createHeadlessRenderer, JsonStringSerializer, createHtmlSerializer, HeadlessRegistry, NormalizedNode` |
+| `@json-ui/core`     | `Catalog, ObservableDataModel, StagingBuffer, UITree`                                                  |
+
+**Internal Dependencies:**
+
+| File                       | Imports                       | Type               |
+| -------------------------- | ----------------------------- | ------------------ |
+| `./nc-headless-components` | `ncHeadlessRegistry`          | Import             |
+| `../catalog/limits`        | `NC_OBSERVER_STALE_THRESHOLD` | Import             |
+| `../runtime/freeze`        | `freezeDeep`                  | Import             |
+| `../types`                 | `NCObserver`                  | Import (type-only) |
+
+**Exports:**
+
+- Interfaces: `CreateNCObserverOptions`
+- Functions: `createNCObserver`
 
 ---
 
@@ -161,80 +322,147 @@ Test files: `nc-app.test.tsx`, `field-id.test.ts`, `nc-catalog.test.ts`, `projec
 ### `src/orchestrator/handle-intent.ts` - Options for the stub intent handler. The stub is deterministic —
 
 **External Dependencies:**
-| Package | Import |
-|---------|--------|
-| `@json-ui/core` | `IntentEvent, UITree` |
+
+| Package         | Import                                          |
+| --------------- | ----------------------------------------------- |
+| `@json-ui/core` | `collectFieldIds, Catalog, IntentEvent, UITree` |
 
 **Internal Dependencies:**
-| File | Imports | Type |
-|------|---------|------|
+
+| File       | Imports           | Type               |
+| ---------- | ----------------- | ------------------ |
 | `../types` | `NCIntentHandler` | Import (type-only) |
 
 **Exports:**
+
 - Interfaces: `CreateStubIntentHandlerOptions`
-- Functions: `createStubIntentHandler`
+- Functions: `createStubIntentHandler`, `submittedFieldsStillPresent`
 
 ---
 
-### `src/orchestrator/index.ts` - index module
+### `src/orchestrator/index.ts` - SPDX-License-Identifier: Apache-2.0
 
 **Internal Dependencies:**
-| File | Imports | Type |
-|------|---------|------|
-| `./handle-intent` | `createStubIntentHandler, type CreateStubIntentHandlerOptions` | Re-export |
+
+| File              | Imports                                                                                     | Type      |
+| ----------------- | ------------------------------------------------------------------------------------------- | --------- |
+| `./handle-intent` | `createStubIntentHandler, submittedFieldsStillPresent, type CreateStubIntentHandlerOptions` | Re-export |
 
 **Exports:**
-- Re-exports: `createStubIntentHandler`, `type CreateStubIntentHandlerOptions`
+
+- Re-exports: `createStubIntentHandler`, `submittedFieldsStillPresent`, `type CreateStubIntentHandlerOptions`
 
 ---
 
 ## Renderer Dependencies
 
-### `src/renderer/index.ts` - index module
+### `src/renderer/error-boundary.tsx` - Catches render throws from NC components so a single bad cast cannot
 
-**Internal Dependencies:**
-| File | Imports | Type |
-|------|---------|------|
-| `./input-components` | `NCContainer, NCText, NCTextField, NCCheckbox, NCButton, type NCComponentProps` | Re-export |
-| `./nc-renderer` | `NCRenderer, type NCRendererProps` | Re-export |
-| `./use-committed-tree` | `useCommittedTree, type UseCommittedTreeOptions` | Re-export |
+**External Dependencies:**
+
+| Package | Import  |
+| ------- | ------- |
+| `react` | `React` |
 
 **Exports:**
-- Re-exports: `NCContainer`, `NCText`, `NCTextField`, `NCCheckbox`, `NCButton`, `type NCComponentProps`, `NCRenderer`, `type NCRendererProps`, `useCommittedTree`, `type UseCommittedTreeOptions`
+
+- Classes: `NCErrorBoundary`
+
+---
+
+### `src/renderer/field-id-stability.ts` - SPDX-License-Identifier: Apache-2.0
+
+**External Dependencies:**
+
+| Package         | Import   |
+| --------------- | -------- |
+| `@json-ui/core` | `UITree` |
+
+**Exports:**
+
+- Classes: `FieldIdTypeChangeError`
+- Functions: `collectFieldIdTypes`, `detectFieldIdTypeChanges`, `commitFieldIdTypes`
+
+---
+
+### `src/renderer/index.ts` - SPDX-License-Identifier: Apache-2.0
+
+**Internal Dependencies:**
+
+| File                   | Imports                                                                                   | Type      |
+| ---------------------- | ----------------------------------------------------------------------------------------- | --------- |
+| `./input-components`   | `NCContainer, NCText, NCTextField, NCCheckbox, NCSelect, NCButton, type NCComponentProps` | Re-export |
+| `./nc-renderer`        | `NCRenderer, type NCRendererProps`                                                        | Re-export |
+| `./use-committed-tree` | `useCommittedTree, type UseCommittedTreeOptions`                                          | Re-export |
+| `./error-boundary`     | `NCErrorBoundary`                                                                         | Re-export |
+| `./field-id-stability` | `collectFieldIdTypes, detectFieldIdTypeChanges, FieldIdTypeChangeError`                   | Re-export |
+
+**Exports:**
+
+- Re-exports: `NCContainer`, `NCText`, `NCTextField`, `NCCheckbox`, `NCSelect`, `NCButton`, `type NCComponentProps`, `NCRenderer`, `type NCRendererProps`, `useCommittedTree`, `type UseCommittedTreeOptions`, `NCErrorBoundary`, `collectFieldIdTypes`, `detectFieldIdTypeChanges`, `FieldIdTypeChangeError`
 
 ---
 
 ### `src/renderer/input-components.tsx` - Props shape used by all NC-authored React components. Matches the
 
 **External Dependencies:**
-| Package | Import |
-|---------|--------|
-| `react` | `React` |
+
+| Package          | Import                        |
+| ---------------- | ----------------------------- |
+| `react`          | `React`                       |
 | `@json-ui/react` | `useStagingField, useActions` |
-| `@json-ui/core` | `UIElement` |
+| `@json-ui/core`  | `UIElement`                   |
+
+**Internal Dependencies:**
+
+| File                      | Imports                                  | Type   |
+| ------------------------- | ---------------------------------------- | ------ |
+| `../catalog/limits`       | `NC_STRING_MAX_LENGTH`                   | Import |
+| `./intent-flight-context` | `FocusFieldContext, IntentFlightContext` | Import |
 
 **Exports:**
+
 - Interfaces: `NCComponentProps`
-- Functions: `NCContainer`, `NCText`, `NCTextField`, `NCCheckbox`, `NCButton`
+- Constants: `NCContainer`, `NCText`, `NCTextField`, `NCCheckbox`, `NCSelect`, `NCButton`
 
 ---
 
-### `src/renderer/nc-renderer.tsx` - Maps NC-authored React components to the ComponentRegistry shape
+### `src/renderer/intent-flight-context.ts` - True while createNCRuntime is awaiting a handler. NCButton reads this
 
 **External Dependencies:**
-| Package | Import |
-|---------|--------|
-| `react` | `React` |
-| `@json-ui/react` | `JSONUIProvider, Renderer, ComponentRegistry, ComponentRenderer` |
-| `@json-ui/core` | `collectFieldIds, Catalog, IntentEvent, UITree` |
 
-**Internal Dependencies:**
-| File | Imports | Type |
-|------|---------|------|
-| `./input-components` | `NCContainer, NCText, NCTextField, NCCheckbox, NCButton` | Import |
-| `../types` | `NCRuntime, NCCatalogVersion` | Import (type-only) |
+| Package | Import  |
+| ------- | ------- |
+| `react` | `React` |
 
 **Exports:**
+
+- Constants: `IntentFlightContext`, `FocusFieldContext`
+
+---
+
+### `src/renderer/nc-renderer.tsx` - The committed tree to render. Must come from a successful stream
+
+**External Dependencies:**
+
+| Package          | Import                                                           |
+| ---------------- | ---------------------------------------------------------------- |
+| `react`          | `React`                                                          |
+| `@json-ui/react` | `JSONUIProvider, Renderer, ComponentRegistry, ComponentRenderer` |
+| `@json-ui/core`  | `collectFieldIds, Catalog, IntentEvent, UITree`                  |
+
+**Internal Dependencies:**
+
+| File                      | Imports                                                             | Type               |
+| ------------------------- | ------------------------------------------------------------------- | ------------------ |
+| `./input-components`      | `NCContainer, NCText, NCTextField, NCCheckbox, NCSelect, NCButton`  | Import             |
+| `../types`                | `NCRuntime, NCCatalogVersion`                                       | Import (type-only) |
+| `./error-boundary`        | `NCErrorBoundary`                                                   | Import             |
+| `./intent-flight-context` | `FocusFieldContext, IntentFlightContext`                            | Import             |
+| `./field-id-stability`    | `collectFieldIdTypes, commitFieldIdTypes, detectFieldIdTypeChanges` | Import             |
+
+**Exports:**
+
 - Interfaces: `NCRendererProps`
 - Functions: `NCRenderer`
 
@@ -243,11 +471,13 @@ Test files: `nc-app.test.tsx`, `field-id.test.ts`, `nc-catalog.test.ts`, `projec
 ### `src/renderer/use-committed-tree.ts` - Thin wrapper around @json-ui/react's useUIStream that pre-selects
 
 **External Dependencies:**
-| Package | Import |
-|---------|--------|
+
+| Package          | Import                            |
+| ---------------- | --------------------------------- |
 | `@json-ui/react` | `useUIStream, UseUIStreamOptions` |
 
 **Exports:**
+
 - Functions: `useCommittedTree`
 
 ---
@@ -257,45 +487,81 @@ Test files: `nc-app.test.tsx`, `field-id.test.ts`, `nc-catalog.test.ts`, `projec
 ### `src/runtime/context.ts` - Options for createNCRuntime. The caller supplies an
 
 **External Dependencies:**
-| Package | Import |
-|---------|--------|
-| `@json-ui/core` | `createStagingBuffer, IntentEvent, ObservableDataModel` |
+
+| Package             | Import                                                           |
+| ------------------- | ---------------------------------------------------------------- |
+| `@json-ui/core`     | `createStagingBuffer, IntentEvent, ObservableDataModel, Catalog` |
+| `@json-ui/headless` | `HeadlessRegistry`                                               |
 
 **Internal Dependencies:**
-| File | Imports | Type |
-|------|---------|------|
-| `../types` | `NCIntentHandler, NCRuntime` | Import (type-only) |
+
+| File                | Imports                                                                     | Type               |
+| ------------------- | --------------------------------------------------------------------------- | ------------------ |
+| `../observer`       | `createNCObserver`                                                          | Import             |
+| `../catalog/limits` | `NC_OBSERVER_STALE_THRESHOLD, NC_SNAPSHOT_MAX_BYTES, NC_STAGING_MAX_FIELDS` | Import             |
+| `../types`          | `asNCCatalogVersion`                                                        | Import             |
+| `../types`          | `NCCatalogVersion, NCIntentHandler, NCRuntime`                              | Import (type-only) |
+| `../catalog`        | `NC_CATALOG_VERSION`                                                        | Import             |
 
 **Exports:**
+
 - Interfaces: `CreateNCRuntimeOptions`
 - Functions: `createNCRuntime`
 
 ---
 
-### `src/runtime/index.ts` - index module
-
-**Internal Dependencies:**
-| File | Imports | Type |
-|------|---------|------|
-| `./context` | `createNCRuntime, type CreateNCRuntimeOptions` | Re-export |
+### `src/runtime/freeze.ts` - SPDX-License-Identifier: Apache-2.0
 
 **Exports:**
-- Re-exports: `createNCRuntime`, `type CreateNCRuntimeOptions`
+
+- Functions: `freezeDeep`, `dict`
+
+---
+
+### `src/runtime/index.ts` - SPDX-License-Identifier: Apache-2.0
+
+**Internal Dependencies:**
+
+| File        | Imports                                        | Type      |
+| ----------- | ---------------------------------------------- | --------- |
+| `./context` | `createNCRuntime, type CreateNCRuntimeOptions` | Re-export |
+| `./freeze`  | `freezeDeep, dict`                             | Re-export |
+
+**Exports:**
+
+- Re-exports: `createNCRuntime`, `type CreateNCRuntimeOptions`, `freezeDeep`, `dict`
 
 ---
 
 ## Types Dependencies
 
-### `src/types/index.ts` - index module
+### `src/types/index.ts` - SPDX-License-Identifier: Apache-2.0
+
+**Internal Dependencies:**
+
+| File         | Imports                                  | Type      |
+| ------------ | ---------------------------------------- | --------- |
+| `./nc-types` | `asNCCatalogVersion, isNCCatalogVersion` | Re-export |
+
+**Exports:**
+
+- Re-exports: `asNCCatalogVersion`, `isNCCatalogVersion`
 
 ---
 
 ### `src/types/nc-types.ts` - An NC intent handler receives a fully-formed IntentEvent from the
 
 **External Dependencies:**
-| Package | Import |
-|---------|--------|
-| `@json-ui/core` | `IntentEvent, StagingBuffer, ObservableDataModel` |
+
+| Package             | Import                                                             |
+| ------------------- | ------------------------------------------------------------------ |
+| `@json-ui/core`     | `IntentEvent, StagingBuffer, ObservableDataModel, UITree, Catalog` |
+| `@json-ui/headless` | `NormalizedNode`                                                   |
+
+**Exports:**
+
+- Interfaces: `NCObserver`, `NCRuntime`
+- Functions: `isNCCatalogVersion`, `asNCCatalogVersion`
 
 ---
 
@@ -303,25 +569,37 @@ Test files: `nc-app.test.tsx`, `field-id.test.ts`, `nc-catalog.test.ts`, `projec
 
 ### File Import/Export Matrix
 
-| File | Imports From | Exports To |
-|------|--------------|------------|
-| `index` | 1 files | 1 files |
-| `nc-app` | 2 files | 1 files |
-| `index` | 1 files | 1 files |
-| `nc-catalog` | 1 files | 1 files |
-| `index` | 6 files | 0 files |
-| `index` | 1 files | 1 files |
-| `projection` | 0 files | 1 files |
-| `handle-intent` | 1 files | 1 files |
-| `index` | 1 files | 1 files |
-| `index` | 3 files | 2 files |
-| `input-components` | 0 files | 2 files |
-| `nc-renderer` | 2 files | 1 files |
-| `use-committed-tree` | 0 files | 1 files |
-| `context` | 1 files | 1 files |
-| `index` | 1 files | 1 files |
-| `index` | 0 files | 5 files |
-| `nc-types` | 0 files | 0 files |
+| File                     | Imports From | Exports To |
+| ------------------------ | ------------ | ---------- |
+| `index`                  | 1 files      | 2 files    |
+| `nc-app`                 | 2 files      | 1 files    |
+| `field-id`               | 1 files      | 2 files    |
+| `index`                  | 3 files      | 3 files    |
+| `limits`                 | 0 files      | 6 files    |
+| `nc-catalog`             | 3 files      | 1 files    |
+| `core`                   | 6 files      | 0 files    |
+| `index`                  | 8 files      | 0 files    |
+| `index`                  | 1 files      | 2 files    |
+| `projection`             | 1 files      | 1 files    |
+| `index`                  | 2 files      | 3 files    |
+| `nc-headless-components` | 0 files      | 2 files    |
+| `nc-observer`            | 4 files      | 1 files    |
+| `handle-intent`          | 1 files      | 1 files    |
+| `index`                  | 1 files      | 2 files    |
+| `react`                  | 2 files      | 0 files    |
+| `error-boundary`         | 0 files      | 2 files    |
+| `field-id-stability`     | 0 files      | 2 files    |
+| `index`                  | 5 files      | 2 files    |
+| `input-components`       | 2 files      | 2 files    |
+| `intent-flight-context`  | 0 files      | 2 files    |
+| `nc-renderer`            | 5 files      | 2 files    |
+| `use-committed-tree`     | 0 files      | 1 files    |
+| `context`                | 4 files      | 1 files    |
+| `freeze`                 | 0 files      | 3 files    |
+| `index`                  | 2 files      | 2 files    |
+| `test-setup`             | 0 files      | 0 files    |
+| `index`                  | 1 files      | 8 files    |
+| `nc-types`               | 0 files      | 1 files    |
 
 ---
 
@@ -340,80 +618,111 @@ graph TD
     end
 
     subgraph Catalog
-        N2[index]
-        N3[nc-catalog]
+        N2[field-id]
+        N3[index]
+        N4[limits]
+        N5[nc-catalog]
+    end
+
+    subgraph Root
+        N6[core]
+        N7[react]
+        N8[test-setup]
     end
 
     subgraph Entry
-        N4[index]
+        N9[index]
     end
 
     subgraph Memory
-        N5[index]
-        N6[projection]
+        N10[index]
+        N11[projection]
+    end
+
+    subgraph Observer
+        N12[index]
+        N13[nc-headless-components]
+        N14[nc-observer]
     end
 
     subgraph Orchestrator
-        N7[handle-intent]
-        N8[index]
+        N15[handle-intent]
+        N16[index]
     end
 
     subgraph Renderer
-        N9[index]
-        N10[input-components]
-        N11[nc-renderer]
-        N12[use-committed-tree]
+        N17[error-boundary]
+        N18[field-id-stability]
+        N19[index]
+        N20[input-components]
+        N21[intent-flight-context]
+        N22[...2 more]
     end
 
     subgraph Runtime
-        N13[context]
-        N14[index]
+        N23[context]
+        N24[freeze]
+        N25[index]
     end
 
     subgraph Types
-        N15[index]
-        N16[nc-types]
+        N26[index]
+        N27[nc-types]
     end
 
     N0 --> N1
-    N1 --> N9
-    N1 --> N15
-    N2 --> N3
-    N3 --> N15
-    N4 --> N2
-    N4 --> N14
-    N4 --> N5
-    N4 --> N9
-    N4 --> N8
-    N4 --> N0
-    N5 --> N6
-    N7 --> N15
-    N8 --> N7
+    N1 --> N26
+    N2 --> N4
+    N3 --> N5
+    N3 --> N2
+    N3 --> N4
+    N5 --> N26
+    N5 --> N2
+    N5 --> N4
+    N6 --> N3
+    N6 --> N26
+    N6 --> N25
+    N6 --> N10
+    N6 --> N16
+    N6 --> N12
+    N9 --> N3
+    N9 --> N26
+    N9 --> N25
     N9 --> N10
-    N9 --> N11
+    N9 --> N19
+    N9 --> N16
+    N9 --> N0
     N9 --> N12
-    N11 --> N10
-    N11 --> N15
-    N13 --> N15
+    N10 --> N11
+    N11 --> N24
+    N12 --> N14
+    N12 --> N13
     N14 --> N13
+    N14 --> N4
+    N14 --> N24
 ```
 
 ---
 
 ## Summary Statistics
 
-Hand-updated 2026-08-29. The generated Mermaid counts above this section are stale.
-
-| Category | Count |
-|----------|-------|
-| Non-test source files | 28 |
-| Test files | 15 |
-| All `src` TypeScript files | 43 |
-| Lines of non-test source | ~1799 |
-| Modules (including observer + split entries) | 9 |
-| Runtime circular deps | 0 (still true of the 2026-04-16 graph; regenerate to confirm) |
+| Category                | Count |
+| ----------------------- | ----- |
+| Total TypeScript Files  | 29    |
+| Total Modules           | 10    |
+| Total Lines of Code     | 2014  |
+| Total Exports           | 164   |
+| Total Re-exports        | 124   |
+| Total Classes           | 2     |
+| Total Interfaces        | 11    |
+| Total Functions         | 15    |
+| Total Type Guards       | 2     |
+| Total Enums             | 0     |
+| Type-only Imports       | 5     |
+| Runtime Circular Deps   | 0     |
+| Type-only Circular Deps | 0     |
 
 ---
 
-*Last Updated*: 2026-08-29
-*Version*: 0.1.0
+_Last Updated_: 2026-08-29
+_Version_: 0.1.0

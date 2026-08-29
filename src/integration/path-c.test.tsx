@@ -6,9 +6,9 @@ import {
   type IntentEvent,
   type UITree,
 } from "@json-ui/core";
-import { createNCRuntime } from "./runtime";
-import { ncStarterCatalog, NC_CATALOG_VERSION } from "./catalog";
-import { NCRenderer } from "./renderer";
+import { createNCRuntime } from "../runtime";
+import { ncStarterCatalog, NC_CATALOG_VERSION } from "../catalog";
+import { NCRenderer } from "../renderer";
 
 describe("NC Path C end-to-end integration", () => {
   it("type → submit → intent cycle with staging snapshot", async () => {
@@ -452,6 +452,111 @@ describe("NC Path C end-to-end integration", () => {
     expect(onIntent).toHaveBeenCalledTimes(1);
 
     releaseFirst();
+    await act(async () => {
+      await firstDone;
+    });
+    runtime.destroy();
+  });
+
+  it("cancel discards staging after the intent snapshot is built", async () => {
+    const durableStore = createObservableDataModel({});
+    const runtime = await createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
+    const snapshots: Record<string, unknown>[] = [];
+    runtime.setIntentHandler(async (event) => {
+      snapshots.push(event.staging_snapshot);
+    });
+    const tree: UITree = {
+      root: "form",
+      elements: {
+        form: {
+          key: "form",
+          type: "Container",
+          props: {},
+          children: ["email", "cancel"],
+        },
+        email: {
+          key: "email",
+          type: "TextField",
+          props: { id: "email", label: "Email" },
+        },
+        cancel: {
+          key: "cancel",
+          type: "Button",
+          props: { label: "Cancel", action: { name: "cancel" } },
+        },
+      },
+    };
+    render(
+      <NCRenderer
+        tree={tree}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "alice@example.com" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(snapshots[0]).toEqual({ email: "alice@example.com" });
+    expect(runtime.stagingBuffer.snapshot()).toEqual({});
+    runtime.destroy();
+  });
+
+  it("disables the submit button while an intent is in flight (NC-004/031)", async () => {
+    let releaseFirst: () => void = () => {};
+    const firstDone = new Promise<void>((r) => {
+      releaseFirst = r;
+    });
+    const durableStore = createObservableDataModel({});
+    const runtime = createNCRuntime({
+      durableStore,
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
+    runtime.setIntentHandler(async () => {
+      await firstDone;
+    });
+    const tree: UITree = {
+      root: "root",
+      elements: {
+        root: {
+          key: "root",
+          type: "Button",
+          props: { label: "Fire", action: { name: "submit_form" } },
+        },
+      },
+    };
+    render(
+      <NCRenderer
+        tree={tree}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+    const button = screen.getByRole("button", {
+      name: "Fire",
+    }) as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+    await act(async () => {
+      fireEvent.click(button);
+      await Promise.resolve();
+    });
+    expect(button.disabled).toBe(true);
+    expect(button.getAttribute("aria-busy")).toBe("true");
+    releaseFirst();
+    await act(async () => {
+      await firstDone;
+    });
+    expect(button.disabled).toBe(false);
     runtime.destroy();
   });
 });

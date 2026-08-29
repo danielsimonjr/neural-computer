@@ -1,17 +1,28 @@
-// Neural Computer — public entry point.
-//
-// The NC runtime composes @json-ui/react, @json-ui/headless, and
-// @danielsimonjr/memoryjs into an LLM-driven application runtime.
-// Path C (headless dual-backend) is wired in: createNCRuntime owns an
-// NCObserver that shadows every successful React tree commit with a
-// @json-ui/headless render over the same shared stagingBuffer and
-// durableStore references. See docs/specs/ and docs/plans/ for the
-// architecture.
+// SPDX-License-Identifier: Apache-2.0
 
-// Catalog
-export { ncStarterCatalog, NC_CATALOG_VERSION } from "./catalog";
+/**
+ * Neural Computer — public entry point.
+ *
+ * v1 is a catalog-constrained React UI runtime with a staging buffer,
+ * a one-at-a-time intent gate, a stub intent handler, and a headless
+ * observer cache. It is not yet an LLM-backed or Python-REPL runtime;
+ * those remain follow-up specs. Import `neural-computer/core` from
+ * Node to avoid the React graph.
+ */
 
-// Types
+export {
+  ncStarterCatalog,
+  NC_CATALOG_VERSION,
+  NC_LLM_ACCEPTANCE_CONTRACT,
+  ncFieldIdSchema,
+  isSafeFieldId,
+  NC_FIELD_ID_MAX_LENGTH,
+  NC_STRING_MAX_LENGTH,
+  NC_STAGING_MAX_FIELDS,
+  NC_SNAPSHOT_MAX_BYTES,
+  NC_STARTER_ACTIONS,
+} from "./catalog";
+
 export type {
   NCIntentHandler,
   NCCatalogVersion,
@@ -19,43 +30,40 @@ export type {
   NCRuntime,
 } from "./types";
 
-// Runtime
-export {
-  createNCRuntime,
-  type CreateNCRuntimeOptions,
-} from "./runtime";
+export { asNCCatalogVersion, isNCCatalogVersion } from "./types";
 
-// Memory
+export { createNCRuntime, type CreateNCRuntimeOptions } from "./runtime";
+
 export {
   defaultNCProjection,
   type NCProjectedData,
   type NCProjectedEntity,
+  type NCProjectedRelation,
 } from "./memory";
 
-// Renderer (React surface)
 export {
   NCRenderer,
   NCContainer,
   NCText,
   NCTextField,
   NCCheckbox,
+  NCSelect,
   NCButton,
   useCommittedTree,
+  NCErrorBoundary,
   type NCRendererProps,
   type NCComponentProps,
   type UseCommittedTreeOptions,
 } from "./renderer";
 
-// Orchestrator (intent handling — no React)
 export {
   createStubIntentHandler,
+  submittedFieldsStillPresent,
   type CreateStubIntentHandlerOptions,
 } from "./orchestrator";
 
-// App (top-level React mounting component)
 export { NCApp, type NCAppProps } from "./app";
 
-// Observer (LLM observer for Path C)
 export {
   createNCObserver,
   ncHeadlessRegistry,

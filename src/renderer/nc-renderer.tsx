@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 "use client";
 
 import React from "react";
@@ -18,26 +20,54 @@ import {
   NCText,
   NCTextField,
   NCCheckbox,
+  NCSelect,
   NCButton,
 } from "./input-components";
 import type { NCRuntime, NCCatalogVersion } from "../types";
+import { NCErrorBoundary } from "./error-boundary";
+import {
+  FocusFieldContext,
+  IntentFlightContext,
+} from "./intent-flight-context";
+import {
+  collectFieldIdTypes,
+  commitFieldIdTypes,
+  detectFieldIdTypeChanges,
+} from "./field-id-stability";
 
-/**
- * Maps NC-authored React components to the ComponentRegistry shape
- * @json-ui/react expects. NC components already accept `{element,
- * children}` as a subset of ComponentRenderProps, so the assignment is
- * structural and no wrapper function is needed — TypeScript's
- * `ComponentType<P>` is contravariant in P, and UIElement is structurally
- * compatible with the NC components' prop shape.
- */
+const BUILTIN_REGISTRY_KEYS = [
+  "Container",
+  "Text",
+  "TextField",
+  "Checkbox",
+  "Select",
+  "Button",
+] as const;
+
 function buildDefaultRegistry(): ComponentRegistry {
   return {
     Container: NCContainer as ComponentRenderer,
     Text: NCText as ComponentRenderer,
     TextField: NCTextField as ComponentRenderer,
     Checkbox: NCCheckbox as ComponentRenderer,
+    Select: NCSelect as ComponentRenderer,
     Button: NCButton as ComponentRenderer,
   };
+}
+
+const lastShadowedByRuntime = new WeakMap<NCRuntime, UITree>();
+
+function mergeRegistry(extraRegistry?: ComponentRegistry): ComponentRegistry {
+  if (extraRegistry) {
+    for (const key of BUILTIN_REGISTRY_KEYS) {
+      if (Object.prototype.hasOwnProperty.call(extraRegistry, key)) {
+        console.warn(
+          `[NC] extraRegistry attempted to override built-in "${key}"; ignored so action.params cannot be dropped.`,
+        );
+      }
+    }
+  }
+  return { ...(extraRegistry ?? {}), ...buildDefaultRegistry() };
 }
 
 export interface NCRendererProps {
@@ -45,29 +75,43 @@ export interface NCRendererProps {
    * The committed tree to render. Must come from a successful stream
    * commit — NCRenderer does NOT tolerate partial trees. Use the
    * useCommittedTree hook to get a tree from useUIStream in atomic mode.
+   * Invalid trees (Zod, duplicate ids, field-id type changes) are not
+   * passed to JSON-UI; the last good validated tree stays on screen.
    */
   tree: UITree;
   /** NC runtime handle (staging buffer, durable store, emitIntent). */
   runtime: NCRuntime;
-  /** Catalog used to validate the tree before reconciliation. */
+  /**
+   * Catalog used to validate the tree before reconciliation. Must be
+   * the same reference as `runtime.catalog`.
+   */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   catalog: Catalog<any, any, any>;
-  /** Catalog version threaded through emitted IntentEvents. */
+  /**
+   * Catalog version threaded through emitted IntentEvents. Must equal
+   * `runtime.catalogVersion`.
+   */
   catalogVersion: NCCatalogVersion;
-  /** Optional additional component registry entries. */
+  /**
+   * Additional component registry entries. Built-in names (Container,
+   * Text, TextField, Checkbox, Select, Button) cannot be overridden.
+   */
   extraRegistry?: ComponentRegistry;
+  /** Called when a tree is rejected (validation or field-id type change). */
+  onValidationError?: (error: unknown) => void;
+  /** Called when NCErrorBoundary catches a render throw. */
+  onRenderError?: (error: Error) => void;
 }
 
 /**
- * The NC React wrapper. Mounts @json-ui/react's JSONUIProvider with
- * NC's runtime-shared StagingBuffer and memoryjs-backed durable store,
- * wires the onIntent callback to the runtime's backpressure gate, and
- * runs catalog.validateTree + staging.reconcile on every committed tree.
+ * The NC React wrapper. Validates the tree *during render* so invalid
+ * trees never reach JSON-UI's Renderer (Invariant 8). Reconcile +
+ * observer.render run in useLayoutEffect against the same Zod-stripped
+ * tree the Renderer receives (Invariant 12).
  *
- * Partial-tree safety (NC Invariant 9) is the caller's responsibility
- * — NCRenderer assumes the `tree` prop only changes on successful
- * stream commits. Use useCommittedTree (Task 9) to get this behavior
- * from useUIStream automatically.
+ * Observer render is a second full tree walk and is not free; it is
+ * skipped when the incoming `tree` reference was already shadowed
+ * (React Strict Mode double-invokes layout effects).
  */
 export function NCRenderer({
   tree,
@@ -75,64 +119,99 @@ export function NCRenderer({
   catalog,
   catalogVersion,
   extraRegistry,
+  onValidationError,
+  onRenderError,
 }: NCRendererProps) {
+  if (catalog !== runtime.catalog) {
+    throw new Error(
+      "[NC] NCRenderer `catalog` must be the same reference as runtime.catalog",
+    );
+  }
+  if (catalogVersion !== runtime.catalogVersion) {
+    throw new Error(
+      "[NC] NCRenderer `catalogVersion` must equal runtime.catalogVersion",
+    );
+  }
+  const activeCatalog = runtime.catalog;
+  const activeVersion = runtime.catalogVersion;
+
   const registry = React.useMemo(
-    () => ({ ...buildDefaultRegistry(), ...extraRegistry }),
+    () => mergeRegistry(extraRegistry),
     [extraRegistry],
   );
 
-  // Reconcile the staging buffer against the committed tree. Guarded
-  // by catalog.validateTree — a tree that fails validation (Zod or
-  // field-ID uniqueness) is skipped, leaving the buffer untouched.
-  // This is the library-side enforcement of NC Invariants 8 and 9.
-  //
-  // IMPORTANT: walks `result.data` (the Zod-parsed/stripped tree),
-  // NOT the raw `tree` prop. Zod v4's default mode strips unknown
-  // keys; a Container element with a stray `id: "foo"` prop passes
-  // validateTree because the extra key is stripped in result.data,
-  // but walking the raw tree would still pick up "foo" and wrongly
-  // preserve a phantom staging entry. Caught by the post-ship Opus
-  // review — fixed by reconciling over result.data.
-  //
-  // useLayoutEffect (not useEffect) so the reconcile runs
-  // synchronously after DOM mutations but BEFORE paint. This closes
-  // the one-frame window where an orphan field's unmounted React
-  // component leaves its staging value visible to any reader of the
-  // buffer. The reconcile is a pure in-memory operation, so the
-  // layout-effect timing has no perf cost.
-  React.useLayoutEffect(() => {
-    const result = catalog.validateTree(tree);
+  const lastGoodRef = React.useRef<UITree | null>(null);
+  const typeHistoryRef = React.useRef<Map<string, string>>(new Map());
+  const focusedIdRef = React.useRef<string | null>(null);
+  const pendingValidationError = React.useRef<unknown>(null);
+
+  const renderTree = React.useMemo((): UITree | null => {
+    const result = activeCatalog.validateTree(tree);
     if (!result.success) {
+      pendingValidationError.current = result.error ?? result.fieldIdError;
+      return lastGoodRef.current;
+    }
+    const data = result.data ?? tree;
+    const nextTypes = collectFieldIdTypes(data);
+    const typeErr = detectFieldIdTypeChanges(typeHistoryRef.current, nextTypes);
+    if (typeErr) {
+      pendingValidationError.current = typeErr;
+      return lastGoodRef.current;
+    }
+    pendingValidationError.current = null;
+    lastGoodRef.current = data;
+    commitFieldIdTypes(typeHistoryRef.current, nextTypes);
+    return data;
+  }, [tree, activeCatalog]);
+
+  const inFlight = React.useSyncExternalStore(
+    runtime.subscribeIntentFlight,
+    runtime.isIntentInFlight,
+    runtime.isIntentInFlight,
+  );
+
+  const focusApi = React.useMemo(
+    () => ({
+      setFocusedId: (id: string | null) => {
+        focusedIdRef.current = id;
+      },
+    }),
+    [],
+  );
+
+  React.useLayoutEffect(() => {
+    if (pendingValidationError.current != null) {
       console.warn(
-        "[NC] Skipping reconcile: catalog.validateTree failed",
-        result.error ?? result.fieldIdError,
+        "[NC] Skipping reconcile: tree rejected",
+        pendingValidationError.current,
       );
+      onValidationError?.(pendingValidationError.current);
       return;
     }
+    if (renderTree === null) return;
+    if (lastShadowedByRuntime.get(runtime) === tree) return;
+    lastShadowedByRuntime.set(runtime, tree);
+    const liveIds = collectFieldIds(renderTree);
     try {
-      // Walk the validated/stripped tree, not the raw one.
-      const liveIds = collectFieldIds(result.data!);
       runtime.stagingBuffer.reconcile(liveIds);
-      // Path C: shadow every successful React tree commit with a headless
-      // render so the LLM orchestrator can observe the committed tree
-      // (including resolved staging values) without importing React.
-      // Observer catches its own exceptions — React is unaffected if
-      // the headless render fails. See docs/specs/2026-04-16-headless-dual-backend-design.md.
-      runtime.observer.render(result.data!);
     } catch (err) {
-      console.warn("[NC] Reconcile threw; buffer untouched:", err);
+      console.warn("[NC] Reconcile threw:", err);
+      return;
     }
-  }, [tree, catalog, runtime.stagingBuffer, runtime.observer]);
+    runtime.observer.render(renderTree);
+    const focusId = focusedIdRef.current;
+    if (focusId && liveIds.has(focusId)) {
+      const escaped =
+        typeof CSS !== "undefined" && typeof CSS.escape === "function"
+          ? CSS.escape(focusId)
+          : focusId.replace(/["\\]/g, "");
+      const node = document.querySelector(`[data-field-id="${escaped}"]`);
+      if (node instanceof HTMLElement) node.focus();
+    }
+  }, [tree, renderTree, runtime, onValidationError]);
 
   const onIntent = React.useCallback(
     (event: IntentEvent) => {
-      // Fire-and-forget into the runtime's backpressure gate. Wrapping
-      // in a .catch logs any handler exception — without this, a
-      // throwing intent handler surfaces as a UI that appears to do
-      // nothing, because `void` swallows the rejected promise. The
-      // `intentInFlight` flag in createNCRuntime's `finally` clears
-      // regardless, so the runtime recovers either way; this just
-      // gives a diagnostic trail.
       runtime.emitIntent(event).catch((err) => {
         console.error("[NC] Intent handler threw:", err);
       });
@@ -141,21 +220,33 @@ export function NCRenderer({
   );
 
   return (
-    <JSONUIProvider
-      registry={registry}
-      store={runtime.durableStore}
-      stagingStore={runtime.stagingBuffer}
-      onIntent={onIntent}
-      catalogVersion={catalogVersion}
-    >
-      {/*
-        Renderer requires `registry` as a prop even though JSONUIProvider
-        accepts it — JSONUIProvider's registry prop is currently vestigial
-        (it doesn't wire it into the render tree). Pass the same registry
-        to both so NC stays forward-compatible if JSONUIProvider starts
-        consuming its registry prop in the future.
-      */}
-      <Renderer tree={tree} registry={registry} />
-    </JSONUIProvider>
+    <NCErrorBoundary onError={onRenderError}>
+      <IntentFlightContext.Provider value={inFlight}>
+        <FocusFieldContext.Provider value={focusApi}>
+          <JSONUIProvider
+            // JSONUIProvider still requires registry (vestigial vs Renderer);
+            // passing the same object keeps ActionProvider and Renderer in sync.
+            registry={registry}
+            store={runtime.durableStore}
+            stagingStore={runtime.stagingBuffer}
+            onIntent={onIntent}
+            catalogVersion={activeVersion}
+          >
+            <form
+              data-nc-form=""
+              aria-busy={inFlight || undefined}
+              onSubmit={(e) => {
+                e.preventDefault();
+              }}
+              noValidate
+            >
+              {renderTree ? (
+                <Renderer tree={renderTree} registry={registry} />
+              ) : null}
+            </form>
+          </JSONUIProvider>
+        </FocusFieldContext.Provider>
+      </IntentFlightContext.Provider>
+    </NCErrorBoundary>
   );
 }

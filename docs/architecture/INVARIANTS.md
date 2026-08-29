@@ -14,7 +14,7 @@ The NC spec defines 13 testable invariants. Each maps to tests in the tree. A ch
 
 When the next tree no longer contains an input field, the staging buffer drops its entry. Accepting a submission is mechanical: persist values to durable state and emit a tree without those ids.
 
-**Tests**: `nc-renderer.test.tsx`, `integration.test.tsx`
+**Tests**: `nc-renderer.test.tsx`, `integration/path-c.test.tsx`
 
 ---
 
@@ -24,7 +24,7 @@ When the next tree no longer contains an input field, the staging buffer drops i
 
 The buffer reconciles on field id, not on props or element identity.
 
-**Tests**: `nc-renderer.test.tsx`, `integration.test.tsx`
+**Tests**: `nc-renderer.test.tsx`, `integration/path-c.test.tsx`
 
 ---
 
@@ -52,7 +52,7 @@ Flushing on intent is a read, not a consume.
 
 > A fired intent event's `staging_snapshot` contains every field ID currently in the buffer, not just the fields referenced by the action's params.
 
-**Tests**: `integration.test.tsx`
+**Tests**: `integration/path-c.test.tsx`
 
 ---
 
@@ -62,7 +62,7 @@ Flushing on intent is a read, not a consume.
 
 `NCButton` must forward `action.params` to `execute()` or this invariant is dead at the source.
 
-**Tests**: `integration.test.tsx`, `input-components.test.tsx`
+**Tests**: `integration/path-c.test.tsx`, `input-components.test.tsx`
 
 ---
 
@@ -102,7 +102,7 @@ The spec's original wording referenced `renderer/staging-buffer.ts`; staging now
 
 `createNCRuntime` gates every emit through an in-flight boolean. The handler is captured before `await`. The flag clears in `finally`. The flag is **public**: `runtime.isIntentInFlight()` and `runtime.subscribeIntentFlight(listener)`. NCRenderer subscribes so `NCButton` disables. Drops resolve; they are not silent from the UI's point of view.
 
-**Tests**: `context.test.ts`, `integration.test.tsx`, `input-components.test.tsx`
+**Tests**: `context.test.ts`, `integration/path-c.test.tsx`, `input-components.test.tsx`
 
 ---
 
@@ -112,7 +112,7 @@ The spec's original wording referenced `renderer/staging-buffer.ts`; staging now
 
 Implemented in `@json-ui/core`'s `resolveActionWithStaging`. NCButton must pass `params` through `execute()`.
 
-**Tests**: `integration.test.tsx`
+**Tests**: `integration/path-c.test.tsx`
 
 ---
 
@@ -122,7 +122,7 @@ Implemented in `@json-ui/core`'s `resolveActionWithStaging`. NCButton must pass 
 
 Both walks use Zod-stripped data: `<Renderer tree={renderTree}>` and `observer.render(renderTree)` receive the same `result.data` (or last-good). `extraRegistry` / `extraHeadlessRegistry` cannot override builtins, which would otherwise desync Button params.
 
-**Tests**: `nc-observer.test.ts`, `nc-renderer.test.tsx`, `integration.test.tsx`
+**Tests**: `nc-observer.test.ts`, `nc-renderer.test.tsx`, `integration/path-c.test.tsx`
 
 ---
 
@@ -136,20 +136,20 @@ Both walks use Zod-stripped data: `<Renderer tree={renderTree}>` and `observer.r
 
 ## Coverage Summary
 
-| # | Invariant | Status | Test Location(s) |
-|---|-----------|--------|-------------------|
-| 1 | Reconciliation drops | Covered | `nc-renderer.test.tsx`, `integration.test.tsx` |
-| 2 | Preserves matched IDs | Covered | `nc-renderer.test.tsx`, `integration.test.tsx` |
-| 3 | Preserves across prop changes | Covered | `nc-renderer.test.tsx` |
-| 4 | Snapshot non-destructive | Covered | `context.test.ts` |
-| 5 | Intent carries full snapshot | Covered | `integration.test.tsx` |
-| 6 | action_params / staging_snapshot separate | Covered | `integration.test.tsx`, `input-components.test.tsx` |
-| 7 | Buffer isolation (includes `../observer`) | Covered | `buffer-isolation.test.ts` |
-| 8 | Field ID uniqueness / last-good tree | Covered | `nc-catalog.test.ts`, `nc-renderer.test.tsx`, `field-id-stability.test.ts` |
-| 9 | Partial-tree safety | Covered | `use-committed-tree.test.tsx`, `nc-renderer.test.tsx`, `handle-intent.test.ts` |
-| 10 | Backpressure (public flag) | Covered | `context.test.ts`, `integration.test.tsx` |
-| 11 | DynamicValue pre-resolution | Covered | `integration.test.tsx` |
-| 12 | Observer shadows React (both walk stripped data) | Covered | `nc-observer.test.ts`, `nc-renderer.test.tsx`, `integration.test.tsx` |
-| 13 | Observer failure best-effort / detectable | Covered | `nc-observer.test.ts` |
+| #   | Invariant                                        | Status  | Test Location(s)                                                               |
+| --- | ------------------------------------------------ | ------- | ------------------------------------------------------------------------------ |
+| 1   | Reconciliation drops                             | Covered | `nc-renderer.test.tsx`, `integration/path-c.test.tsx`                          |
+| 2   | Preserves matched IDs                            | Covered | `nc-renderer.test.tsx`, `integration/path-c.test.tsx`                          |
+| 3   | Preserves across prop changes                    | Covered | `nc-renderer.test.tsx`                                                         |
+| 4   | Snapshot non-destructive                         | Covered | `context.test.ts`                                                              |
+| 5   | Intent carries full snapshot                     | Covered | `integration/path-c.test.tsx`                                                  |
+| 6   | action_params / staging_snapshot separate        | Covered | `integration/path-c.test.tsx`, `input-components.test.tsx`                     |
+| 7   | Buffer isolation (includes `../observer`)        | Covered | `buffer-isolation.test.ts`                                                     |
+| 8   | Field ID uniqueness / last-good tree             | Covered | `nc-catalog.test.ts`, `nc-renderer.test.tsx`, `field-id-stability.test.ts`     |
+| 9   | Partial-tree safety                              | Covered | `use-committed-tree.test.tsx`, `nc-renderer.test.tsx`, `handle-intent.test.ts` |
+| 10  | Backpressure (public flag)                       | Covered | `context.test.ts`, `integration/path-c.test.tsx`                               |
+| 11  | DynamicValue pre-resolution                      | Covered | `integration/path-c.test.tsx`                                                  |
+| 12  | Observer shadows React (both walk stripped data) | Covered | `nc-observer.test.ts`, `nc-renderer.test.tsx`, `integration/path-c.test.tsx`   |
+| 13  | Observer failure best-effort / detectable        | Covered | `nc-observer.test.ts`                                                          |
 
 15 test files under `src/**/*.test.*`; 84 `it`/`test` cases as of the 2026-08-29 documentation refresh.

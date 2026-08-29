@@ -5,9 +5,9 @@
 
 ## What Is This?
 
-Neural Computer (NC) is a **catalog-constrained React form runtime**. It owns a staging buffer for in-progress input, a one-at-a-time intent gate, a deterministic stub intent handler, and a headless observer cache that shadows successful tree commits. It is inspired by Zhuge et al., *Neural Computers* (arXiv:2604.04625), but **this package does not call an LLM and does not spawn a Python REPL**. Those remain follow-up specs.
+Neural Computer (NC) is a **catalog-constrained React form runtime**. It owns a staging buffer for in-progress input, a one-at-a-time intent gate, a deterministic stub intent handler, and a headless observer cache that shadows successful tree commits. It is inspired by Zhuge et al., _Neural Computers_ (arXiv:2604.04625), but **this package does not call an LLM and does not spawn a Python REPL**. Those remain follow-up specs.
 
-The runtime validates every UI tree against `ncStarterCatalog` (version `nc-starter-0.2`) before JSON-UI renders it. Invalid trees never reach `<Renderer>`; the last good validated tree stays on screen. A named catalog action (`submit_form` or `cancel`) flushes an `IntentEvent` to `NCIntentHandler`. The stub handler maps that event to the next tree. The observer (`@json-ui/headless`) produces a frozen `NormalizedNode` of the same Zod-stripped tree React just committed.
+The runtime validates every UI tree against `ncStarterCatalog` (version `nc-starter-0.3`) before JSON-UI renders it. Invalid trees never reach `<Renderer>`; the last good validated tree stays on screen. A named catalog action (`submit_form` or `cancel`) flushes an `IntentEvent` to `NCIntentHandler`. The stub handler maps that event to the next tree. The observer (`@json-ui/headless`) produces a frozen `NormalizedNode` of the same Zod-stripped tree React just committed.
 
 ## Key Capabilities
 
@@ -61,7 +61,7 @@ All three JSON-UI packages and memoryjs are sibling repos consumed via `file:` d
 2. Current UI tree
 3. Staging buffer
 4. In-flight intent flag (`runtime.isIntentInFlight`)
-5. Catalog version (`nc-starter-0.2`)
+5. Catalog version (`nc-starter-0.3`)
 6. LLM session state (future handler; not managed here)
 7. Observer cache (`runtime.observer`)
 
@@ -71,10 +71,10 @@ All three JSON-UI packages and memoryjs are sibling repos consumed via `file:` d
 
 ```typescript
 interface IntentEvent {
-  action_name: string;                    // catalog-declared action
+  action_name: string; // catalog-declared action
   action_params: Record<string, unknown>; // LLM-authored action params
   staging_snapshot: Record<FieldId, unknown>; // full staging buffer at flush
-  catalog_version?: string;               // NC always populates this
+  catalog_version?: string; // NC always populates this
   timestamp: number;
 }
 ```
@@ -113,7 +113,7 @@ neural-computer/
 │   ├── app/                  # NCApp
 │   ├── memory/               # defaultNCProjection
 │   ├── observer/             # createNCObserver + ncHeadlessRegistry
-│   └── integration.test.tsx  # Path C end-to-end
+│   └── integration/path-c.test.tsx  # Path C end-to-end
 │
 ├── docs/
 │   ├── specs/
@@ -137,17 +137,17 @@ Access discipline: the future LLM orchestrator sees exactly durable state plus i
 
 ## Key Statistics (after 2026-08-29 remediation)
 
-| Metric | Value |
-|--------|-------|
-| Source files | 28 TypeScript files (`.ts` + `.tsx`, excluding tests) |
-| Test files | 15 under `src/**/*.test.*` (including `integration.test.tsx`) |
-| All `src/**/*.ts{,x}` | 43 |
-| Lines of source (non-test) | ~1799 |
-| Test cases (`it` / `test`) | 84 |
-| Catalog version | `nc-starter-0.2` |
-| Named state surfaces | 7 |
-| Spec invariants | 13 |
-| Circular dependencies | 0 |
+| Metric                     | Value                                                                |
+| -------------------------- | -------------------------------------------------------------------- |
+| Source files               | 28 TypeScript files (`.ts` + `.tsx`, excluding tests)                |
+| Test files                 | 15 under `src/**/*.test.*` (including `integration/path-c.test.tsx`) |
+| All `src/**/*.ts{,x}`      | 43                                                                   |
+| Lines of source (non-test) | ~1799                                                                |
+| Test cases (`it` / `test`) | 84                                                                   |
+| Catalog version            | `nc-starter-0.3`                                                     |
+| Named state surfaces       | 7                                                                    |
+| Spec invariants            | 13                                                                   |
+| Circular dependencies      | 0                                                                    |
 
 `tsconfig.json` still sets `"skipLibCheck": true`. That hides some sibling-type drift (NC-042 / NC-066); it has not been flipped.
 

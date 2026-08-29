@@ -150,13 +150,44 @@ describe("createNCObserver", () => {
     observer.destroy();
   });
 
-  it("serialize('unknown-format') throws", () => {
+  it("serialize('unknown-format') returns null instead of throwing", () => {
     const observer = createNCObserver(makeDeps());
     observer.render(singleTextFieldTree);
-    // Cast bypasses the string literal union for negative-control testing.
-    expect(() =>
-      observer.serialize("bogus" as "json-string"),
-    ).toThrow(/Unknown serialize format/);
+    expect(observer.serialize("bogus" as "json-string")).toBeNull();
+    observer.destroy();
+  });
+
+  it("onStale fires after NC_OBSERVER_STALE_THRESHOLD consecutive failures (NC-064)", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const onStale = vi.fn();
+    const throwingRegistry: HeadlessRegistry = {
+      ...ncHeadlessRegistry,
+      Container: () => {
+        throw new Error("stale-test");
+      },
+    };
+    const observer = createNCObserver({
+      ...makeDeps(),
+      registry: throwingRegistry,
+      onStale,
+    });
+    const badTree: UITree = {
+      root: "r",
+      elements: {
+        r: { key: "r", type: "Container", props: {}, children: [] },
+      },
+    };
+    observer.render(badTree);
+    observer.render(badTree);
+    expect(onStale).not.toHaveBeenCalled();
+    observer.render(badTree);
+    expect(onStale).toHaveBeenCalledTimes(1);
+    expect(onStale).toHaveBeenCalledWith(3, 0);
+    observer.render(badTree);
+    expect(onStale).toHaveBeenCalledTimes(1);
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
     observer.destroy();
   });
 });

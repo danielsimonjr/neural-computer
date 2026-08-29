@@ -1,11 +1,21 @@
+// SPDX-License-Identifier: Apache-2.0
+
 import {
   createStagingBuffer,
   type IntentEvent,
   type ObservableDataModel,
   type Catalog,
 } from "@json-ui/core";
+import type { HeadlessRegistry } from "@json-ui/headless";
 import { createNCObserver } from "../observer";
+import {
+  NC_OBSERVER_STALE_THRESHOLD,
+  NC_SNAPSHOT_MAX_BYTES,
+  NC_STAGING_MAX_FIELDS,
+} from "../catalog/limits";
+import { asNCCatalogVersion } from "../types";
 import type { NCCatalogVersion, NCIntentHandler, NCRuntime } from "../types";
+import { NC_CATALOG_VERSION } from "../catalog";
 
 /**
  * Options for createNCRuntime. The caller supplies an
@@ -37,14 +47,49 @@ export interface CreateNCRuntimeOptions {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   catalog: Catalog<any, any, any>;
-  /** Optional version string threaded through every emitted IntentEvent. */
+  /**
+   * Version string stored on the runtime and identity-checked against
+   * NCRenderer's catalogVersion prop. Defaults to NC_CATALOG_VERSION.
+   */
   catalogVersion?: NCCatalogVersion;
+  /**
+   * Additional headless registry entries merged *under* ncHeadlessRegistry
+   * (builtins always win). Use this when extraRegistry adds React types
+   * so the observer can shadow them too (Invariant 12).
+   */
+  extraHeadlessRegistry?: HeadlessRegistry;
+  /**
+   * Fired when observer consecutive failures reach
+   * NC_OBSERVER_STALE_THRESHOLD. The observer keeps serving last-good.
+   */
+  onObserverStale?: (consecutiveFailures: number, lastPassId: number) => void;
 }
 
 const NO_HANDLER_WARNING =
   "[NC runtime] emitIntent called before setIntentHandler; ignoring. " +
   "Make sure NCApp has mounted and called setIntentHandler in its useEffect " +
   "before any action can fire.";
+
+function payloadOverBudget(event: IntentEvent): string | null {
+  const snap = event.staging_snapshot;
+  if (snap && typeof snap === "object" && !Array.isArray(snap)) {
+    const fieldCount = Object.keys(snap).length;
+    if (fieldCount > NC_STAGING_MAX_FIELDS) {
+      return `staging snapshot has ${fieldCount} fields (max ${NC_STAGING_MAX_FIELDS})`;
+    }
+  }
+  try {
+    const bytes =
+      JSON.stringify(event.staging_snapshot ?? {}).length +
+      JSON.stringify(event.action_params ?? {}).length;
+    if (bytes > NC_SNAPSHOT_MAX_BYTES) {
+      return `intent payload is ${bytes} bytes (max ${NC_SNAPSHOT_MAX_BYTES})`;
+    }
+  } catch {
+    return "intent payload is not JSON-serializable";
+  }
+  return null;
+}
 
 /**
  * Create an NC runtime handle. Creates a fresh StagingBuffer via
@@ -53,24 +98,38 @@ const NO_HANDLER_WARNING =
  * gates every emit through a backpressure flag (NC Invariant 10 —
  * new intents are rejected while one is in flight).
  *
- * The factory is async to leave room for future initialization
- * steps (e.g., hydrating a persisted staging buffer, handshaking
- * with a remote orchestrator). The current implementation returns
- * synchronously-available data but keeps the signature async.
+ * Synchronous: there is no I/O to wait on. Callers that `await` the
+ * result still work because a non-Promise value is thenable-compatible
+ * with await.
  */
-export async function createNCRuntime(
-  options: CreateNCRuntimeOptions,
-): Promise<NCRuntime> {
+export function createNCRuntime(options: CreateNCRuntimeOptions): NCRuntime {
+  const catalogVersion = options.catalogVersion
+    ? asNCCatalogVersion(options.catalogVersion)
+    : NC_CATALOG_VERSION;
   const stagingBuffer = createStagingBuffer();
   const observer = createNCObserver({
     catalog: options.catalog,
     staging: stagingBuffer,
     data: options.durableStore,
-    catalogVersion: options.catalogVersion,
+    catalogVersion,
+    extraRegistry: options.extraHeadlessRegistry,
+    onStale: options.onObserverStale,
   });
   let intentHandler: NCIntentHandler | null = null;
   let intentInFlight = false;
   let destroyed = false;
+  let generation = 0;
+  const flightListeners = new Set<() => void>();
+
+  const notifyFlight = (): void => {
+    for (const listener of flightListeners) listener();
+  };
+
+  const setInFlight = (next: boolean): void => {
+    if (intentInFlight === next) return;
+    intentInFlight = next;
+    notifyFlight();
+  };
 
   const emitIntent = async (event: IntentEvent): Promise<void> => {
     if (destroyed) {
@@ -82,25 +141,27 @@ export async function createNCRuntime(
       return;
     }
     if (intentInFlight) {
-      // NC Invariant 10: reject (and log) rather than queue. The user's
-      // UI should disable the Submit button while an intent is in flight,
-      // but the runtime enforces the contract defensively even if the
-      // UI drops the guard.
       console.warn(
         `[NC runtime] Rejected in-flight intent: ${event.action_name}`,
       );
       return;
     }
-    // Capture the current handler before awaiting. If setIntentHandler
-    // is called again during the handler's execution, the in-flight
-    // call still runs against its original handler — swaps take effect
-    // on the next emit.
+    const over = payloadOverBudget(event);
+    if (over) {
+      console.warn(`[NC runtime] Dropped oversized intent: ${over}`);
+      return;
+    }
     const currentHandler = intentHandler;
-    intentInFlight = true;
+    const boundGeneration = generation;
+    setInFlight(true);
     try {
+      if (event.action_name === "cancel") {
+        stagingBuffer.reconcile(new Set());
+      }
+      if (destroyed || generation !== boundGeneration) return;
       await currentHandler(event);
     } finally {
-      intentInFlight = false;
+      setInFlight(false);
     }
   };
 
@@ -111,25 +172,38 @@ export async function createNCRuntime(
       );
       return;
     }
-    intentHandler = handler;
+    const boundGeneration = generation;
+    intentHandler = async (event: IntentEvent): Promise<void> => {
+      if (destroyed || generation !== boundGeneration) return;
+      await handler(event);
+    };
   };
 
   const destroy = (): void => {
     if (destroyed) return;
     destroyed = true;
+    generation += 1;
     intentHandler = null;
     observer.destroy();
-    // The durableStore is caller-owned; we don't dispose it here.
-    // If it's a memoryjs adapter, the caller disposes it via
-    // adapter.dispose() after runtime.destroy().
+    if (intentInFlight) setInFlight(false);
+    flightListeners.clear();
   };
 
   return {
     stagingBuffer,
     durableStore: options.durableStore,
     observer,
+    catalog: options.catalog,
+    catalogVersion,
     emitIntent,
     setIntentHandler,
+    isIntentInFlight: () => intentInFlight,
+    subscribeIntentFlight: (listener) => {
+      flightListeners.add(listener);
+      return () => {
+        flightListeners.delete(listener);
+      };
+    },
     destroy,
   };
 }

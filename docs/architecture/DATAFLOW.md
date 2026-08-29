@@ -142,16 +142,16 @@ Click 1 sets `isIntentInFlight` true; subscribers re-render; buttons disable. Cl
 
 ## Data Flow Invariants
 
-| # | Guarantee | Enforced By |
-|---|-----------|-------------|
-| Orchestrator sees only IntentEvent | Buffer isolation including `../observer` (Invariant 7) |
-| Invalid trees never reach Renderer | `useMemo` last-good (Invariant 8) |
-| Staging survives failed validation | Reconcile skipped when pending error is set (Invariant 9) |
-| Staging survives partial streams | `useCommittedTree` atomic mode + stub `validateTree` (Invariant 9) |
-| No phantom staging entries | Walk stripped `renderTree` |
-| React and observer see the same data | Both walk stripped `renderTree` (Invariant 12) |
-| One intent at a time, visible | `isIntentInFlight` / `subscribeIntentFlight` (Invariant 10) |
-| Full snapshot on every intent | ActionProvider (Invariant 5) |
-| `cancel` discards staging | `emitIntent` reconciles to empty after snapshot is on the event |
-| Params and snapshot unmerged | Separate fields (Invariant 6) |
-| DynamicValue resolves from staging | Single-segment paths prefer staging (Invariant 11) |
+| #                                    | Guarantee                                                          | Enforced By |
+| ------------------------------------ | ------------------------------------------------------------------ | ----------- |
+| Orchestrator sees only IntentEvent   | Buffer isolation including `../observer` (Invariant 7)             |
+| Invalid trees never reach Renderer   | `useMemo` last-good (Invariant 8)                                  |
+| Staging survives failed validation   | Reconcile skipped when pending error is set (Invariant 9)          |
+| Staging survives partial streams     | `useCommittedTree` atomic mode + stub `validateTree` (Invariant 9) |
+| No phantom staging entries           | Walk stripped `renderTree`                                         |
+| React and observer see the same data | Both walk stripped `renderTree` (Invariant 12)                     |
+| One intent at a time, visible        | `isIntentInFlight` / `subscribeIntentFlight` (Invariant 10)        |
+| Full snapshot on every intent        | ActionProvider (Invariant 5)                                       |
+| `cancel` discards staging            | `emitIntent` reconciles to empty after snapshot is on the event    |
+| Params and snapshot unmerged         | Separate fields (Invariant 6)                                      |
+| DynamicValue resolves from staging   | Single-segment paths prefer staging (Invariant 11)                 |

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 import {
   createHeadlessRenderer,
   JsonStringSerializer,
@@ -12,6 +14,8 @@ import type {
   UITree,
 } from "@json-ui/core";
 import { ncHeadlessRegistry } from "./nc-headless-components";
+import { NC_OBSERVER_STALE_THRESHOLD } from "../catalog/limits";
+import { freezeDeep } from "../runtime/freeze";
 import type { NCObserver } from "../types";
 
 export interface CreateNCObserverOptions {
@@ -24,43 +28,65 @@ export interface CreateNCObserverOptions {
   data: ObservableDataModel;
   catalogVersion?: string;
   /**
-   * Optional registry override. Defaults to ncHeadlessRegistry. Exposed so
-   * tests can inject a throwing component to exercise Invariant 13's
-   * "observer catches the exception and preserves last good cache" path.
-   * Production callers should use the default.
+   * Additional headless components merged under ncHeadlessRegistry.
+   * Builtin names cannot be overridden (same rule as extraRegistry on
+   * NCRenderer) so Invariant 12 cannot be broken by replacing Button.
    */
+  extraRegistry?: HeadlessRegistry;
+  onStale?: (consecutiveFailures: number, lastPassId: number) => void;
+}
+
+/**
+ * Factory options including the test-only `registry` override. Not
+ * re-exported from the public barrel; tests import createNCObserver
+ * from this module and pass `registry` as an extra property.
+ */
+interface ObserverFactoryOptions extends CreateNCObserverOptions {
   registry?: HeadlessRegistry;
 }
 
-// Fallback-only HTML serializer for diagnostic output. `emitters: {}` means
-// every node falls through to the default <div data-type="..."> wrapper
-// (see html.ts:41-42 in @json-ui/headless). Production HTML rendering
-// (with per-type emitters) belongs to a separate spec if ever needed.
-const ncHtmlSerializer = createHtmlSerializer({ emitters: {} });
+export function createNCObserver(options: ObserverFactoryOptions): NCObserver {
+  const builtinKeys = new Set(Object.keys(ncHeadlessRegistry));
+  if (options.extraRegistry) {
+    for (const key of Object.keys(options.extraRegistry)) {
+      if (builtinKeys.has(key)) {
+        console.warn(
+          `[NC] extraHeadlessRegistry attempted to override built-in "${key}"; ignored.`,
+        );
+      }
+    }
+  }
+  const registry: HeadlessRegistry =
+    options.registry ??
+    ({
+      ...(options.extraRegistry ?? {}),
+      ...ncHeadlessRegistry,
+    } as HeadlessRegistry);
 
-export function createNCObserver(
-  options: CreateNCObserverOptions,
-): NCObserver {
   const renderer = createHeadlessRenderer({
     catalog: options.catalog,
-    registry: options.registry ?? ncHeadlessRegistry,
+    registry,
     staging: options.staging,
     data: options.data,
     catalogVersion: options.catalogVersion,
   });
 
+  const htmlSerializer = createHtmlSerializer({ emitters: {} });
+
   let lastRender: NormalizedNode | null = null;
   let lastPassId = 0;
   let consecutiveFailures = 0;
   let destroyed = false;
+  let staleSignaled = false;
 
   return {
     render(tree: UITree) {
       if (destroyed) return;
       try {
-        lastRender = renderer.render(tree);
+        lastRender = freezeDeep(renderer.render(tree));
         lastPassId += 1;
         consecutiveFailures = 0;
+        staleSignaled = false;
       } catch (err) {
         consecutiveFailures += 1;
         console.warn(
@@ -68,6 +94,16 @@ export function createNCObserver(
             `keeping last good cache:`,
           err,
         );
+        if (
+          consecutiveFailures >= NC_OBSERVER_STALE_THRESHOLD &&
+          !staleSignaled
+        ) {
+          staleSignaled = true;
+          console.error(
+            `[NC] Observer stale: ${consecutiveFailures} consecutive failures; last good passId=${lastPassId}`,
+          );
+          options.onStale?.(consecutiveFailures, lastPassId);
+        }
       }
     },
     getLastRender() {
@@ -83,8 +119,8 @@ export function createNCObserver(
       if (lastRender === null) return null;
       if (format === "json-string")
         return JsonStringSerializer.serialize(lastRender);
-      if (format === "html") return ncHtmlSerializer.serialize(lastRender);
-      throw new Error(`[NC] Unknown serialize format: ${format as string}`);
+      if (format === "html") return htmlSerializer.serialize(lastRender);
+      return null;
     },
     destroy() {
       if (destroyed) return;

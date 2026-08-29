@@ -7,7 +7,7 @@ The package exposes three entry points via `exports` in `package.json`.
 
 ```typescript
 // Client Components / tests (pulls React)
-import { NCApp, createNCRuntime, /* ... */ } from "neural-computer";
+import { NCApp, createNCRuntime /* ... */ } from "neural-computer";
 import { NCApp, NCRenderer } from "neural-computer/react";
 
 // Node / orchestrator (no React, no @json-ui/react)
@@ -48,7 +48,7 @@ Observer: `createNCObserver`, `ncHeadlessRegistry`, `CreateNCObserverOptions`.
 
 ### `ncStarterCatalog`
 
-Five components (`Container`, `Text`, `TextField`, `Checkbox`, `Button`) and two actions (`submit_form`, `cancel`). Version string `NC_CATALOG_VERSION` is `"nc-starter-0.2"`.
+Six components (`Container`, `Text`, `TextField`, `Checkbox`, `Select`, `Button`) and two actions (`submit_form`, `cancel`). Version string `NC_CATALOG_VERSION` is `"nc-starter-0.3"`.
 
 Container is a minimal flex wrapper (`direction` column or row). TextField supports `multiline` (textarea) and `inputType`. There is no Select. `Button.action.name` is the enum `submit_form | cancel`. `NCButton` forwards `action.params` to `execute()`.
 
@@ -65,7 +65,7 @@ Runtime-checked constructor for the `NCCatalogVersion` brand. Throws on empty or
 ### `NCIntentHandler`
 
 ```typescript
-type NCIntentHandler = (event: IntentEvent) => Promise<void>
+type NCIntentHandler = (event: IntentEvent) => Promise<void>;
 ```
 
 Rejections propagate through `emitIntent` and are caught by NCRenderer's `.catch`.
@@ -100,7 +100,7 @@ interface NCRuntime {
 ### `createNCRuntime(options)`
 
 ```typescript
-function createNCRuntime(options: CreateNCRuntimeOptions): NCRuntime
+function createNCRuntime(options: CreateNCRuntimeOptions): NCRuntime;
 ```
 
 **Synchronous.** There is no I/O. `await createNCRuntime(...)` still works because a non-Promise value is awaitable.
@@ -139,7 +139,7 @@ interface NCObserver {
 ### `defaultNCProjection`
 
 ```typescript
-const defaultNCProjection: GraphProjection
+const defaultNCProjection: GraphProjection;
 ```
 
 Output (`NCProjectedData`): `entitiesByType`, `entities` (by name), `relations` (`NCProjectedRelation`: from, to, relationType), `relationCount`. Null-prototype maps. Duplicate names: last write wins, with a warning. Missing timestamps are `null`.

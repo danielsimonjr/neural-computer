@@ -46,23 +46,23 @@ The team can do careful work. The rest of this document is about where that care
 
 ### NC-001 — Invariant 8 is not enforced at the render boundary
 
-**Claim (spec line 67, INVARIANTS.md):** "Attempting to render a tree with two fields sharing the same `id` raises a catalog validation error *before the tree reaches JSON-UI*."
+**Claim (spec line 67, INVARIANTS.md):** "Attempting to render a tree with two fields sharing the same `id` raises a catalog validation error _before the tree reaches JSON-UI_."
 
 **Code (`src/renderer/nc-renderer.tsx`):** `catalog.validateTree(tree)` runs inside `useLayoutEffect`. The JSX unconditionally mounts `<Renderer tree={tree} registry={registry} />` with the raw, possibly-invalid tree.
 
-Effects run after commit. An invalid tree is already in the React fiber tree, already walked by `@json-ui/react`'s `Renderer`, already instantiated NC components, already calling `useStagingField` on colliding IDs, *before* validation runs. Failed validation only skips reconcile and observer update. It does not skip render.
+Effects run after commit. An invalid tree is already in the React fiber tree, already walked by `@json-ui/react`'s `Renderer`, already instantiated NC components, already calling `useStagingField` on colliding IDs, _before_ validation runs. Failed validation only skips reconcile and observer update. It does not skip render.
 
 The tests for Invariant 8 prove `validateTree` returns `success: false` and that reconcile is skipped. They never assert the invalid tree is absent from the DOM. They cannot, because it is present.
 
 This is the same class of bug as the Zod-strip regression (walk `result.data`, not `tree`) except applied to the React render itself: validation and rendering are on different paths, and rendering is the one without the guard.
 
-**Fix shape:** Validate during render (or `useMemo` on `tree`), keep a last-good validated tree in state/ref, and pass *that* to `<Renderer>`. Do not pass `tree` through just because the parent set it.
+**Fix shape:** Validate during render (or `useMemo` on `tree`), keep a last-good validated tree in state/ref, and pass _that_ to `<Renderer>`. Do not pass `tree` through just because the parent set it.
 
 ### NC-002 — React and the observer do not see the same tree (Invariant 12 hole)
 
 **Claim (Invariant 12, Path C spec Rule 2):** After a successful commit, `getLastRender()` is derived from the same validated tree that drove the React render. Observer is passed `result.data` (Zod-stripped).
 
-**Code:** Observer gets `result.data`. React `<Renderer>` gets raw `tree`. Zod v4 strips unknown keys. A Container with a stray `id: "phantom"` is the exact case the post-ship review already caught for *reconcile*. The review did not apply the same fix to the React render path.
+**Code:** Observer gets `result.data`. React `<Renderer>` gets raw `tree`. Zod v4 strips unknown keys. A Container with a stray `id: "phantom"` is the exact case the post-ship review already caught for _reconcile_. The review did not apply the same fix to the React render path.
 
 Consequence: React components can observe props the catalog rejected; the LLM observer cannot. "The LLM sees what the user sees" is false whenever the LLM emits extra keys — which an LLM will.
 
@@ -72,7 +72,7 @@ Consequence: React components can observe props the catalog rejected; the LLM ob
 
 **Claim (spec Rule 3):** "Replacing an input in place: Same ID, different component type. This is a catalog error and must be caught by validation."
 
-**Code:** `validateUniqueFieldIds` (via `catalog.validateTree`) checks uniqueness within *one* tree. Nothing compares ID-to-component-type across commits. An `id: "email"` TextField can become a Checkbox on the next tree. Staging still holds a string. `NCCheckbox` does `checked={value ?? false}` on that string. React will not treat this as a catalog error. The user's value is misinterpreted, not dropped.
+**Code:** `validateUniqueFieldIds` (via `catalog.validateTree`) checks uniqueness within _one_ tree. Nothing compares ID-to-component-type across commits. An `id: "email"` TextField can become a Checkbox on the next tree. Staging still holds a string. `NCCheckbox` does `checked={value ?? false}` on that string. React will not treat this as a catalog error. The user's value is misinterpreted, not dropped.
 
 No test exists for this case.
 
@@ -106,7 +106,7 @@ Callers who trust "never rejects" will not attach `.catch`. Direct `emitIntent` 
 
 ### NC-006 — Invalid trees still render, with unsafe prop casts
 
-`NCText`, `NCTextField`, `NCCheckbox`, `NCButton` all do `element.props as { ... }`. Combined with NC-001, a tree that failed Zod still reaches those casts. Missing `content` renders empty. Missing `id` passes `undefined` into `useStagingField`. This is not theoretical: the Invariant 8 tests *intentionally* rerender duplicate-ID trees through `NCRenderer`.
+`NCText`, `NCTextField`, `NCCheckbox`, `NCButton` all do `element.props as { ... }`. Combined with NC-001, a tree that failed Zod still reaches those casts. Missing `content` renders empty. Missing `id` passes `undefined` into `useStagingField`. This is not theoretical: the Invariant 8 tests _intentionally_ rerender duplicate-ID trees through `NCRenderer`.
 
 ### NC-007 — `cancel` is a catalog action that does nothing
 
@@ -126,7 +126,7 @@ Runtime option is passed only into `createNCObserver` → headless renderer. Int
 
 Invariant 9 is implemented by `useCommittedTree` wrapping `useUIStream({ commitMode: "atomic" })`. `NCApp` uses `useState<UITree>(initialTree)` and `setTree` from the stub handler. The primary public mounting component never touches streaming or atomic mode.
 
-When the deferred Anthropic handler streams tokens, `onTreeCommit(partial)` through today's `NCApp` *will* reconcile against partial trees. The invariant is opt-in via a hook that the documented quickstart does not use. COMPONENTS.md claims the `useCommittedTree` error-path test leaves the buffer untouched; that test never creates a staging buffer. It only asserts `tree` stays null on fetch rejection.
+When the deferred Anthropic handler streams tokens, `onTreeCommit(partial)` through today's `NCApp` _will_ reconcile against partial trees. The invariant is opt-in via a hook that the documented quickstart does not use. COMPONENTS.md claims the `useCommittedTree` error-path test leaves the buffer untouched; that test never creates a staging buffer. It only asserts `tree` stays null on fetch rejection.
 
 Invariant 9 is a property of an unused hook plus an architectural hope, not of the app you actually mount.
 
@@ -134,7 +134,7 @@ Invariant 9 is a property of an unused hook plus an architectural hope, not of t
 
 CHANGELOG: "Added `react-dom` to `dependencies` (NC is a React app, not a library)." The package exports `NCApp`, `NCRenderer`, hooks, and a public barrel. It is a library.
 
-`react` / `react-dom` in `dependencies` plus no `peerDependencies` means consumers get NC's React *and* their own. The vitest `resolve.alias` that exists specifically because two Reacts explode hooks does not apply to a bundler consuming `neural-computer` from npm. The two-React failure mode the project already hit in tests is waiting in production.
+`react` / `react-dom` in `dependencies` plus no `peerDependencies` means consumers get NC's React _and_ their own. The vitest `resolve.alias` that exists specifically because two Reacts explode hooks does not apply to a bundler consuming `neural-computer` from npm. The two-React failure mode the project already hit in tests is waiting in production.
 
 `package.json` also has no `exports` map, no `files` allowlist, `"main": "./dist/index.js"` with `"type": "module"` and a CJS build that is not wired, and a single tsup entry that pulls React into any import of `createStubIntentHandler`. Server-side orchestrator code cannot import the stub without a React graph.
 
@@ -242,7 +242,7 @@ Comment claims `action.params` "arrive pre-resolved by headless context's resolv
 
 ### NC-028 — Observer `currentValue` path is untested through React commits
 
-Path C's test plan: type into TextField → next tree commit → `getLastRender()` includes `currentValue`. Implemented integration test: type → click (no tree commit) → assert `currentValue` is *absent*. That second assertion is correct for "observer is tree-commit, not keystroke." The spec's actual `currentValue`-after-commit path is only covered by calling headless components with a synthetic context, not by `NCRenderer` reconciling then `observer.render`. Nobody tests that a post-submit tree which *keeps* the email field bakes the staging value into the observer.
+Path C's test plan: type into TextField → next tree commit → `getLastRender()` includes `currentValue`. Implemented integration test: type → click (no tree commit) → assert `currentValue` is _absent_. That second assertion is correct for "observer is tree-commit, not keystroke." The spec's actual `currentValue`-after-commit path is only covered by calling headless components with a synthetic context, not by `NCRenderer` reconciling then `observer.render`. Nobody tests that a post-submit tree which _keeps_ the email field bakes the staging value into the observer.
 
 ### NC-029 — `createNCRuntime` is async for no reason
 
@@ -326,22 +326,22 @@ Everything is under `[Unreleased]`. "v1 shipped 2026-04-15" appears in README. N
 
 ### NC-048 — CLAUDE.md, AGENTS.md, and architecture docs disagree with the code
 
-| Claim | Where | Reality |
-|-------|--------|---------|
-| 47 tests / 11 files | CLAUDE.md, CHANGELOG scaffold bullet | 66 / 13 |
-| 11 invariants | CLAUDE.md, OVERVIEW (in one leftover phrase in CLAUDE) | 13 |
-| Five named state surfaces | CLAUDE.md, AGENTS.md, Path C spec ("five existing") | Spec body lists six; Path C adds observer cache as another |
-| Module map has no `observer/` | CLAUDE.md, AGENTS.md | `src/observer/` is a public module |
-| `@json-ui/headless` not listed as a `file:` dep | CLAUDE.md "three dependencies" | `package.json` has four file: deps including headless |
-| `CreateNCRuntimeOptions` is `{ durableStore }` | COMPONENTS.md | Requires `catalog`, optional `catalogVersion` |
-| Public barrel 13 symbols | COMPONENTS.md | 15 values + 13 types |
-| nc-renderer tests: 6 | COMPONENTS.md | 8 |
-| context tests: 7 | COMPONENTS.md | 8 |
-| Staging buffer owned by NCRenderer | ARCHITECTURE.md state table | Created by `createNCRuntime`; renderer only reconciles |
-| In-flight flag owned by renderer wrapper | Spec | Owned by `createNCRuntime` |
-| 17 TS files, 844 LOC | DEPENDENCY_GRAPH.md | 20 source files, 1101 source LOC |
-| JSON-UI listed without headless | README architecture | Headless is a first-class Path C dependency |
-| "Currently 47 tests" | CLAUDE.md commands | Stale |
+| Claim                                           | Where                                                  | Reality                                                    |
+| ----------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------- |
+| 47 tests / 11 files                             | CLAUDE.md, CHANGELOG scaffold bullet                   | 66 / 13                                                    |
+| 11 invariants                                   | CLAUDE.md, OVERVIEW (in one leftover phrase in CLAUDE) | 13                                                         |
+| Five named state surfaces                       | CLAUDE.md, AGENTS.md, Path C spec ("five existing")    | Spec body lists six; Path C adds observer cache as another |
+| Module map has no `observer/`                   | CLAUDE.md, AGENTS.md                                   | `src/observer/` is a public module                         |
+| `@json-ui/headless` not listed as a `file:` dep | CLAUDE.md "three dependencies"                         | `package.json` has four file: deps including headless      |
+| `CreateNCRuntimeOptions` is `{ durableStore }`  | COMPONENTS.md                                          | Requires `catalog`, optional `catalogVersion`              |
+| Public barrel 13 symbols                        | COMPONENTS.md                                          | 15 values + 13 types                                       |
+| nc-renderer tests: 6                            | COMPONENTS.md                                          | 8                                                          |
+| context tests: 7                                | COMPONENTS.md                                          | 8                                                          |
+| Staging buffer owned by NCRenderer              | ARCHITECTURE.md state table                            | Created by `createNCRuntime`; renderer only reconciles     |
+| In-flight flag owned by renderer wrapper        | Spec                                                   | Owned by `createNCRuntime`                                 |
+| 17 TS files, 844 LOC                            | DEPENDENCY_GRAPH.md                                    | 20 source files, 1101 source LOC                           |
+| JSON-UI listed without headless                 | README architecture                                    | Headless is a first-class Path C dependency                |
+| "Currently 47 tests"                            | CLAUDE.md commands                                     | Stale                                                      |
 
 Agents following CLAUDE.md will not know the observer exists.
 
@@ -361,7 +361,7 @@ Spec: system prompt must declare "accept = emit tree without those fields"; test
 
 ### NC-052 — No SECURITY.md, no threat model, no trusted-tree boundary
 
-UI trees are LLM output. That is untrusted HTML-adjacent structure. React text escaping covers `NCText` content. The catalog does not allow `href`, `src`, or raw HTML *today*. `extraRegistry` can add them tomorrow. Staging snapshots go to the LLM (prompt injection from the user into the next tree). Durable-store paths in DynamicValue (`{ path: "entities/admin/observations" }`) copy durable data into `action_params`. None of this is documented as a security boundary. For an LLM-driven UI that is the product.
+UI trees are LLM output. That is untrusted HTML-adjacent structure. React text escaping covers `NCText` content. The catalog does not allow `href`, `src`, or raw HTML _today_. `extraRegistry` can add them tomorrow. Staging snapshots go to the LLM (prompt injection from the user into the next tree). Durable-store paths in DynamicValue (`{ path: "entities/admin/observations" }`) copy durable data into `action_params`. None of this is documented as a security boundary. For an LLM-driven UI that is the product.
 
 ---
 
@@ -471,7 +471,7 @@ Shared across all observers in a process. If `createHtmlSerializer` closes over 
 
 ### NC-077 — Headless TextField/Checkbox omit `currentValue` when `has` is false, including explicit `undefined`
 
-If staging `set(id, undefined)` or a value that `has` reports true with get undefined — depends on upstream StagingBuffer. If `has` is true for a set-undefined, `currentValue: undefined` is added. JSON.stringify drops `undefined` in objects... actually JSON.stringify *omits* `undefined` values in objects. The "omit key for untouched" compactness goal can be undone by JSON serialization anyway for other fields.
+If staging `set(id, undefined)` or a value that `has` reports true with get undefined — depends on upstream StagingBuffer. If `has` is true for a set-undefined, `currentValue: undefined` is added. JSON.stringify drops `undefined` in objects... actually JSON.stringify _omits_ `undefined` values in objects. The "omit key for untouched" compactness goal can be undone by JSON serialization anyway for other fields.
 
 ### NC-078 — No `catalog.validateTree` on `initialTree` before first paint
 
@@ -491,7 +491,7 @@ No visibility pruning in NC's headless components. If JSON-UI's walker supports 
 
 ### NC-082 — Comments in production code retell CHANGELOG
 
-`input-components.tsx` and `nc-renderer.tsx` contain multi-paragraph histories of the Opus review. AGENTS.md already indexes those traps. The comments are *why*-adjacent but they are also changelog-in-source. They will diverge (they already mention "April-15" while Path C is April-16).
+`input-components.tsx` and `nc-renderer.tsx` contain multi-paragraph histories of the Opus review. AGENTS.md already indexes those traps. The comments are _why_-adjacent but they are also changelog-in-source. They will diverge (they already mention "April-15" while Path C is April-16).
 
 ### NC-083 — `docs/plans/2026-04-11-ephemeral-ui-state-plan.md` is superseded and still in the tree without a banner at the top of agent entry points
 
@@ -507,7 +507,7 @@ Format drift will not fail CI. Typecheck will.
 
 ### NC-086 — `overrides` pin react to `$react`
 
-Good for install-time dedup of *this* package's tree. Does nothing for the consumer's tree (NC-011).
+Good for install-time dedup of _this_ package's tree. Does nothing for the consumer's tree (NC-011).
 
 ### NC-087 — Observer render is synchronous inside `useLayoutEffect`
 
@@ -537,21 +537,21 @@ There is no `createAnthropicIntentHandler`. There is no `src/compute/`. There is
 
 ## 7. Invariant-by-invariant honesty
 
-| # | Stated guarantee | Honest status |
-|---|------------------|---------------|
-| 1 | Reconcile drops missing IDs | **Held**, for trees that pass validation. Invalid trees skip reconcile (so IDs that *should* drop, do not). |
-| 2 | Reconcile preserves present IDs | **Held**, same caveat. |
-| 3 | Preserve across prop changes | **Held** for same component type. **Fails** spec's same-ID-different-type case (NC-003). |
-| 4 | Snapshot non-destructive | **Held**. Tested. |
-| 5 | Intent carries full snapshot | **Held**, via JSON-UI ActionProvider. NC integration test covers it. |
-| 6 | params / snapshot unmerged | **Held**. Tested. The NCButton params-forwarding fix is load-bearing. |
-| 7 | Orchestrator isolation | **Held** for static `from` imports of a 46-line stub. Regex is incomplete (NC-023). |
-| 8 | Duplicate IDs never reach JSON-UI | **Failed** (NC-001). Validation exists; it is after render. |
-| 9 | No reconcile on partial/invalid trees | **Partial.** Invalid: reconcile skipped, render not. Partial streams: only if caller uses `useCommittedTree`. `NCApp` does not. |
-| 10 | In-flight intents rejected, not queued | **Held** as a gate. **Failed** as a product (NC-004). Rejected clicks are silent. Flag is not observable. |
-| 11 | DynamicValue pre-resolve from staging | **Held** in the React click path (integration test). Headless path is an upstream assumption (NC-027). |
-| 12 | Observer shadows React | **Partial.** Same *keys* on happy path. Different *props* (raw vs Zod-stripped). Breaks with `extraRegistry`. `currentValue`-after-commit untested through NCRenderer. Strict Mode passId. |
-| 13 | Observer failure isolated and detectable | **Held** for injected throwing registry. Detectable only by polling. Stub handler never polls. |
+| #   | Stated guarantee                         | Honest status                                                                                                                                                                              |
+| --- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Reconcile drops missing IDs              | **Held**, for trees that pass validation. Invalid trees skip reconcile (so IDs that _should_ drop, do not).                                                                                |
+| 2   | Reconcile preserves present IDs          | **Held**, same caveat.                                                                                                                                                                     |
+| 3   | Preserve across prop changes             | **Held** for same component type. **Fails** spec's same-ID-different-type case (NC-003).                                                                                                   |
+| 4   | Snapshot non-destructive                 | **Held**. Tested.                                                                                                                                                                          |
+| 5   | Intent carries full snapshot             | **Held**, via JSON-UI ActionProvider. NC integration test covers it.                                                                                                                       |
+| 6   | params / snapshot unmerged               | **Held**. Tested. The NCButton params-forwarding fix is load-bearing.                                                                                                                      |
+| 7   | Orchestrator isolation                   | **Held** for static `from` imports of a 46-line stub. Regex is incomplete (NC-023).                                                                                                        |
+| 8   | Duplicate IDs never reach JSON-UI        | **Failed** (NC-001). Validation exists; it is after render.                                                                                                                                |
+| 9   | No reconcile on partial/invalid trees    | **Partial.** Invalid: reconcile skipped, render not. Partial streams: only if caller uses `useCommittedTree`. `NCApp` does not.                                                            |
+| 10  | In-flight intents rejected, not queued   | **Held** as a gate. **Failed** as a product (NC-004). Rejected clicks are silent. Flag is not observable.                                                                                  |
+| 11  | DynamicValue pre-resolve from staging    | **Held** in the React click path (integration test). Headless path is an upstream assumption (NC-027).                                                                                     |
+| 12  | Observer shadows React                   | **Partial.** Same _keys_ on happy path. Different _props_ (raw vs Zod-stripped). Breaks with `extraRegistry`. `currentValue`-after-commit untested through NCRenderer. Strict Mode passId. |
+| 13  | Observer failure isolated and detectable | **Held** for injected throwing registry. Detectable only by polling. Stub handler never polls.                                                                                             |
 
 "All 13 invariants have test coverage" is true in the sense that each has an `it()`. It is false in the sense that several tests assert a weaker property than the invariant text.
 

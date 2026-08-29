@@ -1,8 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
+
 import type {
   IntentEvent,
   StagingBuffer,
   ObservableDataModel,
   UITree,
+  Catalog,
 } from "@json-ui/core";
 import type { NormalizedNode } from "@json-ui/headless";
 
@@ -18,12 +21,36 @@ import type { NormalizedNode } from "@json-ui/headless";
 export type NCIntentHandler = (event: IntentEvent) => Promise<void>;
 
 /**
- * Nominal string brand for a catalog version. NC threads this through
- * every emitted IntentEvent.catalog_version so the orchestrator can
- * validate that the LLM's tree emissions match the catalog version in
- * effect at emission time.
+ * Nominal string brand for a catalog version. Construct values with
+ * {@link asNCCatalogVersion} so empty / oversized strings cannot sneak
+ * through a bare `as` cast at the runtime boundary.
  */
-export type NCCatalogVersion = string & { readonly __brand: "NCCatalogVersion" };
+export type NCCatalogVersion = string & {
+  readonly __brand: "NCCatalogVersion";
+};
+
+const NC_CATALOG_VERSION_MAX = 64;
+
+export function isNCCatalogVersion(value: unknown): value is NCCatalogVersion {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= NC_CATALOG_VERSION_MAX
+  );
+}
+
+/**
+ * Runtime-checked constructor for {@link NCCatalogVersion}. Throws if the
+ * string is empty or longer than 64 characters.
+ */
+export function asNCCatalogVersion(value: string): NCCatalogVersion {
+  if (!isNCCatalogVersion(value)) {
+    throw new Error(
+      `[NC] Invalid catalog version (non-empty, max ${NC_CATALOG_VERSION_MAX} chars): ${JSON.stringify(value)}`,
+    );
+  }
+  return value;
+}
 
 /**
  * The NC LLM observer. Shadows every successful React tree commit by
@@ -42,7 +69,8 @@ export interface NCObserver {
 
   /**
    * Returns the normalized tree from the most recent successful render,
-   * or null if no render has completed yet.
+   * or null if no render has completed yet. The graph is deeply frozen;
+   * mutating it is a no-op in strict mode and a TypeError in some engines.
    */
   getLastRender: () => NormalizedNode | null;
 
@@ -62,7 +90,11 @@ export interface NCObserver {
   /**
    * Serialize the last render via @json-ui/headless built-in serializers.
    * "json-string" → JSON.stringify(lastRender) for LLM prompts.
-   * "html"        → fallback-only diagnostic HTML (debug preview, not UI).
+   * "html"        → fallback-only diagnostic HTML. NOT safe for assignment
+   *                 to `innerHTML` or `dangerouslySetInnerHTML`: it may
+   *                 contain user staging values and LLM-emitted text.
+   *                 Treat the string as untrusted. Returns null if no
+   *                 render has completed, or if `format` is not recognized.
    * Callers wanting the structured NormalizedNode should use getLastRender().
    */
   serialize: (format: "json-string" | "html") => string | null;
@@ -95,14 +127,26 @@ export interface NCRuntime {
   /** LLM observer: shadows every React tree commit with a headless render. */
   observer: NCObserver;
   /**
-   * Emit an IntentEvent through NC's backpressure gate. The returned
-   * promise always resolves (never rejects): if another intent is
-   * already in flight, the event is dropped with a warning (NC
-   * Invariant 10). If no handler has been bound via setIntentHandler,
-   * also dropped with a warning. Otherwise resolves when the bound
-   * handler finishes. Handler rejections propagate out through this
-   * promise — NCRenderer's onIntent attaches a .catch so they surface
-   * as diagnostics instead of unhandled rejections.
+   * Catalog bound at construction. NCRenderer MUST pass this same
+   * reference as its `catalog` prop (identity check at render time).
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  catalog: Catalog<any, any, any>;
+  /**
+   * Version string the runtime threads into the observer and that
+   * NCRenderer must echo into JSONUIProvider. Identity-checked against
+   * the NCRenderer `catalogVersion` prop.
+   */
+  catalogVersion: NCCatalogVersion;
+  /**
+   * Emit an IntentEvent through NC's backpressure gate.
+   *
+   * The returned promise:
+   * - Resolves (does not reject) when the event is dropped: no handler
+   *   bound, already in flight (Invariant 10), or called after destroy.
+   * - Rejects when a bound handler rejects or throws. NCRenderer's
+   *   onIntent attaches a .catch so those surface as diagnostics
+   *   instead of unhandled rejections.
    */
   emitIntent: (event: IntentEvent) => Promise<void>;
   /**
@@ -111,8 +155,24 @@ export interface NCRuntime {
    * reference that the handler can capture. Installing a second
    * handler replaces the first immediately; any in-flight intent
    * continues to run with the old handler until it resolves.
+   * Pass a no-op on unmount so a late handler cannot call setTree.
    */
   setIntentHandler: (handler: NCIntentHandler) => void;
-  /** Release resources. Idempotent. */
+  /** True while a handler invocation is awaiting. */
+  isIntentInFlight: () => boolean;
+  /**
+   * Subscribe to in-flight flag changes. Returns an unsubscribe
+   * function. Used by NCRenderer via useSyncExternalStore so buttons
+   * can disable while an intent is running.
+   */
+  subscribeIntentFlight: (listener: () => void) => () => void;
+  /**
+   * Release resources. Idempotent. Increments an internal generation so
+   * a handler installed before destroy is not invoked after destroy, and
+   * clears the in-flight flag so the UI is not stuck. An already-running
+   * handler body cannot be aborted (Promises have no cancel); NCApp
+   * additionally no-ops setTree after unmount. Further emitIntent /
+   * setIntentHandler calls are ignored.
+   */
   destroy: () => void;
 }

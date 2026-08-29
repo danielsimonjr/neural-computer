@@ -1,6 +1,6 @@
 # Headless Dual-Backend (Path C "LLM Observer") Design
 
-**Status:** Design spec (not yet implemented)
+**Status:** Shipped (Path C, 2026-04-16). Headless observer is owned by `createNCRuntime`.
 **Date:** 2026-04-16
 **Scope:** How the NC runtime maintains a second, non-React normalized view of the current UI tree for the LLM orchestrator to observe.
 **Supersedes:** Deferred item #2 in [README.md](../../README.md) roadmap. Dependent on v1 runtime primitives shipped 2026-04-15.
@@ -160,7 +160,9 @@ const NCTextFieldHeadless: HeadlessComponent = (element, ctx) => {
   // returns `JSONValue | undefined`, so the `has` guard is not required for
   // correctness — but it clarifies intent and lets the NormalizedNode omit
   // the `currentValue` prop entirely when the field has never been typed.
-  const value = ctx.staging.has(props.id) ? ctx.staging.get(props.id) : undefined;
+  const value = ctx.staging.has(props.id)
+    ? ctx.staging.get(props.id)
+    : undefined;
   return {
     type: "TextField",
     key: element.key,
@@ -172,7 +174,9 @@ const NCTextFieldHeadless: HeadlessComponent = (element, ctx) => {
 
 const NCCheckboxHeadless: HeadlessComponent = (element, ctx) => {
   const props = element.props as { id: string; label: string };
-  const value = ctx.staging.has(props.id) ? ctx.staging.get(props.id) : undefined;
+  const value = ctx.staging.has(props.id)
+    ? ctx.staging.get(props.id)
+    : undefined;
   return {
     type: "Checkbox",
     key: element.key,
@@ -331,7 +335,8 @@ export function createNCObserver(options: CreateNCObserverOptions): NCObserver {
       // JsonSerializer is an IDENTITY serializer returning NormalizedNode
       // (json.ts:5-9), not a string. Removed from the serialize() surface —
       // callers who want the structured node should use getLastRender().
-      if (format === "json-string") return JsonStringSerializer.serialize(lastRender);
+      if (format === "json-string")
+        return JsonStringSerializer.serialize(lastRender);
       if (format === "html") return ncHtmlSerializer.serialize(lastRender);
       throw new Error(`[NC] Unknown serialize format: ${format as string}`);
     },
@@ -358,31 +363,31 @@ Extending the existing 11 NC invariants:
 
 ## Failure Modes
 
-| Risk | Handling |
-|------|----------|
-| Headless registry throws | `console.warn("[NC] Observer render threw (failure #N)")`, keep previous cache, React unaffected, `getConsecutiveFailures()` advances, `getLastRenderPassId()` does not |
-| Tree fails catalog validation | Observer render skipped (same as reconcile); cache stays at last good (Invariant 9) |
-| `runtime.destroy()` called | Observer destroyed; final cached value still readable until runtime is GC'd |
-| Observer read before any render | `getLastRender()` / `serialize()` return `null` — caller must handle |
-| LLM observer sees stale staging | By design — observer reflects last *tree* commit, not last keystroke. Intent events carry up-to-the-click `staging_snapshot` separately |
-| Multiple React paths mount same runtime | Not supported in v1. Behavior undefined; may corrupt observer cache |
+| Risk                                    | Handling                                                                                                                                                                |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Headless registry throws                | `console.warn("[NC] Observer render threw (failure #N)")`, keep previous cache, React unaffected, `getConsecutiveFailures()` advances, `getLastRenderPassId()` does not |
+| Tree fails catalog validation           | Observer render skipped (same as reconcile); cache stays at last good (Invariant 9)                                                                                     |
+| `runtime.destroy()` called              | Observer destroyed; final cached value still readable until runtime is GC'd                                                                                             |
+| Observer read before any render         | `getLastRender()` / `serialize()` return `null` — caller must handle                                                                                                    |
+| LLM observer sees stale staging         | By design — observer reflects last _tree_ commit, not last keystroke. Intent events carry up-to-the-click `staging_snapshot` separately                                 |
+| Multiple React paths mount same runtime | Not supported in v1. Behavior undefined; may corrupt observer cache                                                                                                     |
 
 ## Testing Strategy
 
 Estimated 10 new `it()` blocks. Current suite 47 → ~57.
 
-| Test file | `it()` block |
-|-----------|---------------|
-| `src/observer/nc-observer.test.ts` | Factory constructs observer; `getLastRender()` null before first render; `getLastRenderPassId() === 0`; `getConsecutiveFailures() === 0` |
-| `src/observer/nc-observer.test.ts` | After `render(tree)`, `getLastRender()` returns a `NormalizedNode`; `getLastRenderPassId() === 1`; repeated render advances passId monotonically |
-| `src/observer/nc-observer.test.ts` | `serialize("json-string")` returns `JSON.stringify(lastRender)` (byte-for-byte equal) |
-| `src/observer/nc-observer.test.ts` | `serialize("html")` returns a non-empty string with fallback `<div data-type="...">` wrappers |
-| `src/observer/nc-observer.test.ts` | `destroy()` is idempotent; `render()` after destroy is a no-op; subsequent serialize calls still return the last cached result |
-| `src/observer/nc-observer.test.ts` | **Invariant 12** — after `render(tree)`, cached normalized tree's root key matches input tree's root key, element keys are preserved (modulo visibility pruning) |
-| `src/observer/nc-observer.test.ts` | **Invariant 13** — throwing registry → `console.warn` fires; `getLastRender()` returns the prior cached tree; `getConsecutiveFailures()` advances to 1 then 2 on successive throws; `getLastRenderPassId()` does not advance; a subsequent successful render resets `getConsecutiveFailures()` to 0 |
-| `src/renderer/nc-renderer.test.tsx` | After `render(<NCRenderer ... />)`, `runtime.observer.getLastRender()` is non-null and reflects the rendered tree |
-| `src/renderer/nc-renderer.test.tsx` | Tree fails validation (duplicate field IDs) → observer NOT updated; `getLastRenderPassId()` stays at its prior value |
-| `src/integration.test.tsx` | End-to-end: type value into a TextField → staging buffer updates → next tree commit → `observer.getLastRender()` includes `currentValue` for the field → submit → handler reads `runtime.observer.serialize("json-string")` and sees the tree + staging snapshot |
+| Test file                           | `it()` block                                                                                                                                                                                                                                                                                        |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/observer/nc-observer.test.ts`  | Factory constructs observer; `getLastRender()` null before first render; `getLastRenderPassId() === 0`; `getConsecutiveFailures() === 0`                                                                                                                                                            |
+| `src/observer/nc-observer.test.ts`  | After `render(tree)`, `getLastRender()` returns a `NormalizedNode`; `getLastRenderPassId() === 1`; repeated render advances passId monotonically                                                                                                                                                    |
+| `src/observer/nc-observer.test.ts`  | `serialize("json-string")` returns `JSON.stringify(lastRender)` (byte-for-byte equal)                                                                                                                                                                                                               |
+| `src/observer/nc-observer.test.ts`  | `serialize("html")` returns a non-empty string with fallback `<div data-type="...">` wrappers                                                                                                                                                                                                       |
+| `src/observer/nc-observer.test.ts`  | `destroy()` is idempotent; `render()` after destroy is a no-op; subsequent serialize calls still return the last cached result                                                                                                                                                                      |
+| `src/observer/nc-observer.test.ts`  | **Invariant 12** — after `render(tree)`, cached normalized tree's root key matches input tree's root key, element keys are preserved (modulo visibility pruning)                                                                                                                                    |
+| `src/observer/nc-observer.test.ts`  | **Invariant 13** — throwing registry → `console.warn` fires; `getLastRender()` returns the prior cached tree; `getConsecutiveFailures()` advances to 1 then 2 on successive throws; `getLastRenderPassId()` does not advance; a subsequent successful render resets `getConsecutiveFailures()` to 0 |
+| `src/renderer/nc-renderer.test.tsx` | After `render(<NCRenderer ... />)`, `runtime.observer.getLastRender()` is non-null and reflects the rendered tree                                                                                                                                                                                   |
+| `src/renderer/nc-renderer.test.tsx` | Tree fails validation (duplicate field IDs) → observer NOT updated; `getLastRenderPassId()` stays at its prior value                                                                                                                                                                                |
+| `src/integration.test.tsx`          | End-to-end: type value into a TextField → staging buffer updates → next tree commit → `observer.getLastRender()` includes `currentValue` for the field → submit → handler reads `runtime.observer.serialize("json-string")` and sees the tree + staging snapshot                                    |
 
 **Negative-control discipline** (per JSON-UI Invariant guidance): the throwing-registry test must also assert that a non-throwing registry produces a valid render in the same test file, so the test would actually fail if the observer's registry wiring were silently broken.
 
@@ -407,7 +412,7 @@ Why export `createNCObserver` at all if `createNCRuntime` always constructs one?
 
 ## What This Spec Is Not
 
-- **Not an Anthropic handler spec.** Replacing `createStubIntentHandler` with a real LLM-backed handler is a separate spec. This spec only ensures the observer is *available* for that future handler to consume.
+- **Not an Anthropic handler spec.** Replacing `createStubIntentHandler` with a real LLM-backed handler is a separate spec. This spec only ensures the observer is _available_ for that future handler to consume.
 - **Not a multi-session spec.** NC supports exactly one React path and one observer per runtime in v1. Dual mounting of either is undefined behavior.
 - **Not a persistence spec.** The observer cache is in-memory and does not survive `runtime.destroy()` or process restart. Persistent observation trails are out of scope.
 - **Not a visual testing tool.** The HTML serializer is available but NC does not ship a viewer, snapshot framework, or visual-regression harness. Consumers build those separately if they want them.
@@ -420,7 +425,7 @@ Why export `createNCObserver` at all if `createNCRuntime` always constructs one?
 
 3. **Should consecutive-failure counter trigger a backoff or circuit breaker?** `getConsecutiveFailures()` exposes the count so callers can detect runaway staleness, but the observer itself keeps retrying on every commit. Alternative: after N consecutive failures, stop calling the headless renderer and return null from `getLastRender()` until `runtime.destroy()` or a manual reset. Leaning toward: no circuit breaker in v1 — retries are cheap and the failure mode (buggy registry) is a developer bug that should surface via warnings, not be silenced.
 
-*Resolved during spec review (2026-04-16):* the raw-tree-vs-`result.data` ambiguity from the first draft: `NCRenderer` passes `result.data!` to `observer.render(tree)`. The observer does not re-validate. Decided in favor of keeping NCRenderer as the single validation point and avoiding a second Zod pass.
+_Resolved during spec review (2026-04-16):_ the raw-tree-vs-`result.data` ambiguity from the first draft: `NCRenderer` passes `result.data!` to `observer.render(tree)`. The observer does not re-validate. Decided in favor of keeping NCRenderer as the single validation point and avoiding a second Zod pass.
 
 ## Non-Goals
 

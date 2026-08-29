@@ -410,6 +410,232 @@ describe("NCRenderer", () => {
     // The original "email" staging value is preserved because reconcile
     // was skipped on the invalid tree.
     expect(runtime.stagingBuffer.get("email")).toBe("keep-me");
+    expect(screen.getByLabelText("E")).toBeDefined();
+    expect(screen.queryByLabelText("A")).toBeNull();
+    expect(screen.queryByLabelText("B")).toBeNull();
+    runtime.destroy();
+  });
+
+  it("does not paint an invalid tree (Invariant 8 at the React boundary)", async () => {
+    const runtime = await makeRuntime(() => {});
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(
+      <NCRenderer
+        tree={{
+          root: "root",
+          elements: {
+            root: {
+              key: "root",
+              type: "Container",
+              props: {},
+              children: ["a", "b"],
+            },
+            a: {
+              key: "a",
+              type: "TextField",
+              props: { id: "dup", label: "A" },
+            },
+            b: {
+              key: "b",
+              type: "TextField",
+              props: { id: "dup", label: "B" },
+            },
+          },
+        }}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+    expect(screen.queryByLabelText("A")).toBeNull();
+    expect(screen.queryByLabelText("B")).toBeNull();
+    warn.mockRestore();
+    runtime.destroy();
+  });
+
+  it("rejects same field id with a different component type (NC-003)", async () => {
+    const runtime = await makeRuntime(() => {});
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { rerender } = render(
+      <NCRenderer
+        tree={{
+          root: "r",
+          elements: {
+            r: {
+              key: "r",
+              type: "TextField",
+              props: { id: "email", label: "Email" },
+            },
+          },
+        }}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+    runtime.stagingBuffer.set("email", "keep");
+    rerender(
+      <NCRenderer
+        tree={{
+          root: "r",
+          elements: {
+            r: {
+              key: "r",
+              type: "Checkbox",
+              props: { id: "email", label: "Email" },
+            },
+          },
+        }}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+    expect(runtime.stagingBuffer.get("email")).toBe("keep");
+    expect(screen.getByLabelText("Email")).toBeDefined();
+    const input = screen.getByLabelText("Email") as HTMLInputElement;
+    expect(input.type).toBe("text");
+    warn.mockRestore();
+    runtime.destroy();
+  });
+
+  it("observer currentValue appears after a tree re-commit with staging (NC-028)", async () => {
+    const runtime = await makeRuntime(() => {});
+    const tree: UITree = {
+      root: "f",
+      elements: {
+        f: {
+          key: "f",
+          type: "TextField",
+          props: { id: "email", label: "Email" },
+        },
+      },
+    };
+    const { rerender } = render(
+      <NCRenderer
+        tree={tree}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+    runtime.stagingBuffer.set("email", "a@b.c");
+    const next: UITree = {
+      root: "f",
+      elements: {
+        f: {
+          key: "f",
+          type: "TextField",
+          props: { id: "email", label: "Email", error: "ok" },
+        },
+      },
+    };
+    rerender(
+      <NCRenderer
+        tree={next}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+    const json = runtime.observer.serialize("json-string");
+    expect(json).toContain("a@b.c");
+    expect(json).toContain("currentValue");
+    runtime.destroy();
+  });
+
+  it("throws when catalog is not the runtime catalog (NC-009)", async () => {
+    const runtime = await makeRuntime(() => {});
+    const { createCatalog } = await import("@json-ui/core");
+    const other = createCatalog({
+      name: "other",
+      components: {},
+      actions: {},
+    });
+    expect(() =>
+      render(
+        <NCRenderer
+          tree={{
+            root: "r",
+            elements: {
+              r: { key: "r", type: "Text", props: { content: "x" } },
+            },
+          }}
+          runtime={runtime}
+          catalog={other}
+          catalogVersion={NC_CATALOG_VERSION}
+        />,
+      ),
+    ).toThrow(/same reference/);
+    runtime.destroy();
+  });
+
+  it("StrictMode does not double-advance observer passId (NC-022)", async () => {
+    const runtime = await makeRuntime(() => {});
+    render(
+      <React.StrictMode>
+        <NCRenderer
+          tree={{
+            root: "r",
+            elements: {
+              r: { key: "r", type: "Text", props: { content: "hello" } },
+            },
+          }}
+          runtime={runtime}
+          catalog={ncStarterCatalog}
+          catalogVersion={NC_CATALOG_VERSION}
+        />
+      </React.StrictMode>,
+    );
+    expect(runtime.observer.getLastRenderPassId()).toBe(1);
+    runtime.destroy();
+  });
+
+  it("restores focus to the same field id after a re-commit (NC-053)", async () => {
+    const runtime = await makeRuntime(() => {});
+    const tree: UITree = {
+      root: "f",
+      elements: {
+        f: {
+          key: "f",
+          type: "TextField",
+          props: { id: "email", label: "Email" },
+        },
+      },
+    };
+    const { rerender } = render(
+      <NCRenderer
+        tree={tree}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+    const input = screen.getByLabelText("Email") as HTMLInputElement;
+    act(() => {
+      input.focus();
+    });
+    expect(document.activeElement).toBe(input);
+    const next: UITree = {
+      root: "f",
+      elements: {
+        f: {
+          key: "f",
+          type: "TextField",
+          props: { id: "email", label: "Email", error: "required" },
+        },
+      },
+    };
+    rerender(
+      <NCRenderer
+        tree={next}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+      />,
+    );
+    const after = screen.getByLabelText("Email") as HTMLInputElement;
+    expect(document.activeElement).toBe(after);
     runtime.destroy();
   });
 });

@@ -1,4 +1,11 @@
-import type { IntentEvent, UITree } from "@json-ui/core";
+// SPDX-License-Identifier: Apache-2.0
+
+import {
+  collectFieldIds,
+  type Catalog,
+  type IntentEvent,
+  type UITree,
+} from "@json-ui/core";
 import type { NCIntentHandler } from "../types";
 
 /**
@@ -6,16 +13,21 @@ import type { NCIntentHandler } from "../types";
  * it takes a pure function that maps an IntentEvent to the next
  * UITree and calls onTreeCommit with that tree. This is the v1
  * handler shape; the real LLM-backed handler will be introduced in
- * a follow-up task and will conform to the same NCIntentHandler
+ * a follow-up spec and will conform to the same NCIntentHandler
  * signature so the orchestrator loop doesn't need to know which is
  * in use.
  *
  * Isolating the "compute next tree" step as a pure function lets
  * us test the loop without standing up a real Anthropic client.
- * The real handler will call the Anthropic SDK and feed the
- * response back through the same contract.
  */
 export interface CreateStubIntentHandlerOptions {
+  /**
+   * Catalog used to validate nextTree output before onTreeCommit.
+   * Invalid trees are rejected (the promise rejects) and onTreeCommit
+   * is not called — Invariant 9 at the handler boundary.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  catalog: Catalog<any, any, any>;
   /**
    * Pure function mapping an IntentEvent to the next UITree. Called
    * once per dispatched intent. The stub does not batch multiple
@@ -34,13 +46,38 @@ export interface CreateStubIntentHandlerOptions {
 /**
  * Build a deterministic intent handler suitable for integration
  * testing. Real LLM-backed handlers will replace this in a later
- * task but will conform to the same NCIntentHandler signature.
+ * spec but will conform to the same NCIntentHandler signature.
  */
 export function createStubIntentHandler(
   options: CreateStubIntentHandlerOptions,
 ): NCIntentHandler {
   return async (event: IntentEvent): Promise<void> => {
     const tree = options.nextTree(event);
-    await options.onTreeCommit(tree);
+    const result = options.catalog.validateTree(tree);
+    if (!result.success) {
+      throw new Error(
+        `[NC] Stub handler nextTree failed catalog validation: ${String(
+          result.error ?? result.fieldIdError ?? "unknown",
+        )}`,
+      );
+    }
+    await options.onTreeCommit(result.data ?? tree);
   };
+}
+
+/**
+ * Field ids present in both the intent's staging snapshot and the next
+ * tree. The LLM acceptance contract (NC_LLM_ACCEPTANCE_CONTRACT) says
+ * accepting input means omitting those ids; keeping them is the reject
+ * (re-prompt) path. Runtime cannot tell which the model meant — this
+ * helper is the enforceable test/orchestrator slice of Risk 1.
+ */
+export function submittedFieldsStillPresent(
+  event: IntentEvent,
+  nextTree: UITree,
+): string[] {
+  const submitted = Object.keys(event.staging_snapshot ?? {});
+  if (submitted.length === 0) return [];
+  const live = collectFieldIds(nextTree);
+  return submitted.filter((id) => live.has(id));
 }

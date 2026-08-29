@@ -84,6 +84,7 @@ neural-computer/
 
 **Model:** Sonnet
 **Files:**
+
 - Modify: `package.json`
 - Create: `vitest.config.ts`
 - Create: `tsup.config.ts`
@@ -199,6 +200,7 @@ git commit -m "chore: scaffold vitest, tsup, eslint configs + bump memoryjs to 1
 
 **Model:** Sonnet
 **Files:**
+
 - Create: `src/types/nc-types.ts`
 - Create: `src/types/index.ts`
 - Create: `src/types/nc-types.test.ts`
@@ -209,12 +211,12 @@ Create `src/types/nc-types.test.ts`:
 
 ```typescript
 import { describe, it, expect, expectTypeOf } from "vitest";
+import type { NCIntentHandler, NCRuntime, NCCatalogVersion } from "./nc-types";
 import type {
-  NCIntentHandler,
-  NCRuntime,
-  NCCatalogVersion,
-} from "./nc-types";
-import type { IntentEvent, StagingBuffer, ObservableDataModel } from "@json-ui/core";
+  IntentEvent,
+  StagingBuffer,
+  ObservableDataModel,
+} from "@json-ui/core";
 
 describe("NC core types", () => {
   it("NCIntentHandler is an async function taking IntentEvent", () => {
@@ -224,15 +226,21 @@ describe("NC core types", () => {
   });
 
   it("NCRuntime exposes stagingBuffer, durableStore, emitIntent, setIntentHandler, destroy", () => {
-    expectTypeOf<NCRuntime>().toHaveProperty("stagingBuffer").toEqualTypeOf<StagingBuffer>();
-    expectTypeOf<NCRuntime>().toHaveProperty("durableStore").toEqualTypeOf<ObservableDataModel>();
-    expectTypeOf<NCRuntime>().toHaveProperty("emitIntent").toEqualTypeOf<
-      (event: IntentEvent) => Promise<void>
-    >();
-    expectTypeOf<NCRuntime>().toHaveProperty("setIntentHandler").toEqualTypeOf<
-      (handler: NCIntentHandler) => void
-    >();
-    expectTypeOf<NCRuntime>().toHaveProperty("destroy").toEqualTypeOf<() => void>();
+    expectTypeOf<NCRuntime>()
+      .toHaveProperty("stagingBuffer")
+      .toEqualTypeOf<StagingBuffer>();
+    expectTypeOf<NCRuntime>()
+      .toHaveProperty("durableStore")
+      .toEqualTypeOf<ObservableDataModel>();
+    expectTypeOf<NCRuntime>()
+      .toHaveProperty("emitIntent")
+      .toEqualTypeOf<(event: IntentEvent) => Promise<void>>();
+    expectTypeOf<NCRuntime>()
+      .toHaveProperty("setIntentHandler")
+      .toEqualTypeOf<(handler: NCIntentHandler) => void>();
+    expectTypeOf<NCRuntime>()
+      .toHaveProperty("destroy")
+      .toEqualTypeOf<() => void>();
   });
 
   it("NCCatalogVersion is a string brand", () => {
@@ -275,7 +283,9 @@ export type NCIntentHandler = (event: IntentEvent) => Promise<void>;
  * validate that the LLM's tree emissions match the catalog version in
  * effect at emission time.
  */
-export type NCCatalogVersion = string & { readonly __brand: "NCCatalogVersion" };
+export type NCCatalogVersion = string & {
+  readonly __brand: "NCCatalogVersion";
+};
 
 /**
  * The NC runtime — a handle to the shared state references and the
@@ -323,11 +333,7 @@ export interface NCRuntime {
 Create `src/types/index.ts`:
 
 ```typescript
-export type {
-  NCIntentHandler,
-  NCCatalogVersion,
-  NCRuntime,
-} from "./nc-types";
+export type { NCIntentHandler, NCCatalogVersion, NCRuntime } from "./nc-types";
 ```
 
 - [ ] **Step 5: Run tests**
@@ -349,6 +355,7 @@ git commit -m "feat(types): add NC core type definitions (NCRuntime, NCIntentHan
 
 **Model:** Sonnet
 **Files:**
+
 - Create: `src/catalog/nc-catalog.ts`
 - Create: `src/catalog/index.ts`
 - Create: `src/catalog/nc-catalog.test.ts`
@@ -529,9 +536,7 @@ export const ncStarterCatalog = createCatalog({
         action: z
           .object({
             name: z.string(),
-            params: z
-              .record(z.string(), z.unknown())
-              .optional(),
+            params: z.record(z.string(), z.unknown()).optional(),
           })
           .optional(),
       }),
@@ -577,6 +582,7 @@ git commit -m "feat(catalog): add NC starter catalog with id-required input sche
 
 **Model:** Sonnet
 **Files:**
+
 - Create: `src/renderer/input-components.tsx`
 - Create: `src/renderer/index.ts`
 - Create: `src/renderer/input-components.test.tsx`
@@ -843,6 +849,7 @@ git commit -m "feat(renderer): add NC input components wired to staging buffer"
 
 **Model:** Sonnet
 **Files:**
+
 - Create: `src/memory/projection.ts`
 - Create: `src/memory/index.ts`
 - Create: `src/memory/projection.test.ts`
@@ -888,7 +895,10 @@ describe("defaultNCProjection", () => {
       ],
       [],
     );
-    expect(Object.keys(result.entitiesByType).sort()).toEqual(["message", "user"]);
+    expect(Object.keys(result.entitiesByType).sort()).toEqual([
+      "message",
+      "user",
+    ]);
     expect(Array.isArray(result.entitiesByType.user)).toBe(true);
     expect(result.entitiesByType.user).toHaveLength(2);
     expect(result.entitiesByType.message).toHaveLength(1);
@@ -1047,6 +1057,7 @@ git commit -m "feat(memory): add defaultNCProjection — entities-by-type + enti
 
 **Model:** Opus — wires together staging buffer + memoryjs adapter + backpressure flag + intent handler plumbing. Multiple design decisions about ordering and error handling.
 **Files:**
+
 - Create: `src/runtime/context.ts`
 - Create: `src/runtime/index.ts`
 - Create: `src/runtime/context.test.ts`
@@ -1325,10 +1336,7 @@ export async function createNCRuntime(
 Create `src/runtime/index.ts`:
 
 ```typescript
-export {
-  createNCRuntime,
-  type CreateNCRuntimeOptions,
-} from "./context";
+export { createNCRuntime, type CreateNCRuntimeOptions } from "./context";
 ```
 
 - [ ] **Step 5: Run tests**
@@ -1350,6 +1358,7 @@ git commit -m "feat(runtime): add createNCRuntime with staging buffer + backpres
 
 **Model:** Opus — architectural decisions about what the handler does, how it composes the observation, and where the real LLM call will plug in.
 **Files:**
+
 - Create: `src/orchestrator/handle-intent.ts`
 - Create: `src/orchestrator/index.ts`
 - Create: `src/orchestrator/handle-intent.test.ts`
@@ -1399,7 +1408,10 @@ describe("createStubIntentHandler", () => {
 
   it("is async — caller can await the full handler cycle", async () => {
     const handler = createStubIntentHandler({
-      nextTree: () => ({ root: "r", elements: { r: { key: "r", type: "Text", props: { content: "" } } } }),
+      nextTree: () => ({
+        root: "r",
+        elements: { r: { key: "r", type: "Text", props: { content: "" } } },
+      }),
       onTreeCommit: async () => {
         await new Promise((r) => setTimeout(r, 5));
       },
@@ -1505,6 +1517,7 @@ git commit -m "feat(orchestrator): add createStubIntentHandler for deterministic
 
 **Model:** Sonnet — mechanical composition of already-shipped JSON-UI providers.
 **Files:**
+
 - Create: `src/renderer/nc-renderer.tsx`
 - Modify: `src/renderer/index.ts` (add new exports)
 - Create: `src/renderer/nc-renderer.test.tsx`
@@ -1878,6 +1891,7 @@ git commit -m "feat(renderer): add NCRenderer wrapping JSONUIProvider with valid
 
 **Model:** Sonnet
 **Files:**
+
 - Create: `src/renderer/use-committed-tree.ts`
 - Modify: `src/renderer/index.ts`
 - Create: `src/renderer/use-committed-tree.test.tsx`
@@ -2025,6 +2039,7 @@ git commit -m "feat(renderer): add useCommittedTree atomic-mode useUIStream wrap
 **Pattern:** NCApp owns a `useState<UITree>` for the current tree. On mount (useEffect), it calls `runtime.setIntentHandler(props.buildIntentHandler(setTree))`, passing its own setState as the `onTreeCommit` sink for the stub handler (or whatever handler factory the caller supplies). When a catalog action fires, NCRenderer forwards the IntentEvent through `runtime.emitIntent`, which calls the handler, which calls `setTree(nextTree)`, which re-renders NCApp with the new tree.
 
 **Files:**
+
 - Create: `src/app/nc-app.tsx`
 - Create: `src/app/index.ts`
 - Create: `src/app/nc-app.test.tsx`
@@ -2274,6 +2289,7 @@ git commit -m "feat(app): add NCApp React mounting component"
 
 **Model:** Opus — exercises the full Path C flow and asserts the invariants hold across the real components.
 **Files:**
+
 - Create: `src/integration.test.tsx`
 
 - [ ] **Step 1: Write the integration test**
@@ -2523,6 +2539,7 @@ NC Invariant 7 requires that the orchestrator module not import from the React s
 Enforcement is via vitest (not ESLint plugin) because it gives the same guarantee with zero extra dependencies and runs in the standard test suite.
 
 **Files:**
+
 - Create: `src/orchestrator/buffer-isolation.test.ts`
 
 - [ ] **Step 1: Write the regression-guard test**
@@ -2603,6 +2620,7 @@ git commit -m "test(orchestrator): add NC Invariant 7 buffer-isolation meta-test
 
 **Model:** Sonnet
 **Files:**
+
 - Modify: `src/index.ts`
 - Modify: `README.md`
 
@@ -2621,17 +2639,10 @@ Replace `src/index.ts`:
 export { ncStarterCatalog, NC_CATALOG_VERSION } from "./catalog";
 
 // Types
-export type {
-  NCIntentHandler,
-  NCCatalogVersion,
-  NCRuntime,
-} from "./types";
+export type { NCIntentHandler, NCCatalogVersion, NCRuntime } from "./types";
 
 // Runtime
-export {
-  createNCRuntime,
-  type CreateNCRuntimeOptions,
-} from "./runtime";
+export { createNCRuntime, type CreateNCRuntimeOptions } from "./runtime";
 
 // Memory
 export {
@@ -2668,7 +2679,7 @@ export { NCApp, type NCAppProps } from "./app";
 
 Replace the "Status and roadmap" section of `README.md` with:
 
-```markdown
+````markdown
 ## Status
 
 The runtime surface is live. All 12 implementation tasks from
@@ -2679,7 +2690,10 @@ handler will replace it in a follow-up spec.
 ## Quickstart
 
 ```tsx
-import { ManagerContext, createObservableDataModelFromGraph } from "@danielsimonjr/memoryjs";
+import {
+  ManagerContext,
+  createObservableDataModelFromGraph,
+} from "@danielsimonjr/memoryjs";
 import { createRoot } from "react-dom/client";
 import React from "react";
 import {
@@ -2733,6 +2747,8 @@ function App() {
 
 createRoot(document.getElementById("app")!).render(<App />);
 ```
+````
+
 ```
 
 - [ ] **Step 3: Run the full verification suite**
@@ -2753,6 +2769,7 @@ NC's `package.json` has `"type": "module"`, so a bare `node -e "require(...)"` w
 Run: `node --input-type=commonjs -e "const nc = require('./dist/index.cjs'); console.log(Object.keys(nc).sort().join('\n'));"`
 Expected output includes at minimum:
 ```
+
 NCApp
 NCButton
 NCCheckbox
@@ -2766,7 +2783,8 @@ createStubIntentHandler
 defaultNCProjection
 ncStarterCatalog
 useCommittedTree
-```
+
+````
 
 - [ ] **Step 5: Commit**
 
@@ -2774,7 +2792,7 @@ useCommittedTree
 cd "<workspace>"
 git add src/index.ts README.md
 git commit -m "feat: public barrel + README quickstart + v2 plan complete"
-```
+````
 
 - [ ] **Step 6: Push to origin/main**
 
@@ -2789,23 +2807,24 @@ git push origin main
 
 **Spec coverage:** Every invariant from `docs/specs/2026-04-11-ephemeral-ui-state-design.md` has a task that implements it:
 
-| Invariant | Task |
-|---|---|
-| 1 (Reconciliation drops orphans) | Task 8 reconcile test, Task 11 integration test |
-| 2 (Reconciliation preserves matching IDs) | Task 11 integration test |
-| 3 (Reconciliation preserves across prop changes) | Library-enforced by `collectFieldIds` — no NC code needed |
-| 4 (Snapshot non-destructive) | Library-enforced by `StagingBuffer.snapshot` |
-| 5 (Intent events carry full snapshot) | Task 8, Task 11 |
-| 6 (action_params and staging_snapshot separate) | Library-enforced by `ActionProvider` — Task 11 asserts |
-| 7 (Buffer isolation) | Task 12 meta-test |
-| 8 (Field ID uniqueness) | Task 3 catalog test, Task 8 skip-reconcile-on-invalid test |
-| 9 (Partial-tree safety) | Task 9 useCommittedTree atomic mode |
-| 10 (Backpressure rejection) | Task 6 runtime backpressure test, Task 11 integration test |
-| 11 (DynamicValue pre-resolution) | Library-enforced by `resolveActionWithStaging` in `ActionProvider.execute` |
+| Invariant                                        | Task                                                                       |
+| ------------------------------------------------ | -------------------------------------------------------------------------- |
+| 1 (Reconciliation drops orphans)                 | Task 8 reconcile test, Task 11 integration test                            |
+| 2 (Reconciliation preserves matching IDs)        | Task 11 integration test                                                   |
+| 3 (Reconciliation preserves across prop changes) | Library-enforced by `collectFieldIds` — no NC code needed                  |
+| 4 (Snapshot non-destructive)                     | Library-enforced by `StagingBuffer.snapshot`                               |
+| 5 (Intent events carry full snapshot)            | Task 8, Task 11                                                            |
+| 6 (action_params and staging_snapshot separate)  | Library-enforced by `ActionProvider` — Task 11 asserts                     |
+| 7 (Buffer isolation)                             | Task 12 meta-test                                                          |
+| 8 (Field ID uniqueness)                          | Task 3 catalog test, Task 8 skip-reconcile-on-invalid test                 |
+| 9 (Partial-tree safety)                          | Task 9 useCommittedTree atomic mode                                        |
+| 10 (Backpressure rejection)                      | Task 6 runtime backpressure test, Task 11 integration test                 |
+| 11 (DynamicValue pre-resolution)                 | Library-enforced by `resolveActionWithStaging` in `ActionProvider.execute` |
 
 **Placeholder scan:** No TBD, TODO, "implement later", or vague error handling. Every step has exact file paths, complete code, and exact commands with expected output.
 
 **Type consistency:**
+
 - `NCRuntime` shape defined in Task 2, consumed in Tasks 6, 8, 10, 11
 - `NCCatalogVersion` branded string defined in Task 2, used in Task 3 (`NC_CATALOG_VERSION`), consumed in Tasks 8, 10, 11
 - `createNCRuntime` signature in Task 6 matches consumers in Tasks 8, 10, 11

@@ -1,13 +1,65 @@
 # Unused Files and Exports Analysis
 
-Stale graph; run `npm run docs:deps` after install.
+**Generated**: 2026-08-29
 
-**Hand-updated**: 2026-08-29. The 2026-04-16 generator marked public barrel types as unused because it did not follow `src/index.ts` re-exports, and it claimed `src/types/nc-types.ts` was an unused file. That file is imported by the types barrel and is the source of `NCRuntime`.
+## Summary
 
-## Current tree (not unused)
+- **Potentially unused files**: 3
+- **Potentially unused exports**: 15
 
-Every non-test file under `src/` is reachable from `src/index.ts`, `src/core.ts`, or `src/react.ts`, except that `field-id-stability.ts` helpers are also imported by `NCRenderer` directly. Public types (`NCAppProps`, `NCProjectedData`, `CreateNCRuntimeOptions`, and so on) are part of the package API even when no other module in `src/` imports them by name.
+## Potentially Unused Files
 
-## What the generator used to report (historical)
+These files are not imported by any other file in the codebase. That is expected for package entry points (`src/core.ts`, `src/react.ts`) and for Vitest setup (`src/test-setup.ts`).
 
-On 2026-04-16 it listed one "unused file" (`src/types/nc-types.ts`) and eight "unused exports" that were all public interface types. Treat that list as a false-positive of the graph tool, not as a deletion candidate.
+- `src/core.ts` — `neural-computer/core` tsup entry
+- `src/react.ts` — `neural-computer/react` tsup entry
+- `src/test-setup.ts` — vitest `setupFiles` (RTL `cleanup`)
+
+## Potentially Unused Exports
+
+These exports are not imported by any other file in the codebase:
+
+### `src/app/nc-app.tsx`
+
+- `NCAppProps` (interface)
+
+### `src/catalog/limits.ts`
+
+- `NCStarterActionName` (type)
+
+### `src/memory/projection.ts`
+
+- `NCProjectedRelation` (interface)
+- `NCProjectedData` (interface)
+- `NCProjectedEntity` (interface)
+
+### `src/observer/nc-observer.ts`
+
+- `CreateNCObserverOptions` (interface)
+
+### `src/orchestrator/handle-intent.ts`
+
+- `CreateStubIntentHandlerOptions` (interface)
+
+### `src/renderer/input-components.tsx`
+
+- `NCComponentProps` (interface)
+
+### `src/renderer/nc-renderer.tsx`
+
+- `NCRendererProps` (interface)
+
+### `src/renderer/use-committed-tree.ts`
+
+- `UseCommittedTreeOptions` (type)
+
+### `src/runtime/context.ts`
+
+- `CreateNCRuntimeOptions` (interface)
+
+### `src/types/nc-types.ts`
+
+- `NCObserver` (interface)
+- `NCRuntime` (interface)
+- `NCIntentHandler` (type)
+- `NCCatalogVersion` (type)

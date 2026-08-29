@@ -1,46 +1,92 @@
 # Test Coverage Analysis
 
-Stale graph; run `npm run docs:deps` after install.
-
-**Hand-updated**: 2026-08-29. The 2026-04-16 generator omitted `src/observer/` and later files. Counts below match `find src`.
+**Generated**: 2026-08-29
 
 ## Summary
 
-| Metric | Count |
-|--------|-------|
-| Total source files (non-test) | 28 |
-| Total test files | 15 |
-| `it` / `test` cases | 84 |
-| Coverage tool | `@vitest/coverage-v8` via `bun run test:coverage` |
+| Metric                     | Count |
+| -------------------------- | ----- |
+| Total Source Files         | 29    |
+| Total Test Files           | 15    |
+| Source Files with Tests    | 21    |
+| Source Files without Tests | 8     |
+| Coverage                   | 72.4% |
 
-Barrel re-exports (`**/index.ts`, `core.ts`, `react.ts`) have no dedicated test files; they are exercised by importers. `intent-flight-context.ts` and `error-boundary.tsx` are covered through `NCRenderer` / `NCApp` tests rather than colocated files. `freeze.ts` is covered through observer and projection tests.
+---
 
-## Test files (`src/**/*.test.*`)
+## Source Files Without Test Coverage
 
-| Test file | Exercises |
-|-----------|-----------|
-| `src/app/nc-app.test.tsx` | NCApp mount, handler wiring, extraRegistry plumbing |
-| `src/catalog/nc-catalog.test.ts` | Catalog shape, validateTree, action enum, field ids |
-| `src/catalog/field-id.test.ts` | `isSafeFieldId` / `ncFieldIdSchema` |
-| `src/memory/projection.test.ts` | Grouping, relations, null-prototype maps, duplicates |
-| `src/observer/nc-observer.test.ts` | Invariants 12–13, freeze, serialize |
-| `src/observer/nc-headless-components.test.ts` | Headless registry / currentValue |
-| `src/orchestrator/buffer-isolation.test.ts` | Invariant 7 including `../observer` |
-| `src/orchestrator/handle-intent.test.ts` | Stub catalog validation, throwing nextTree |
-| `src/renderer/nc-renderer.test.tsx` | Last-good tree, reconcile, observer.render, Zod strip |
-| `src/renderer/input-components.test.tsx` | Inputs, NCButton execute/params, in-flight disable |
-| `src/renderer/field-id-stability.test.ts` | Same id, different type |
-| `src/renderer/use-committed-tree.test.tsx` | Atomic commit mode |
-| `src/runtime/context.test.ts` | emitIntent, backpressure, cancel, destroy, in-flight flag |
-| `src/types/nc-types.test.ts` | Brand, observer field on NCRuntime |
-| `src/integration.test.tsx` | Path C end-to-end |
+Barrels (`**/index.ts`), package entries (`src/core.ts`, `src/react.ts`), and Vitest setup (`src/test-setup.ts`) are not expected to have dedicated test files. Coverage for those symbols lives in the colocated tests that import through the barrels.
 
-## Source files without a colocated `*.test.*`
+### app/
 
-These are expected (barrels or helpers covered elsewhere):
+- `src/app/index.ts` → Expected test: `tests/unit/app/index.test.ts`
 
-- `src/index.ts`, `src/core.ts`, `src/react.ts`
-- `src/app/index.ts`, `src/catalog/index.ts`, `src/memory/index.ts`, `src/observer/index.ts`, `src/orchestrator/index.ts`, `src/renderer/index.ts`, `src/runtime/index.ts`, `src/types/index.ts`
-- `src/catalog/limits.ts` (imported by catalog and field-id tests)
-- `src/runtime/freeze.ts` (observer + projection)
-- `src/renderer/error-boundary.tsx`, `src/renderer/intent-flight-context.ts` (renderer tests)
+### root/
+
+- `src/core.ts` → Expected test: `tests/unit/root/core.test.ts`
+- `src/index.ts` → Expected test: `tests/unit/root/index.test.ts`
+- `src/react.ts` → Expected test: `tests/unit/root/react.test.ts`
+- `src/test-setup.ts` → Expected test: `tests/unit/root/test-setup.test.ts`
+
+### memory/
+
+- `src/memory/index.ts` → Expected test: `tests/unit/memory/index.test.ts`
+
+### observer/
+
+- `src/observer/index.ts` → Expected test: `tests/unit/observer/index.test.ts`
+
+### renderer/
+
+- `src/renderer/intent-flight-context.ts` → Expected test: `tests/unit/renderer/intent-flight-context.test.ts`
+
+---
+
+## Source Files With Test Coverage
+
+| Source File                          | Test Files                                                                                                                                            |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/nc-app.tsx`                     | `nc-app.test.tsx`                                                                                                                                     |
+| `catalog/field-id.ts`                | `nc-app.test.tsx`, `field-id.test.ts`, `path-c.test.tsx`, `nc-observer.test.ts`, `handle-intent.test.ts`, `nc-renderer.test.tsx`, `context.test.ts`   |
+| `catalog/index.ts`                   | `nc-app.test.tsx`, `path-c.test.tsx`, `nc-observer.test.ts`, `handle-intent.test.ts`, `nc-renderer.test.tsx`, `context.test.ts`                       |
+| `catalog/limits.ts`                  | `nc-app.test.tsx`, `path-c.test.tsx`, `nc-observer.test.ts`, `handle-intent.test.ts`, `nc-renderer.test.tsx`, `context.test.ts`                       |
+| `catalog/nc-catalog.ts`              | `nc-app.test.tsx`, `nc-catalog.test.ts`, `path-c.test.tsx`, `nc-observer.test.ts`, `handle-intent.test.ts`, `nc-renderer.test.tsx`, `context.test.ts` |
+| `memory/projection.ts`               | `projection.test.ts`                                                                                                                                  |
+| `observer/nc-headless-components.ts` | `nc-headless-components.test.ts`, `nc-observer.test.ts`                                                                                               |
+| `observer/nc-observer.ts`            | `nc-observer.test.ts`                                                                                                                                 |
+| `orchestrator/handle-intent.ts`      | `nc-app.test.tsx`, `handle-intent.test.ts`                                                                                                            |
+| `orchestrator/index.ts`              | `nc-app.test.tsx`                                                                                                                                     |
+| `renderer/error-boundary.tsx`        | `path-c.test.tsx`                                                                                                                                     |
+| `renderer/field-id-stability.ts`     | `path-c.test.tsx`, `field-id-stability.test.ts`                                                                                                       |
+| `renderer/index.ts`                  | `path-c.test.tsx`                                                                                                                                     |
+| `renderer/input-components.tsx`      | `path-c.test.tsx`, `input-components.test.tsx`                                                                                                        |
+| `renderer/nc-renderer.tsx`           | `path-c.test.tsx`, `nc-renderer.test.tsx`                                                                                                             |
+| `renderer/use-committed-tree.ts`     | `path-c.test.tsx`, `use-committed-tree.test.tsx`                                                                                                      |
+| `runtime/context.ts`                 | `nc-app.test.tsx`, `path-c.test.tsx`, `nc-renderer.test.tsx`, `context.test.ts`                                                                       |
+| `runtime/freeze.ts`                  | `nc-app.test.tsx`, `path-c.test.tsx`, `nc-renderer.test.tsx`                                                                                          |
+| `runtime/index.ts`                   | `nc-app.test.tsx`, `path-c.test.tsx`, `nc-renderer.test.tsx`                                                                                          |
+| `types/index.ts`                     | `field-id.test.ts`                                                                                                                                    |
+| `types/nc-types.ts`                  | `field-id.test.ts`, `nc-types.test.ts`                                                                                                                |
+
+---
+
+## Test File Details
+
+| Test File                                 | Imports from Source |
+| ----------------------------------------- | ------------------- |
+| `app/nc-app.test.tsx`                     | 10 files            |
+| `catalog/field-id.test.ts`                | 3 files             |
+| `catalog/nc-catalog.test.ts`              | 1 files             |
+| `integration/path-c.test.tsx`             | 13 files            |
+| `memory/projection.test.ts`               | 1 files             |
+| `observer/nc-headless-components.test.ts` | 1 files             |
+| `observer/nc-observer.test.ts`            | 6 files             |
+| `orchestrator/buffer-isolation.test.ts`   | 0 files             |
+| `orchestrator/handle-intent.test.ts`      | 5 files             |
+| `renderer/field-id-stability.test.ts`     | 1 files             |
+| `renderer/input-components.test.tsx`      | 1 files             |
+| `renderer/nc-renderer.test.tsx`           | 8 files             |
+| `renderer/use-committed-tree.test.tsx`    | 1 files             |
+| `runtime/context.test.ts`                 | 5 files             |
+| `types/nc-types.test.ts`                  | 1 files             |
