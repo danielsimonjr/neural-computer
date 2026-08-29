@@ -19,7 +19,8 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 ### Added
 
 - **Python REPL compute arm (`src/compute/`).** `createPythonRepl()` spawns a persistent CPython worker (`python3 -u -I -X utf8`) and speaks JSON lines. `exec` / `set` / `get` / `loadContext` / `reset` / `isBusy` / `destroy`. One operation at a time; timeout kills the worker and respawns empty. Optional `llmQuery` implements in-REPL `llm_query`. Not attached to `NCRuntime`. Exported from `neural-computer/core` and the root barrel, not from `/react`. Spec: `docs/specs/2026-08-29-compute-rlm-repl-design.md`.
-- **LLM intent handler (`src/orchestrator/llm-handler.ts`).** `createLlmIntentHandler` composes an observation (catalog prompt, acceptance contract, intent, durable snapshot, observer JSON), runs a tool loop (`commit_ui_tree`, optional `python_*`, optional `durable_write`), and commits one catalog-valid tree. `createAnthropicIntentHandler` / `createAnthropicTransport` adapt Anthropic Messages. Tests inject a fake transport (no network). Spec: `docs/specs/2026-08-29-llm-intent-handler-design.md`. Not HTTP streaming into `useCommittedTree` (that hook remains for hosts with a patch endpoint).
+- **LLM intent handler (`src/orchestrator/llm-handler.ts`).** `createLlmIntentHandler` composes an observation (catalog prompt, acceptance contract, intent, durable snapshot, observer JSON), runs a tool loop (`commit_ui_tree`, optional `python_*`, `durable_write`), and commits one catalog-valid tree. `durable_write` uses `onDurableWrite` if supplied, otherwise `ObservableDataModel.write` (when present) or `set`. `createAnthropicIntentHandler` / `createAnthropicTransport` adapt Anthropic Messages. Tests inject a fake transport (no network). Spec: `docs/specs/2026-08-29-llm-intent-handler-design.md`. Not HTTP streaming into `useCommittedTree` (that hook remains for hosts with a patch endpoint).
+- **`AnyCatalog` alias.** Catalog props use one named type instead of repeating `Catalog<any, any, any>`.
 
 ### Fixed
 
@@ -41,7 +42,7 @@ Audit `docs/audits/2026-08-29-full-codebase-audit.md` (NC-001–NC-092). Highlig
 
 - **Catalog migration** for trees emitted against `nc-starter-0.1` / `nc-starter-0.2`.
 - **Persistent staging buffer across process restart** (explicit non-goal of the April-11 spec).
-- **memoryjs graph mutation DSL** — v1 durable writes are path-shaped `onDurableWrite` callbacks; hosts map them onto `entityManager` / transactions.
+- **memoryjs graph mutation DSL** — path-shaped writes go through `adapter.write()` / `onWrite` or NC `onDurableWrite`; hosts still map `{path, value}` onto `entityManager` / transactions.
 
 ---
 

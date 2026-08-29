@@ -4,7 +4,6 @@ import {
   createStagingBuffer,
   type IntentEvent,
   type ObservableDataModel,
-  type Catalog,
 } from "@json-ui/core";
 import type { HeadlessRegistry } from "@json-ui/headless";
 import { createNCObserver } from "../observer";
@@ -14,7 +13,12 @@ import {
   NC_STAGING_MAX_FIELDS,
 } from "../catalog/limits";
 import { asNCCatalogVersion } from "../types";
-import type { NCCatalogVersion, NCIntentHandler, NCRuntime } from "../types";
+import type {
+  AnyCatalog,
+  NCCatalogVersion,
+  NCIntentHandler,
+  NCRuntime,
+} from "../types";
 import { NC_CATALOG_VERSION } from "../catalog";
 
 /**
@@ -45,8 +49,7 @@ export interface CreateNCRuntimeOptions {
    * same post-Zod-strip tree that reconcile walks. @json-ui/headless binds
    * the catalog at factory construction (renderer.ts:27), not per-render.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  catalog: Catalog<any, any, any>;
+  catalog: AnyCatalog;
   /**
    * Version string stored on the runtime and identity-checked against
    * NCRenderer's catalogVersion prop. Defaults to NC_CATALOG_VERSION.

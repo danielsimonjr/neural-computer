@@ -22,6 +22,7 @@ All design decisions live in `docs/`. Read the relevant spec before implementing
 - **Path C spec:** `docs/specs/2026-04-16-headless-dual-backend-design.md` (shipped) — LLM observer.
 - **Compute spec:** `docs/specs/2026-08-29-compute-rlm-repl-design.md` — Python REPL (RLM pattern). Read this before touching `src/compute/`.
 - **LLM handler spec:** `docs/specs/2026-08-29-llm-intent-handler-design.md` — tool loop + Anthropic transport. Read this before touching `src/orchestrator/llm-*.ts`.
+- **Sibling API spec:** `docs/specs/2026-08-29-sibling-api-surface.md` — JSON-UI / memoryjs seams. Do not modify those repos from this checkout unless you can push them.
 - **v1 implementation plan:** `docs/plans/2026-04-15-neural-computer-v2-plan.md` — supersedes the April-11 plan (which is marked SUPERSEDED).
 - **CHANGELOG.md** — behavior changes and traps not to re-introduce.
 - **docs/audits/** — 2026-08-29 full-repo audit; do not re-introduce NC-001–NC-092.

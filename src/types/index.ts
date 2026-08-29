@@ -5,6 +5,7 @@ export type {
   NCCatalogVersion,
   NCObserver,
   NCRuntime,
+  AnyCatalog,
 } from "./nc-types";
 
 export { asNCCatalogVersion, isNCCatalogVersion } from "./nc-types";

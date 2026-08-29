@@ -50,13 +50,13 @@ If the serialized payload exceeds `NC_OBSERVATION_MAX_BYTES`, truncate `observer
 
 ## Tools
 
-| Tool                  | When advertised           | Behavior                                                                                                                                                                                                     |
-| --------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `commit_ui_tree`      | Always                    | `{ tree }`. `catalog.validateTree`. Success: `onTreeCommit(result.data)`, end loop. Failure: tool error, model may retry.                                                                                    |
-| `python_exec`         | `repl` option provided    | `{ code }`. `repl.exec`. Returns `{ ok, stdout, stderr, truncated, error? }`.                                                                                                                                |
-| `python_load_context` | `repl` provided           | `{ text }`. `repl.loadContext`.                                                                                                                                                                              |
-| `python_reset`        | `repl` provided           | `repl.reset`.                                                                                                                                                                                                |
-| `durable_write`       | `onDurableWrite` provided | `{ path, value }`. Host callback. memoryjs adapters throw on `store.set`; the host maps writes onto `entityManager` / transactions. This spec does **not** invent a graph mutation DSL (separate follow-up). |
+| Tool                  | When advertised        | Behavior                                                                                                                                                                                                            |
+| --------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `commit_ui_tree`      | Always                 | `{ tree }`. `catalog.validateTree`. Success: `onTreeCommit(result.data)`, end loop. Failure: tool error, model may retry.                                                                                           |
+| `python_exec`         | `repl` option provided | `{ code }`. `repl.exec`. Returns `{ ok, stdout, stderr, truncated, error? }`.                                                                                                                                       |
+| `python_load_context` | `repl` provided        | `{ text }`. `repl.loadContext`.                                                                                                                                                                                     |
+| `python_reset`        | `repl` provided        | `repl.reset`.                                                                                                                                                                                                       |
+| `durable_write`       | Always                 | `{ path, value }`. Prefers host `onDurableWrite`. Else `durableStore.write` (memoryjs `onWrite`). Else `set` (in-memory). memoryjs `set()` still throws so React cannot mutate the graph. Not a graph mutation DSL. |
 
 `llm_query` inside the REPL is **not** auto-wired. If the host wants nested model calls from Python, they pass `llmQuery` into `createPythonRepl` themselves (typically a tool-free `transport.complete`). The handler will not recurse into a second REPL from `llm_query`.
 

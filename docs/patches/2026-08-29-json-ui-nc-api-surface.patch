@@ -1,0 +1,373 @@
+From ade7cc06029b8095e439d4b4d5493c9ef01152b7 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Sat, 29 Aug 2026 01:59:43 +0000
+Subject: [PATCH] feat: AnyCatalog, store.write, and registry context for
+ Neural Computer
+
+Add AnyCatalog so hosts can store a catalog without repeating
+Catalog<any, any, any>. ObservableDataModel.write is the orchestrator
+write seam (in-memory implements it as set). JSONUIProvider publishes
+registry via context so Renderer can omit a second copy. ComponentRenderer
+uses a bivariant call signature so memoized host components type-check
+without casts.
+---
+ CHANGELOG.md                                  | 21 ++++++-
+ packages/core/src/catalog.ts                  | 10 ++++
+ packages/core/src/index.ts                    |  1 +
+ packages/core/src/runtime.test.ts             |  7 +++
+ packages/core/src/runtime.ts                  | 36 +++++++----
+ .../src/renderer-registry-context.test.tsx    | 53 ++++++++++++++++
+ packages/react/src/renderer.tsx               | 60 +++++++++++++++----
+ 7 files changed, 162 insertions(+), 26 deletions(-)
+ create mode 100644 packages/react/src/renderer-registry-context.test.tsx
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index f6141f1..7f97d7a 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -26,13 +26,32 @@ In addition, this project uses two non-standard sections that fit how the work i
+ 
+ ## [Unreleased]
+ 
++### Added
++
++- **`AnyCatalog` type** (`@json-ui/core`). Method variance makes a specific
++  `Catalog<MyComponents>` unassignable to the default `Catalog` type. Neural
++  Computer (and any host that stores a catalog on a runtime handle) should
++  use `AnyCatalog` instead of repeating `Catalog<any, any, any>`.
++- **`ObservableDataModel.write?`** (`@json-ui/core`). Orchestrator write
++  seam. `createObservableDataModel` implements it as `set()`. React
++  `DataProvider` still uses `set()`. Read-only adapters (memoryjs) keep
++  throwing on `set()` and may implement `write()` as an awaited
++  transaction.
++- **`JSONUIProvider` registry context** (`@json-ui/react`). `registry` is
++  optional on both `JSONUIProvider` and `Renderer`. Nested `Renderer`
++  inherits the provider registry; an explicit prop wins. Neural Computer
++  no longer has to pass the same object twice.
++- **`ComponentRenderer` bivariant call signature.** Host memoized
++  components that only declare `{element, children}` (Neural Computer)
++  type-check without `as ComponentRenderer` casts. The renderer still
++  passes `onAction` and `loading` at runtime.
++
+ ### Security
+ 
+ - `nanoid` 3.3.16 -> 3.3.18 (GHSA-2v37-7h3g-55p8, `<3.3.17`). Lock-only, nanoid alone;
+   typecheck and tests green. A blanket `npm update` of all four swept packages broke the
+   gates here, so only the package actually flagged was moved.
+ 
+-
+ ### Added
+ 
+ - **`@json-ui/core` Neural Computer integration helpers** — three new modules added to core so the Neural Computer runtime can implement its "Path C" (React + headless renderer both driving one shared `StagingBuffer` and one shared `ObservableDataModel`) without hand-rolling the reconciliation, field-ID validation, or staging-aware action resolution pieces.
+diff --git a/packages/core/src/catalog.ts b/packages/core/src/catalog.ts
+index bed5df5..6fd76d3 100644
+--- a/packages/core/src/catalog.ts
++++ b/packages/core/src/catalog.ts
+@@ -142,6 +142,16 @@ export interface Catalog<
+   };
+ }
+ 
++/**
++ * Catalog without preserving component/action generics. Method variance
++ * makes a specific `Catalog<MyComponents>` unassignable to the default
++ * `Catalog` type; hosts that store catalogs on a runtime handle (Neural
++ * Computer) should use this alias instead of `Catalog<any, any, any>`
++ * at every call site.
++ */
++// eslint-disable-next-line @typescript-eslint/no-explicit-any
++export type AnyCatalog = Catalog<any, any, any>;
++
+ /**
+  * Create a v2 catalog with visibility, actions, and validation support
+  */
+diff --git a/packages/core/src/index.ts b/packages/core/src/index.ts
+index 278cb7c..ca42a6c 100644
+--- a/packages/core/src/index.ts
++++ b/packages/core/src/index.ts
+@@ -85,6 +85,7 @@ export type {
+   ComponentDefinition,
+   CatalogConfig,
+   Catalog,
++  AnyCatalog,
+   InferCatalogComponentProps,
+ } from "./catalog";
+ 
+diff --git a/packages/core/src/runtime.test.ts b/packages/core/src/runtime.test.ts
+index e4117d8..0a95e42 100644
+--- a/packages/core/src/runtime.test.ts
++++ b/packages/core/src/runtime.test.ts
+@@ -207,6 +207,13 @@ describe("createObservableDataModel - basic operations", () => {
+     expect(typeof model.delete).toBe("function");
+     expect(typeof model.snapshot).toBe("function");
+     expect(typeof model.subscribe).toBe("function");
++    expect(typeof model.write).toBe("function");
++  });
++
++  test("write is set: in-memory stores persist through the orchestrator seam", () => {
++    const m = createObservableDataModel();
++    m.write!("note", "hello");
++    expect(m.get("note")).toBe("hello");
+   });
+ });
+ 
+diff --git a/packages/core/src/runtime.ts b/packages/core/src/runtime.ts
+index 9317c13..4de8d53 100644
+--- a/packages/core/src/runtime.ts
++++ b/packages/core/src/runtime.ts
+@@ -12,12 +12,7 @@ export type FieldId = string;
+  * themselves JSONValue.
+  */
+ export type JSONValue =
+-  | null
+-  | boolean
+-  | number
+-  | string
+-  | JSONValue[]
+-  | { [key: string]: JSONValue };
++  null | boolean | number | string | JSONValue[] | { [key: string]: JSONValue };
+ 
+ /** A plain-JSON snapshot of a staging buffer at a single point in time. */
+ export type StagingSnapshot = Record<FieldId, JSONValue>;
+@@ -319,6 +314,16 @@ export interface ObservableDataModel {
+    * parent containers (per spec Open Question 2 — leave-empty semantics).
+    */
+   delete(path: string): void;
++  /**
++   * Orchestrator write seam. React `DataProvider` keeps using `set()`
++   * (synchronous, may throw on read-only adapters). Neural Computer's
++   * intent handler prefers `write()` so memoryjs hosts can await a
++   * transaction without pretending `set()` is async.
++   *
++   * The in-memory factory implements this as `set()`. Adapters may
++   * omit it; callers then fall back to `set()`.
++   */
++  write?(path: string, value: JSONValue): void | Promise<void>;
+   snapshot(): Readonly<Record<string, JSONValue>>;
+   subscribe(callback: () => void): () => void;
+ }
+@@ -446,17 +451,22 @@ export function createObservableDataModel(
+     }
+   };
+ 
++  const set = (path: string, value: JSONValue): void => {
++    // Mirror the delete() pattern: only notify subscribers if the path
++    // helper actually wrote something. Empty paths are a no-op that must
++    // not fire spurious notifications or invalidate the snapshot cache.
++    if (setAtPath(root, path, value)) {
++      invalidateAndNotify();
++    }
++  };
++
+   return {
+     get(path) {
+       return getAtPath(root, path);
+     },
+-    set(path, value) {
+-      // Mirror the delete() pattern: only notify subscribers if the path
+-      // helper actually wrote something. Empty paths are a no-op that must
+-      // not fire spurious notifications or invalidate the snapshot cache.
+-      if (setAtPath(root, path, value)) {
+-        invalidateAndNotify();
+-      }
++    set,
++    write(path, value) {
++      set(path, value);
+     },
+     delete(path) {
+       if (deleteAtPath(root, path)) {
+diff --git a/packages/react/src/renderer-registry-context.test.tsx b/packages/react/src/renderer-registry-context.test.tsx
+new file mode 100644
+index 0000000..ff53da9
+--- /dev/null
++++ b/packages/react/src/renderer-registry-context.test.tsx
+@@ -0,0 +1,53 @@
++import { describe, it, expect } from "vitest";
++import React from "react";
++import { render, screen } from "@testing-library/react";
++import { JSONUIProvider, Renderer, type ComponentRegistry } from "./renderer";
++import type { UITree } from "@json-ui/core";
++
++const tree: UITree = {
++  root: "t",
++  elements: {
++    t: { key: "t", type: "text", props: { content: "hello" } },
++  },
++};
++
++const registry: ComponentRegistry = {
++  text: ({ element }) =>
++    React.createElement(
++      "span",
++      { "data-testid": "txt" },
++      String((element.props as { content?: string }).content ?? ""),
++    ),
++};
++
++describe("Renderer registry context", () => {
++  it("inherits registry from JSONUIProvider so the prop is not required twice", () => {
++    render(
++      <JSONUIProvider registry={registry}>
++        <Renderer tree={tree} />
++      </JSONUIProvider>,
++    );
++    expect(screen.getByTestId("txt").textContent).toBe("hello");
++  });
++
++  it("lets an explicit registry prop win over the provider", () => {
++    const override: ComponentRegistry = {
++      text: ({ element }) =>
++        React.createElement(
++          "span",
++          { "data-testid": "override" },
++          String((element.props as { content?: string }).content ?? ""),
++        ),
++    };
++    render(
++      <JSONUIProvider registry={registry}>
++        <Renderer tree={tree} registry={override} />
++      </JSONUIProvider>,
++    );
++    expect(screen.getByTestId("override")).toBeTruthy();
++  });
++
++  it("throws when neither a prop nor a provider registry is present", () => {
++    expect(() => render(<Renderer tree={tree} />)).toThrow(/registry/);
++  });
++});
+diff --git a/packages/react/src/renderer.tsx b/packages/react/src/renderer.tsx
+index ad4a740..ea017ef 100644
+--- a/packages/react/src/renderer.tsx
++++ b/packages/react/src/renderer.tsx
+@@ -1,6 +1,11 @@
+ "use client";
+ 
+-import React, { type ComponentType, type ReactNode, useMemo } from "react";
++import React, {
++  type ComponentType,
++  type ReactNode,
++  createContext,
++  useContext,
++} from "react";
+ import type {
+   UIElement,
+   UITree,
+@@ -10,7 +15,6 @@ import type {
+ } from "@json-ui/core";
+ import { useIsVisible } from "./contexts/visibility";
+ import { useActions } from "./contexts/actions";
+-import { useData } from "./contexts/data";
+ 
+ /**
+  * Props passed to component renderers
+@@ -27,11 +31,15 @@ export interface ComponentRenderProps<P = Record<string, unknown>> {
+ }
+ 
+ /**
+- * Component renderer type
++ * Component renderer type.
++ *
++ * Uses a bivariant call signature so host memoized components that only
++ * declare `{ element, children }` (Neural Computer) assign without
++ * `as` casts, while the renderer may still pass `onAction` and `loading`.
+  */
+-export type ComponentRenderer<P = Record<string, unknown>> = ComponentType<
+-  ComponentRenderProps<P>
+->;
++export type ComponentRenderer<P = Record<string, unknown>> = {
++  bivarianceHack(props: ComponentRenderProps<P>): React.ReactNode;
++}["bivarianceHack"];
+ 
+ /**
+  * Registry of component renderers
+@@ -44,8 +52,11 @@ export type ComponentRegistry = Record<string, ComponentRenderer<any>>;
+ export interface RendererProps {
+   /** The UI tree to render */
+   tree: UITree | null;
+-  /** Component registry */
+-  registry: ComponentRegistry;
++  /**
++   * Component registry. Optional when a `JSONUIProvider` ancestor
++   * already provided one; an explicit prop wins.
++   */
++  registry?: ComponentRegistry;
+   /** Whether the tree is currently loading/streaming */
+   loading?: boolean;
+   /** Fallback component for unknown types */
+@@ -113,6 +124,14 @@ function ElementRenderer({
+  * Main renderer component
+  */
+ export function Renderer({ tree, registry, loading, fallback }: RendererProps) {
++  const contextRegistry = useContext(ComponentRegistryContext);
++  const resolvedRegistry = registry ?? contextRegistry;
++  if (!resolvedRegistry) {
++    throw new Error(
++      "Renderer requires a registry prop, or a JSONUIProvider ancestor that provided one",
++    );
++  }
++
+   if (!tree || !tree.root) {
+     return null;
+   }
+@@ -126,7 +145,7 @@ export function Renderer({ tree, registry, loading, fallback }: RendererProps) {
+     <ElementRenderer
+       element={rootElement}
+       tree={tree}
+-      registry={registry}
++      registry={resolvedRegistry}
+       loading={loading}
+       fallback={fallback}
+     />
+@@ -137,8 +156,12 @@ export function Renderer({ tree, registry, loading, fallback }: RendererProps) {
+  * Props for JSONUIProvider
+  */
+ export interface JSONUIProviderProps {
+-  /** Component registry */
+-  registry: ComponentRegistry;
++  /**
++   * Component registry. Optional: hosts that only need contexts (data,
++   * staging, actions) can omit it. When provided, nested `Renderer`
++   * components inherit it unless they pass their own `registry` prop.
++   */
++  registry?: ComponentRegistry;
+   /** Initial data model — ignored when `store` is provided. */
+   initialData?: Record<string, unknown>;
+   /**
+@@ -223,6 +246,10 @@ import { ActionProvider } from "./contexts/actions";
+ import { ValidationProvider } from "./contexts/validation";
+ import { ConfirmDialog } from "./contexts/actions";
+ 
++const ComponentRegistryContext = createContext<ComponentRegistry | undefined>(
++  undefined,
++);
++
+ /**
+  * Combined provider for all JSONUI contexts. See `JSONUIProviderProps`
+  * for the `store` and `stagingStore` props added for NC Path C.
+@@ -252,7 +279,7 @@ export function JSONUIProvider({
+       children
+     );
+ 
+-  return (
++  const tree = (
+     <DataProvider
+       initialData={initialData}
+       store={store}
+@@ -281,6 +308,15 @@ export function JSONUIProvider({
+       </VisibilityProvider>
+     </DataProvider>
+   );
++
++  if (registry === undefined) {
++    return tree;
++  }
++  return (
++    <ComponentRegistryContext.Provider value={registry}>
++      {tree}
++    </ComponentRegistryContext.Provider>
++  );
+ }
+ 
+ /**
+-- 
+2.43.0
+
