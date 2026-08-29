@@ -28,6 +28,7 @@ export type {
   NCCatalogVersion,
   NCObserver,
   NCRuntime,
+  AnyCatalog,
 } from "./types";
 
 export { asNCCatalogVersion, isNCCatalogVersion } from "./types";

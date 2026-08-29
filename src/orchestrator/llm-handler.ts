@@ -2,13 +2,12 @@
 
 import {
   generateCatalogPrompt,
-  type Catalog,
   type JSONValue,
   type UITree,
 } from "@json-ui/core";
 import { NC_LLM_ACCEPTANCE_CONTRACT } from "../catalog";
 import type { NCPythonRepl } from "../compute";
-import type { NCIntentHandler, NCRuntime } from "../types";
+import type { AnyCatalog, NCIntentHandler, NCRuntime } from "../types";
 import { NC_LLM_DEFAULT_MAX_ROUNDS } from "./limits";
 import {
   NCLlmError,
@@ -27,8 +26,7 @@ export interface DurableWrite {
 
 export interface CreateLlmIntentHandlerOptions {
   runtime: NCRuntime;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  catalog: Catalog<any, any, any>;
+  catalog: AnyCatalog;
   onTreeCommit: (tree: UITree) => Promise<void> | void;
   transport: NCLlmTransport;
   repl?: NCPythonRepl;
@@ -87,7 +85,7 @@ const PYTHON_RESET_TOOL: NCLlmTool = {
 const DURABLE_WRITE_TOOL: NCLlmTool = {
   name: "durable_write",
   description:
-    "Write a JSON value into durable state at a / path. Hosts using the memoryjs adapter must supply onDurableWrite; store.set on that adapter is read-only.",
+    "Write a JSON value into durable state at a / path. Uses onDurableWrite if the host supplied one, otherwise ObservableDataModel.write (memoryjs onWrite) or set (in-memory store). React DataProvider cannot write the memoryjs adapter; that set() still throws.",
   input_schema: {
     type: "object",
     additionalProperties: false,
@@ -115,12 +113,9 @@ function toolUses(content: NCLlmContent[]): NCLlmToolUseContent[] {
 }
 
 function advertisedTools(options: CreateLlmIntentHandlerOptions): NCLlmTool[] {
-  const tools = [COMMIT_TOOL];
+  const tools = [COMMIT_TOOL, DURABLE_WRITE_TOOL];
   if (options.repl) {
     tools.push(PYTHON_EXEC_TOOL, PYTHON_LOAD_TOOL, PYTHON_RESET_TOOL);
-  }
-  if (options.onDurableWrite) {
-    tools.push(DURABLE_WRITE_TOOL);
   }
   return tools;
 }
@@ -321,25 +316,19 @@ async function handleTool(
         return { result: toolResult(use.id, { ok: true }), committed: null };
       }
       case "durable_write": {
-        if (!options.onDurableWrite) {
-          return {
-            result: toolResult(
-              use.id,
-              { ok: false, error: "durable_write not configured" },
-              true,
-            ),
-            committed: null,
-          };
-        }
         const path =
           isRecord(use.input) && typeof use.input.path === "string"
             ? use.input.path
             : "";
-        const value = isRecord(use.input) ? use.input.value : undefined;
-        await options.onDurableWrite({
-          path,
-          value: value as JSONValue,
-        });
+        const value = (isRecord(use.input) ? use.input.value : undefined) as
+          JSONValue | undefined;
+        if (options.onDurableWrite) {
+          await options.onDurableWrite({ path, value: value as JSONValue });
+        } else if (typeof options.runtime.durableStore.write === "function") {
+          await options.runtime.durableStore.write(path, value as JSONValue);
+        } else {
+          options.runtime.durableStore.set(path, value as JSONValue);
+        }
         return { result: toolResult(use.id, { ok: true }), committed: null };
       }
       default:

@@ -1,12 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import {
-  collectFieldIds,
-  type Catalog,
-  type IntentEvent,
-  type UITree,
-} from "@json-ui/core";
-import type { NCIntentHandler } from "../types";
+import { collectFieldIds, type IntentEvent, type UITree } from "@json-ui/core";
+import type { AnyCatalog, NCIntentHandler } from "../types";
 
 /**
  * Options for the stub intent handler. The stub is deterministic —
@@ -24,8 +19,7 @@ export interface CreateStubIntentHandlerOptions {
    * Invalid trees are rejected (the promise rejects) and onTreeCommit
    * is not called — Invariant 9 at the handler boundary.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  catalog: Catalog<any, any, any>;
+  catalog: AnyCatalog;
   /**
    * Pure function mapping an IntentEvent to the next UITree. Called
    * once per dispatched intent. The stub does not batch multiple

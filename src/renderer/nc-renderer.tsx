@@ -9,12 +9,7 @@ import {
   type ComponentRegistry,
   type ComponentRenderer,
 } from "@json-ui/react";
-import {
-  collectFieldIds,
-  type Catalog,
-  type IntentEvent,
-  type UITree,
-} from "@json-ui/core";
+import { collectFieldIds, type IntentEvent, type UITree } from "@json-ui/core";
 import {
   NCContainer,
   NCText,
@@ -23,7 +18,7 @@ import {
   NCSelect,
   NCButton,
 } from "./input-components";
-import type { NCRuntime, NCCatalogVersion } from "../types";
+import type { AnyCatalog, NCRuntime, NCCatalogVersion } from "../types";
 import { NCErrorBoundary } from "./error-boundary";
 import {
   FocusFieldContext,
@@ -85,8 +80,7 @@ export interface NCRendererProps {
    * Catalog used to validate the tree before reconciliation. Must be
    * the same reference as `runtime.catalog`.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  catalog: Catalog<any, any, any>;
+  catalog: AnyCatalog;
   /**
    * Catalog version threaded through emitted IntentEvents. Must equal
    * `runtime.catalogVersion`.
@@ -224,8 +218,9 @@ export function NCRenderer({
       <IntentFlightContext.Provider value={inFlight}>
         <FocusFieldContext.Provider value={focusApi}>
           <JSONUIProvider
-            // JSONUIProvider still requires registry (vestigial vs Renderer);
-            // passing the same object keeps ActionProvider and Renderer in sync.
+            // Pinned JSON-UI still requires registry on both sides.
+            // JSON-UI cursor/nc-api-surface-1bce publishes it via context
+            // so Renderer can omit the prop; keep both until CI pins that SHA.
             registry={registry}
             store={runtime.durableStore}
             stagingStore={runtime.stagingBuffer}

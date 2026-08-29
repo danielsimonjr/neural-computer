@@ -245,6 +245,41 @@ describe("createLlmIntentHandler", () => {
     runtime.destroy();
   });
 
+  it("writes through durableStore.write when onDurableWrite is omitted", async () => {
+    const runtime = createNCRuntime({
+      durableStore: createObservableDataModel({}),
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
+    const transport = scripted([
+      {
+        content: [
+          {
+            type: "tool_use",
+            id: "d",
+            name: "durable_write",
+            input: { path: "note", value: "via-store" },
+          },
+        ],
+      },
+      { content: [commitUse("c", validTree)] },
+    ]);
+    const handler = createLlmIntentHandler({
+      runtime,
+      catalog: ncStarterCatalog,
+      onTreeCommit: vi.fn(),
+      transport,
+    });
+    await handler({
+      action_name: "submit_form",
+      action_params: {},
+      staging_snapshot: {},
+      timestamp: 0,
+    });
+    expect(runtime.durableStore.get("note")).toBe("via-store");
+    runtime.destroy();
+  });
+
   it("calls python_load_context and python_reset then commits", async () => {
     const runtime = createNCRuntime({
       durableStore: createObservableDataModel({}),

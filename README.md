@@ -59,6 +59,7 @@ Shipped: `src/compute/` — Python subprocess dispatch via the RLM pattern (`cre
 - [`docs/specs/2026-04-16-headless-dual-backend-design.md`](./docs/specs/2026-04-16-headless-dual-backend-design.md) — LLM observer (Path C).
 - [`docs/specs/2026-08-29-compute-rlm-repl-design.md`](./docs/specs/2026-08-29-compute-rlm-repl-design.md) — Python REPL compute arm. Independent of `NCRuntime`; exported from `neural-computer/core`.
 - [`docs/specs/2026-08-29-llm-intent-handler-design.md`](./docs/specs/2026-08-29-llm-intent-handler-design.md) — tool-loop intent handler; Anthropic is one transport.
+- [`docs/specs/2026-08-29-sibling-api-surface.md`](./docs/specs/2026-08-29-sibling-api-surface.md) — JSON-UI / memoryjs seams and patches.
 - [`docs/plans/2026-04-15-neural-computer-v2-plan.md`](./docs/plans/2026-04-15-neural-computer-v2-plan.md) — the v1 implementation plan, 13 tasks, shipped 2026-04-15.
 
 ## Development

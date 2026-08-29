@@ -3,15 +3,19 @@
 "use client";
 
 import React from "react";
-import type { Catalog, UITree } from "@json-ui/core";
+import type { UITree } from "@json-ui/core";
 import type { ComponentRegistry } from "@json-ui/react";
 import { NCRenderer } from "../renderer/nc-renderer";
-import type { NCRuntime, NCCatalogVersion, NCIntentHandler } from "../types";
+import type {
+  AnyCatalog,
+  NCRuntime,
+  NCCatalogVersion,
+  NCIntentHandler,
+} from "../types";
 
 export interface NCAppProps {
   runtime: NCRuntime;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  catalog: Catalog<any, any, any>;
+  catalog: AnyCatalog;
   catalogVersion: NCCatalogVersion;
   /**
    * Tree shown before any intent commits a replacement. Changing this

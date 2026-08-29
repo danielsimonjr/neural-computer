@@ -10,6 +10,15 @@ import type {
 import type { NormalizedNode } from "@json-ui/headless";
 
 /**
+ * Catalog without preserving component generics. JSON-UI method variance
+ * makes a specific `Catalog<MyComponents>` unassignable to the default
+ * `Catalog` type. JSON-UI will export this as `AnyCatalog`; until that
+ * ships, NC owns the alias.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AnyCatalog = Catalog<any, any, any>;
+
+/**
  * An NC intent handler receives a fully-formed IntentEvent from the
  * React layer (via ActionProvider.onIntent) and is responsible for
  * composing the observation, invoking the LLM, and applying any
@@ -130,8 +139,7 @@ export interface NCRuntime {
    * Catalog bound at construction. NCRenderer MUST pass this same
    * reference as its `catalog` prop (identity check at render time).
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  catalog: Catalog<any, any, any>;
+  catalog: AnyCatalog;
   /**
    * Version string the runtime threads into the observer and that
    * NCRenderer must echo into JSONUIProvider. Identity-checked against

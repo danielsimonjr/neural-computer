@@ -26,7 +26,7 @@ React 19 is a **peer dependency**. Host applications must dedupe React so `@json
 
 Catalog: `ncStarterCatalog`, `NC_CATALOG_VERSION`, `NC_LLM_ACCEPTANCE_CONTRACT`, `ncFieldIdSchema`, `isSafeFieldId`, `NC_FIELD_ID_MAX_LENGTH`, `NC_STRING_MAX_LENGTH`, `NC_STARTER_ACTIONS`.
 
-Types: `NCIntentHandler`, `NCCatalogVersion`, `NCObserver`, `NCRuntime`. Values: `asNCCatalogVersion`, `isNCCatalogVersion`.
+Types: `NCIntentHandler`, `NCCatalogVersion`, `NCObserver`, `NCRuntime`, `AnyCatalog`. Values: `asNCCatalogVersion`, `isNCCatalogVersion`. `AnyCatalog` is NC's alias for `Catalog<any, any, any>` (JSON-UI method variance). JSON-UI will export the same name; until CI pins that SHA, NC owns the alias.
 
 Runtime: `createNCRuntime`, `CreateNCRuntimeOptions`.
 
@@ -79,7 +79,7 @@ interface NCRuntime {
   stagingBuffer: StagingBuffer;
   durableStore: ObservableDataModel;
   observer: NCObserver;
-  catalog: Catalog<any, any, any>;
+  catalog: AnyCatalog;
   catalogVersion: NCCatalogVersion;
   emitIntent: (event: IntentEvent) => Promise<void>;
   setIntentHandler: (handler: NCIntentHandler) => void;
@@ -110,7 +110,7 @@ function createNCRuntime(options: CreateNCRuntimeOptions): NCRuntime;
 ```typescript
 interface CreateNCRuntimeOptions {
   durableStore: ObservableDataModel;
-  catalog: Catalog<any, any, any>;
+  catalog: AnyCatalog;
   catalogVersion?: NCCatalogVersion;
   extraHeadlessRegistry?: HeadlessRegistry;
   onObserverStale?: (consecutiveFailures: number, lastPassId: number) => void;
@@ -156,7 +156,7 @@ Output (`NCProjectedData`): `entitiesByType`, `entities` (by name), `relations` 
 interface NCRendererProps {
   tree: UITree;
   runtime: NCRuntime;
-  catalog: Catalog<any, any, any>;
+  catalog: AnyCatalog;
   catalogVersion: NCCatalogVersion;
   extraRegistry?: ComponentRegistry;
   onValidationError?: (error: unknown) => void;
@@ -186,7 +186,7 @@ Class boundary. Optional `onError`. Exported from the React entries.
 
 ```typescript
 interface CreateStubIntentHandlerOptions {
-  catalog: Catalog<any, any, any>; // required; nextTree is validated
+  catalog: AnyCatalog; // required; nextTree is validated
   nextTree: (event: IntentEvent) => UITree;
   onTreeCommit: (tree: UITree) => Promise<void> | void;
 }
@@ -203,7 +203,7 @@ Invalid `nextTree` rejects; `onTreeCommit` is not called.
 ```typescript
 interface NCAppProps {
   runtime: NCRuntime;
-  catalog: Catalog<any, any, any>;
+  catalog: AnyCatalog;
   catalogVersion: NCCatalogVersion;
   initialTree: UITree;
   buildIntentHandler: (setTree: (tree: UITree) => void) => NCIntentHandler;
@@ -264,3 +264,5 @@ function createLlmIntentHandler(
 Same signature as the stub. Requires `runtime`, `catalog`, `onTreeCommit`, and an `NCLlmTransport`. Optional `repl` advertises Python tools. Optional `onDurableWrite` advertises `durable_write`. The model must call `commit_ui_tree` with a catalog-valid tree within `maxRounds` (default 8). Invalid trees come back as tool errors. Spec: `docs/specs/2026-08-29-llm-intent-handler-design.md`.
 
 `createAnthropicIntentHandler` / `createAnthropicTransport` map this onto Anthropic Messages. Inject `send` in tests. This handler commits complete trees; it does not POST JSON patches to `useCommittedTree`.
+
+`durable_write` is always advertised. It prefers `onDurableWrite`, then `durableStore.write` (memoryjs `onWrite`), then `durableStore.set` (in-memory).

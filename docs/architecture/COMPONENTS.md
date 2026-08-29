@@ -196,7 +196,7 @@ Three id namespaces: React `key`, `data-key` (`element.key`), `data-field-id` (s
 | `NCRendererProps` | Interface          | `tree`, `runtime`, `catalog`, `catalogVersion`, optional `extraRegistry`, `onValidationError`, `onRenderError` |
 | `NCRenderer`      | Function component | Validates during render; last-good tree to `<Renderer>`                                                        |
 
-`extraRegistry` cannot override builtin names (`Container`, `Text`, `TextField`, `Checkbox`, `Select`, `Button`) so a host cannot drop `action.params` by replacing `Button`.
+`extraRegistry` cannot override builtin names (`Container`, `Text`, `TextField`, `Checkbox`, `Select`, `Button`) so a host cannot drop `action.params` by replacing `Button`. Registry is still passed to both `JSONUIProvider` and `Renderer` until CI pins the JSON-UI registry-context change.
 
 After a successful commit, `useLayoutEffect` reconciles and calls `observer.render` on the **same Zod-stripped tree** the Renderer received. That effect is not validation.
 
