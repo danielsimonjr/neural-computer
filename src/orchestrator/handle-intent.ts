@@ -1,24 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import {
-  collectFieldIds,
-  type Catalog,
-  type IntentEvent,
-  type UITree,
-} from "@json-ui/core";
-import type { NCIntentHandler } from "../types";
+import { collectFieldIds, type IntentEvent, type UITree } from "@json-ui/core";
+import type { AnyCatalog, NCIntentHandler } from "../types";
 
 /**
  * Options for the stub intent handler. The stub is deterministic —
  * it takes a pure function that maps an IntentEvent to the next
- * UITree and calls onTreeCommit with that tree. This is the v1
- * handler shape; the real LLM-backed handler will be introduced in
- * a follow-up spec and will conform to the same NCIntentHandler
- * signature so the orchestrator loop doesn't need to know which is
- * in use.
+ * UITree and calls onTreeCommit with that tree. createLlmIntentHandler
+ * shares the same NCIntentHandler signature so the runtime does not
+ * need to know which is in use.
  *
  * Isolating the "compute next tree" step as a pure function lets
- * us test the loop without standing up a real Anthropic client.
+ * tests drive the loop without a model.
  */
 export interface CreateStubIntentHandlerOptions {
   /**
@@ -26,8 +19,7 @@ export interface CreateStubIntentHandlerOptions {
    * Invalid trees are rejected (the promise rejects) and onTreeCommit
    * is not called — Invariant 9 at the handler boundary.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  catalog: Catalog<any, any, any>;
+  catalog: AnyCatalog;
   /**
    * Pure function mapping an IntentEvent to the next UITree. Called
    * once per dispatched intent. The stub does not batch multiple
@@ -45,8 +37,8 @@ export interface CreateStubIntentHandlerOptions {
 
 /**
  * Build a deterministic intent handler suitable for integration
- * testing. Real LLM-backed handlers will replace this in a later
- * spec but will conform to the same NCIntentHandler signature.
+ * testing. createLlmIntentHandler is the production handler and
+ * uses the same NCIntentHandler signature.
  */
 export function createStubIntentHandler(
   options: CreateStubIntentHandlerOptions,

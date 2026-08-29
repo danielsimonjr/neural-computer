@@ -14,11 +14,13 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 - **`createStubIntentHandler` requires `catalog`** and rejects `nextTree` results that fail `validateTree`.
 - **`NC_CATALOG_VERSION` is `nc-starter-0.3`.** Field ids, action names, string caps, optional `direction` / `multiline` / `inputType` / `visible`, and `Select`.
 - **React is a peerDependency.** Import `neural-computer/react` or the root barrel from Client Components. Use `neural-computer/core` from Node.
-- **`@anthropic-ai/sdk` removed** until an LLM handler spec exists.
+- **`@anthropic-ai/sdk` is a runtime dependency** of the Anthropic adapter (`createAnthropicTransport`). Tests inject `send` or a fake `NCLlmTransport` and never call the network.
 
 ### Added
 
 - **Python REPL compute arm (`src/compute/`).** `createPythonRepl()` spawns a persistent CPython worker (`python3 -u -I -X utf8`) and speaks JSON lines. `exec` / `set` / `get` / `loadContext` / `reset` / `isBusy` / `destroy`. One operation at a time; timeout kills the worker and respawns empty. Optional `llmQuery` implements in-REPL `llm_query`. Not attached to `NCRuntime`. Exported from `neural-computer/core` and the root barrel, not from `/react`. Spec: `docs/specs/2026-08-29-compute-rlm-repl-design.md`.
+- **LLM intent handler (`src/orchestrator/llm-handler.ts`).** `createLlmIntentHandler` composes an observation (catalog prompt, acceptance contract, intent, durable snapshot, observer JSON), runs a tool loop (`commit_ui_tree`, optional `python_*`, `durable_write`), and commits one catalog-valid tree. `durable_write` uses `onDurableWrite` if supplied, otherwise `ObservableDataModel.write` (when present) or `set`. `createAnthropicIntentHandler` / `createAnthropicTransport` adapt Anthropic Messages. Tests inject a fake transport (no network). Spec: `docs/specs/2026-08-29-llm-intent-handler-design.md`. Not HTTP streaming into `useCommittedTree` (that hook remains for hosts with a patch endpoint).
+- **`AnyCatalog` alias.** Catalog props use one named type instead of repeating `Catalog<any, any, any>`.
 
 ### Fixed
 
@@ -38,9 +40,9 @@ Audit `docs/audits/2026-08-29-full-codebase-audit.md` (NC-001–NC-092). Highlig
 
 ### Known deferred items
 
-- **Real LLM-backed intent handler** (`createAnthropicIntentHandler`). The stub plus `NC_LLM_ACCEPTANCE_CONTRACT` / `submittedFieldsStillPresent` cover the testable slice of Risk 1. A future handler is what will drive the RLM loop against `createPythonRepl`.
-- **Persistent staging buffer across process restart.**
 - **Catalog migration** for trees emitted against `nc-starter-0.1` / `nc-starter-0.2`.
+- **Persistent staging buffer across process restart** (explicit non-goal of the April-11 spec).
+- **memoryjs graph mutation DSL** — path-shaped writes go through `adapter.write()` / `onWrite` or NC `onDurableWrite`; hosts still map `{path, value}` onto `entityManager` / transactions.
 
 ---
 

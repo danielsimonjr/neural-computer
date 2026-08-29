@@ -1,11 +1,11 @@
 {
   "metadata": {
-    "generatedAt": "2026-08-29T01:16:08.670Z",
-    "totalSourceFiles": 34,
-    "totalTestFiles": 17,
-    "testedCount": 26,
+    "generatedAt": "2026-08-29T01:46:17.895Z",
+    "totalSourceFiles": 39,
+    "totalTestFiles": 20,
+    "testedCount": 31,
     "untestedCount": 8,
-    "coveragePercent": "76.5"
+    "coveragePercent": "79.5"
   },
   "untestedFiles": [
     "src/app/index.ts",
@@ -31,8 +31,13 @@
     "src/memory/projection.ts",
     "src/observer/nc-headless-components.ts",
     "src/observer/nc-observer.ts",
+    "src/orchestrator/anthropic-transport.ts",
     "src/orchestrator/handle-intent.ts",
     "src/orchestrator/index.ts",
+    "src/orchestrator/limits.ts",
+    "src/orchestrator/llm-handler.ts",
+    "src/orchestrator/llm-transport.ts",
+    "src/orchestrator/observation.ts",
     "src/renderer/error-boundary.tsx",
     "src/renderer/field-id-stability.ts",
     "src/renderer/index.ts",
@@ -56,6 +61,8 @@
       "src/integration/path-c.test.tsx",
       "src/observer/nc-observer.test.ts",
       "src/orchestrator/handle-intent.test.ts",
+      "src/orchestrator/llm-handler.test.ts",
+      "src/orchestrator/observation.test.ts",
       "src/renderer/nc-renderer.test.tsx",
       "src/runtime/context.test.ts"
     ],
@@ -64,6 +71,8 @@
       "src/integration/path-c.test.tsx",
       "src/observer/nc-observer.test.ts",
       "src/orchestrator/handle-intent.test.ts",
+      "src/orchestrator/llm-handler.test.ts",
+      "src/orchestrator/observation.test.ts",
       "src/renderer/nc-renderer.test.tsx",
       "src/runtime/context.test.ts"
     ],
@@ -72,6 +81,8 @@
       "src/integration/path-c.test.tsx",
       "src/observer/nc-observer.test.ts",
       "src/orchestrator/handle-intent.test.ts",
+      "src/orchestrator/llm-handler.test.ts",
+      "src/orchestrator/observation.test.ts",
       "src/renderer/nc-renderer.test.tsx",
       "src/runtime/context.test.ts"
     ],
@@ -81,23 +92,30 @@
       "src/integration/path-c.test.tsx",
       "src/observer/nc-observer.test.ts",
       "src/orchestrator/handle-intent.test.ts",
+      "src/orchestrator/llm-handler.test.ts",
+      "src/orchestrator/observation.test.ts",
       "src/renderer/nc-renderer.test.tsx",
       "src/runtime/context.test.ts"
     ],
     "src/compute/index.ts": [
-      "src/compute/python-repl.test.ts"
+      "src/compute/python-repl.test.ts",
+      "src/orchestrator/llm-handler.test.ts"
     ],
     "src/compute/limits.ts": [
-      "src/compute/python-repl.test.ts"
+      "src/compute/python-repl.test.ts",
+      "src/orchestrator/llm-handler.test.ts"
     ],
     "src/compute/python-repl.ts": [
-      "src/compute/python-repl.test.ts"
+      "src/compute/python-repl.test.ts",
+      "src/orchestrator/llm-handler.test.ts"
     ],
     "src/compute/types.ts": [
-      "src/compute/python-repl.test.ts"
+      "src/compute/python-repl.test.ts",
+      "src/orchestrator/llm-handler.test.ts"
     ],
     "src/compute/worker-path.ts": [
-      "src/compute/python-repl.test.ts"
+      "src/compute/python-repl.test.ts",
+      "src/orchestrator/llm-handler.test.ts"
     ],
     "src/core.ts": [],
     "src/index.ts": [],
@@ -113,12 +131,32 @@
     "src/observer/nc-observer.ts": [
       "src/observer/nc-observer.test.ts"
     ],
+    "src/orchestrator/anthropic-transport.ts": [
+      "src/app/nc-app.test.tsx",
+      "src/orchestrator/anthropic-transport.test.ts"
+    ],
     "src/orchestrator/handle-intent.ts": [
       "src/app/nc-app.test.tsx",
       "src/orchestrator/handle-intent.test.ts"
     ],
     "src/orchestrator/index.ts": [
       "src/app/nc-app.test.tsx"
+    ],
+    "src/orchestrator/limits.ts": [
+      "src/app/nc-app.test.tsx",
+      "src/orchestrator/anthropic-transport.test.ts"
+    ],
+    "src/orchestrator/llm-handler.ts": [
+      "src/app/nc-app.test.tsx",
+      "src/orchestrator/llm-handler.test.ts"
+    ],
+    "src/orchestrator/llm-transport.ts": [
+      "src/app/nc-app.test.tsx",
+      "src/orchestrator/llm-handler.test.ts"
+    ],
+    "src/orchestrator/observation.ts": [
+      "src/app/nc-app.test.tsx",
+      "src/orchestrator/observation.test.ts"
     ],
     "src/react.ts": [],
     "src/renderer/error-boundary.tsx": [
@@ -147,17 +185,20 @@
     "src/runtime/context.ts": [
       "src/app/nc-app.test.tsx",
       "src/integration/path-c.test.tsx",
+      "src/orchestrator/llm-handler.test.ts",
       "src/renderer/nc-renderer.test.tsx",
       "src/runtime/context.test.ts"
     ],
     "src/runtime/freeze.ts": [
       "src/app/nc-app.test.tsx",
       "src/integration/path-c.test.tsx",
+      "src/orchestrator/llm-handler.test.ts",
       "src/renderer/nc-renderer.test.tsx"
     ],
     "src/runtime/index.ts": [
       "src/app/nc-app.test.tsx",
       "src/integration/path-c.test.tsx",
+      "src/orchestrator/llm-handler.test.ts",
       "src/renderer/nc-renderer.test.tsx"
     ],
     "src/test-setup.ts": [],
@@ -180,7 +221,12 @@
       "src/catalog/field-id.ts",
       "src/catalog/limits.ts",
       "src/orchestrator/index.ts",
-      "src/orchestrator/handle-intent.ts"
+      "src/orchestrator/handle-intent.ts",
+      "src/orchestrator/observation.ts",
+      "src/orchestrator/llm-handler.ts",
+      "src/orchestrator/llm-transport.ts",
+      "src/orchestrator/anthropic-transport.ts",
+      "src/orchestrator/limits.ts"
     ],
     "src/catalog/field-id.test.ts": [
       "src/catalog/field-id.ts",
@@ -227,6 +273,10 @@
       "src/catalog/field-id.ts",
       "src/catalog/limits.ts"
     ],
+    "src/orchestrator/anthropic-transport.test.ts": [
+      "src/orchestrator/anthropic-transport.ts",
+      "src/orchestrator/limits.ts"
+    ],
     "src/orchestrator/buffer-isolation.test.ts": [],
     "src/orchestrator/handle-intent.test.ts": [
       "src/orchestrator/handle-intent.ts",
@@ -234,6 +284,29 @@
       "src/catalog/nc-catalog.ts",
       "src/catalog/field-id.ts",
       "src/catalog/limits.ts"
+    ],
+    "src/orchestrator/llm-handler.test.ts": [
+      "src/catalog/index.ts",
+      "src/catalog/nc-catalog.ts",
+      "src/catalog/field-id.ts",
+      "src/catalog/limits.ts",
+      "src/runtime/index.ts",
+      "src/runtime/context.ts",
+      "src/runtime/freeze.ts",
+      "src/orchestrator/llm-handler.ts",
+      "src/orchestrator/llm-transport.ts",
+      "src/compute/index.ts",
+      "src/compute/limits.ts",
+      "src/compute/types.ts",
+      "src/compute/python-repl.ts",
+      "src/compute/worker-path.ts"
+    ],
+    "src/orchestrator/observation.test.ts": [
+      "src/catalog/index.ts",
+      "src/catalog/nc-catalog.ts",
+      "src/catalog/field-id.ts",
+      "src/catalog/limits.ts",
+      "src/orchestrator/observation.ts"
     ],
     "src/renderer/field-id-stability.test.ts": [
       "src/renderer/field-id-stability.ts"

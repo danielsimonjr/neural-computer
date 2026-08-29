@@ -1,0 +1,151 @@
+From 08aa085b6b98e98d6bdac957f9bea354b3eaed04 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Sat, 29 Aug 2026 01:59:43 +0000
+Subject: [PATCH] feat: adapter.write / onWrite for orchestrator durable writes
+
+Keep set() and delete() throwing so React DataProvider cannot mutate
+the graph. Hosts pass onWrite and call adapter.write() from an
+intent handler (Neural Computer). This is a seam, not a graph DSL.
+---
+ CHANGELOG.md                                  |  6 ++++
+ src/features/ObservableDataModelAdapter.ts    | 36 ++++++++++++++++---
+ .../ObservableDataModelAdapter.test.ts        | 24 +++++++++++++
+ 3 files changed, 62 insertions(+), 4 deletions(-)
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 6427328..83d64c5 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
+ 
+ ### Added
+ 
++- **`createObservableDataModelFromGraph({ onWrite })` / `adapter.write()`.**
++  React `DataProvider` still cannot mutate the graph (`set()` / `delete()`
++  throw `ReadOnlyMemoryGraphDataError`). Orchestrators (Neural Computer's
++  LLM handler) pass `onWrite` and call `adapter.write(path, value)`, which
++  is async so it can await `withTransaction`. This is a seam, not a graph
++  mutation DSL — the host maps `{path, value}` onto entity/relation APIs.
+ - **Dependabot auto-merge workflow.** Queues `--auto --squash` for patch and minor
+   updates, which merges only after branch protection is satisfied; a major update is
+   labelled and commented instead, never queued. The comment asks the two questions a
+diff --git a/src/features/ObservableDataModelAdapter.ts b/src/features/ObservableDataModelAdapter.ts
+index f8070f3..c9e4bff 100644
+--- a/src/features/ObservableDataModelAdapter.ts
++++ b/src/features/ObservableDataModelAdapter.ts
+@@ -44,6 +44,11 @@ export interface ObservableDataModelShape {
+   get(path: string): JSONValue | undefined;
+   set(path: string, value: JSONValue): void;
+   delete(path: string): void;
++  /**
++   * Orchestrator write seam (Neural Computer LLM handler). React
++   * DataProvider never calls this; it uses `set()`, which still throws.
++   */
++  write?(path: string, value: JSONValue): void | Promise<void>;
+   snapshot(): Readonly<Record<string, JSONValue>>;
+   subscribe(callback: () => void): () => void;
+ }
+@@ -60,6 +65,7 @@ export class ReadOnlyMemoryGraphDataError extends Error {
+     super(
+       `Cannot ${operation}(${JSON.stringify(path)}) on the memoryjs ObservableDataModel adapter. ` +
+         'Durable state is read-only at the DataProvider boundary; write through ' +
++        'adapter.write() (pass onWrite to createObservableDataModelFromGraph) or ' +
+         'ctx.governanceManager.withTransaction() or ctx.entityManager / ctx.observationManager directly.',
+     );
+   }
+@@ -108,6 +114,16 @@ export interface ObservableDataModelAdapterOptions {
+    * errors into the host runtime's observability pipeline.
+    */
+   onError?: (err: Error) => void;
++  /**
++   * Orchestrator write seam. When provided, `adapter.write(path, value)`
++   * awaits this callback. `set()` and `delete()` still throw
++   * `ReadOnlyMemoryGraphDataError` so React DataProvider cannot mutate
++   * the graph. Neural Computer's LLM handler calls `write()`, not `set()`.
++   *
++   * This is not a graph mutation DSL — the host maps `{path, value}` onto
++   * `entityManager` / `withTransaction`.
++   */
++  onWrite?: (path: string, value: JSONValue) => void | Promise<void>;
+ }
+ 
+ /**
+@@ -154,10 +170,14 @@ const EMPTY_SNAPSHOT: Readonly<Record<string, JSONValue>> = Object.freeze({});
+  * reads come from `storage.cachedGraph` (a sync accessor) — the adapter
+  * does not block on I/O after construction.
+  *
+- * **Read-only.** `set()` and `delete()` throw `ReadOnlyMemoryGraphDataError`
+- * because durable state in the Neural Computer architecture is owned by
+- * memoryjs transactions, not by the React layer. Route writes through
+- * `ctx.governanceManager.withTransaction` or the managers directly.
++ * **Read-only at the React boundary.** `set()` and `delete()` throw
++ * `ReadOnlyMemoryGraphDataError` because durable state in the Neural
++ * Computer architecture is owned by memoryjs transactions, not by the
++ * React layer. Route React-originated writes away from DataProvider.
++ *
++ * **Orchestrator writes.** Pass `onWrite` and call `adapter.write(path,
++ * value)` from the intent handler. `write()` without `onWrite` throws
++ * the same read-only error.
+  *
+  * **Event-driven invalidation.** The adapter subscribes to the storage's
+  * `GraphEventEmitter` via `onAny` and invalidates its cached snapshot on
+@@ -211,6 +231,7 @@ export async function createObservableDataModelFromGraph(
+     projection,
+     onError = (err) =>
+       logger.error('[memoryjs ObservableDataModel adapter]', err),
++    onWrite,
+   } = options;
+ 
+   // Warm the storage cache once so all subsequent reads can be synchronous
+@@ -300,6 +321,13 @@ export async function createObservableDataModelFromGraph(
+       throw new ReadOnlyMemoryGraphDataError('delete', path);
+     },
+ 
++    async write(path: string, value: JSONValue): Promise<void> {
++      if (!onWrite) {
++        throw new ReadOnlyMemoryGraphDataError('set', path);
++      }
++      await onWrite(path, value);
++    },
++
+     snapshot(): Readonly<Record<string, JSONValue>> {
+       return buildSnapshot();
+     },
+diff --git a/tests/unit/features/ObservableDataModelAdapter.test.ts b/tests/unit/features/ObservableDataModelAdapter.test.ts
+index 304458b..6ec56cf 100644
+--- a/tests/unit/features/ObservableDataModelAdapter.test.ts
++++ b/tests/unit/features/ObservableDataModelAdapter.test.ts
+@@ -309,6 +309,30 @@ describe('adapter.set / adapter.delete — read-only enforcement', () => {
+     );
+     adapter.dispose();
+   });
++
++  it('write without onWrite throws ReadOnlyMemoryGraphDataError', async () => {
++    const adapter = await createObservableDataModelFromGraph(storage, {
++      projection: SIMPLE_PROJECTION,
++    });
++    await expect(adapter.write!('note', 'x')).rejects.toBeInstanceOf(
++      ReadOnlyMemoryGraphDataError,
++    );
++    adapter.dispose();
++  });
++
++  it('write with onWrite forwards the path and value; set still throws', async () => {
++    const onWrite = vi.fn(async () => {});
++    const adapter = await createObservableDataModelFromGraph(storage, {
++      projection: SIMPLE_PROJECTION,
++      onWrite,
++    });
++    await adapter.write!('/note', 'hello');
++    expect(onWrite).toHaveBeenCalledWith('/note', 'hello');
++    expect(() => adapter.set('/note', 'nope')).toThrow(
++      ReadOnlyMemoryGraphDataError,
++    );
++    adapter.dispose();
++  });
+ });
+ 
+ // ==================== Error isolation ====================
+-- 
+2.43.0
+

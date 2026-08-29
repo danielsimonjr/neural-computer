@@ -65,3 +65,46 @@ try {
   await repl.destroy();
 }
 ```
+
+LLM intent handler (inject a transport; this fake never uses the network). Swap in `createAnthropicIntentHandler` when `ANTHROPIC_API_KEY` is set. Memoryjs hosts pass `onWrite` into `createObservableDataModelFromGraph` so `durable_write` can await a transaction without React calling `store.set()`.
+
+```ts
+import {
+  createLlmIntentHandler,
+  ncStarterCatalog,
+  type NCLlmTransport,
+} from "neural-computer/core";
+import type { UITree } from "@json-ui/core";
+
+const tree: UITree = {
+  root: "r",
+  elements: { r: { key: "r", type: "Text", props: { content: "ok" } } },
+};
+
+const transport: NCLlmTransport = {
+  async complete() {
+    return {
+      content: [
+        {
+          type: "tool_use",
+          id: "1",
+          name: "commit_ui_tree",
+          input: { tree },
+        },
+      ],
+    };
+  },
+};
+
+function buildIntentHandler(setTree: (next: UITree) => void) {
+  return createLlmIntentHandler({
+    runtime,
+    catalog: ncStarterCatalog,
+    onTreeCommit: setTree,
+    transport,
+    // repl, onDurableWrite optional
+  });
+}
+```
+
+`useCommittedTree` is for hosts that already POST JSON-patch streams to an HTTP endpoint. This handler commits one complete tree, same as the stub.
