@@ -14,6 +14,7 @@ import math
 import re
 import sys
 import traceback
+from types import MappingProxyType
 from typing import Any
 
 PROTOCOL_VERSION = 1
@@ -24,6 +25,18 @@ REAL_STDERR = sys.stderr
 
 DEFAULT_MAX_STDOUT = 64 * 1024
 DEFAULT_MAX_VALUE = 256 * 1024
+DEFAULT_MAX_CODE = 64 * 1024
+DEFAULT_MAX_LLM_PROMPT = 32 * 1024
+
+
+def clamp_limit(raw: object, default: int, cap: int) -> int:
+    try:
+        n = int(raw)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return default
+    if n < 1:
+        return default
+    return min(n, cap)
 
 IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 RESERVED_NAMES = frozenset(
@@ -108,6 +121,8 @@ def write_msg(obj: dict[str, Any]) -> None:
 def llm_query(prompt: object) -> str:
     if not isinstance(prompt, str):
         raise TypeError("llm_query prompt must be a str")
+    if len(prompt.encode("utf-8")) > DEFAULT_MAX_LLM_PROMPT:
+        raise ValueError("llm_query prompt exceeds limit")
     write_msg({"op": "llm_query", "prompt": prompt})
     line = REAL_STDIN.readline()
     if not line:
@@ -125,7 +140,7 @@ def llm_query(prompt: object) -> str:
 
 def make_namespace() -> dict[str, Any]:
     return {
-        "__builtins__": dict(SAFE_BUILTINS),
+        "__builtins__": MappingProxyType(dict(SAFE_BUILTINS)),
         "json": json,
         "math": math,
         "re": re,
@@ -165,7 +180,22 @@ def handle_exec(ns: dict[str, Any], msg: dict[str, Any]) -> None:
             }
         )
         return
-    max_stdout = int(msg.get("maxStdoutBytes") or DEFAULT_MAX_STDOUT)
+    if len(code.encode("utf-8")) > DEFAULT_MAX_CODE:
+        write_msg(
+            {
+                "id": msg.get("id"),
+                "op": "result",
+                "ok": False,
+                "error": {
+                    "type": "LimitError",
+                    "message": f"code exceeds {DEFAULT_MAX_CODE} bytes",
+                },
+            }
+        )
+        return
+    max_stdout = clamp_limit(
+        msg.get("maxStdoutBytes"), DEFAULT_MAX_STDOUT, DEFAULT_MAX_STDOUT
+    )
     out = io.StringIO()
     err = io.StringIO()
     ok = True
@@ -239,7 +269,9 @@ def main() -> None:
                     raise NameError(name)
                 value = ns[name]
                 dumped = json.dumps(value, ensure_ascii=False)
-                max_value = int(msg.get("maxValueBytes") or DEFAULT_MAX_VALUE)
+                max_value = clamp_limit(
+                    msg.get("maxValueBytes"), DEFAULT_MAX_VALUE, DEFAULT_MAX_VALUE
+                )
                 if len(dumped.encode("utf-8")) > max_value:
                     write_msg(
                         {

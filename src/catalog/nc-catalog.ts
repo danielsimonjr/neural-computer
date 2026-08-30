@@ -6,6 +6,7 @@ import { asNCCatalogVersion } from "../types";
 import { ncFieldIdSchema } from "./field-id";
 import {
   NC_ACTION_PARAM_MAX_KEYS,
+  NC_RESERVED_FIELD_IDS,
   NC_SELECT_MAX_OPTIONS,
   NC_STRING_MAX_LENGTH,
   NC_STARTER_ACTIONS,
@@ -39,6 +40,13 @@ const actionParamsSchema = z
   .refine((obj) => Object.keys(obj).length <= NC_ACTION_PARAM_MAX_KEYS, {
     message: `action.params supports at most ${NC_ACTION_PARAM_MAX_KEYS} keys`,
   })
+  .refine(
+    (obj) => Object.keys(obj).every((k) => !NC_RESERVED_FIELD_IDS.has(k)),
+    {
+      message:
+        "action.params cannot use reserved keys (__proto__, constructor, prototype)",
+    },
+  )
   .optional();
 
 const visibleProp = z.boolean().optional();

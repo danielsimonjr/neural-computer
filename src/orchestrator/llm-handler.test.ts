@@ -417,4 +417,95 @@ describe("createLlmIntentHandler", () => {
     expect(onTreeCommit).toHaveBeenCalledTimes(1);
     runtime.destroy();
   });
+
+  it("rejects durable_write paths that would pollute Object.prototype", async () => {
+    const runtime = createNCRuntime({
+      durableStore: createObservableDataModel({}),
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
+    const onTreeCommit = vi.fn();
+    const transport = scripted([
+      {
+        content: [
+          {
+            type: "tool_use",
+            id: "d",
+            name: "durable_write",
+            input: { path: "__proto__/polluted", value: "bad" },
+          },
+        ],
+      },
+      { content: [commitUse("c", validTree)] },
+    ]);
+    const handler = createLlmIntentHandler({
+      runtime,
+      catalog: ncStarterCatalog,
+      onTreeCommit,
+      transport,
+    });
+    await handler({
+      action_name: "submit_form",
+      action_params: {},
+      staging_snapshot: {},
+      timestamp: 0,
+    });
+    expect(
+      Object.prototype.hasOwnProperty.call(Object.prototype, "polluted"),
+    ).toBe(false);
+    expect(onTreeCommit).toHaveBeenCalledTimes(1);
+    runtime.destroy();
+  });
+
+  it("does not run durable_write after a successful commit in the same turn", async () => {
+    const runtime = createNCRuntime({
+      durableStore: createObservableDataModel({}),
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
+    const transport = scripted([
+      {
+        content: [
+          commitUse("c", validTree),
+          {
+            type: "tool_use",
+            id: "d",
+            name: "durable_write",
+            input: { path: "note", value: "after-commit" },
+          },
+        ],
+      },
+    ]);
+    const handler = createLlmIntentHandler({
+      runtime,
+      catalog: ncStarterCatalog,
+      onTreeCommit: vi.fn(),
+      transport,
+    });
+    await handler({
+      action_name: "submit_form",
+      action_params: {},
+      staging_snapshot: {},
+      timestamp: 0,
+    });
+    expect(runtime.durableStore.get("note")).toBeUndefined();
+    runtime.destroy();
+  });
+
+  it("throws when catalog is not the runtime catalog", () => {
+    const runtime = createNCRuntime({
+      durableStore: createObservableDataModel({}),
+      catalog: ncStarterCatalog,
+      catalogVersion: NC_CATALOG_VERSION,
+    });
+    expect(() =>
+      createLlmIntentHandler({
+        runtime,
+        catalog: { ...ncStarterCatalog },
+        onTreeCommit: vi.fn(),
+        transport: scripted([]),
+      }),
+    ).toThrow(/same reference/);
+    runtime.destroy();
+  });
 });

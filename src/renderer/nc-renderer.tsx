@@ -28,6 +28,14 @@ import {
   commitFieldIdTypes,
   detectFieldIdTypeChanges,
 } from "./field-id-stability";
+import { readOnlyDurableStore } from "./read-only-store";
+
+function escapeFieldIdSelector(id: string): string {
+  if (typeof CSS !== "undefined" && typeof CSS.escape === "function") {
+    return CSS.escape(id);
+  }
+  return id.replace(/[^A-Za-z0-9_-]/g, (ch) => `\\${ch}`);
+}
 
 const BUILTIN_REGISTRY_KEYS = [
   "Container",
@@ -132,6 +140,10 @@ export function NCRenderer({
     () => mergeRegistry(extraRegistry),
     [extraRegistry],
   );
+  const reactStore = React.useMemo(
+    () => readOnlyDurableStore(runtime.durableStore),
+    [runtime],
+  );
 
   const lastGoodRef = React.useRef<UITree | null>(null);
   const typeHistoryRef = React.useRef<Map<string, string>>(new Map());
@@ -194,10 +206,7 @@ export function NCRenderer({
     runtime.observer.render(renderTree);
     const focusId = focusedIdRef.current;
     if (focusId && liveIds.has(focusId)) {
-      const escaped =
-        typeof CSS !== "undefined" && typeof CSS.escape === "function"
-          ? CSS.escape(focusId)
-          : focusId.replace(/["\\]/g, "");
+      const escaped = escapeFieldIdSelector(focusId);
       const node = document.querySelector(`[data-field-id="${escaped}"]`);
       if (node instanceof HTMLElement) node.focus();
     }
@@ -218,7 +227,7 @@ export function NCRenderer({
         <FocusFieldContext.Provider value={focusApi}>
           <JSONUIProvider
             registry={registry}
-            store={runtime.durableStore}
+            store={reactStore}
             stagingStore={runtime.stagingBuffer}
             onIntent={onIntent}
             catalogVersion={activeVersion}

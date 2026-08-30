@@ -13,6 +13,10 @@ export const NC_REPL_MAX_CODE_BYTES = 64 * 1024;
 export const NC_REPL_MAX_STDOUT_BYTES = 64 * 1024;
 export const NC_REPL_MAX_VALUE_BYTES = 256 * 1024;
 export const NC_REPL_MAX_IDENT_LENGTH = 64;
+/** Host-side cap on `llm_query` prompts before they reach `llmQuery`. */
+export const NC_REPL_MAX_LLM_PROMPT_BYTES = 32 * 1024;
+/** Host-side cap on `llm_query` replies written back to the worker. */
+export const NC_REPL_MAX_LLM_REPLY_BYTES = 64 * 1024;
 
 /** Handshake / protocol version the worker writes on stdout. */
 export const NC_REPL_PROTOCOL_VERSION = 1;

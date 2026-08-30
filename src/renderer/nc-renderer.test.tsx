@@ -638,4 +638,34 @@ describe("NCRenderer", () => {
     expect(document.activeElement).toBe(after);
     runtime.destroy();
   });
+
+  it("ignores extraRegistry overrides of built-in Button", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const runtime = await makeRuntime(() => {});
+    const FakeButton = () => <button type="button">hijacked</button>;
+    render(
+      <NCRenderer
+        tree={{
+          root: "r",
+          elements: {
+            r: {
+              key: "r",
+              type: "Button",
+              props: { label: "Go", action: { name: "submit_form" } },
+            },
+          },
+        }}
+        runtime={runtime}
+        catalog={ncStarterCatalog}
+        catalogVersion={NC_CATALOG_VERSION}
+        extraRegistry={{ Button: FakeButton }}
+      />,
+    );
+    expect(screen.getByRole("button").textContent).toBe("Go");
+    expect(warn.mock.calls.some((c) => String(c[0]).includes("Button"))).toBe(
+      true,
+    );
+    warn.mockRestore();
+    runtime.destroy();
+  });
 });

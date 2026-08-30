@@ -14,6 +14,12 @@ export const NC_STAGING_MAX_FIELDS = 64;
 export const NC_SNAPSHOT_MAX_BYTES = 256 * 1024;
 /** Max options on a Select component. */
 export const NC_SELECT_MAX_OPTIONS = 64;
+/** Max characters of a durable_write path (including slashes). */
+export const NC_DURABLE_PATH_MAX_LENGTH = 256;
+/** Max non-empty segments in a durable_write path. */
+export const NC_DURABLE_PATH_MAX_SEGMENTS = 16;
+/** Max JSON.stringify bytes of a durable_write value. */
+export const NC_DURABLE_VALUE_MAX_BYTES = 64 * 1024;
 
 /** Consecutive observer failures before the runtime logs a stale warning. */
 export const NC_OBSERVER_STALE_THRESHOLD = 3;

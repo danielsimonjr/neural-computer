@@ -99,6 +99,26 @@ describe("ncStarterCatalog", () => {
     }
   });
 
+  it("rejects action.params reserved keys", () => {
+    const result = ncStarterCatalog.validateTree({
+      root: "r",
+      elements: {
+        r: {
+          key: "r",
+          type: "Button",
+          props: {
+            label: "Go",
+            action: {
+              name: "submit_form",
+              params: { constructor: "x" },
+            },
+          },
+        },
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("rejects Button actions not in the catalog allowlist", () => {
     const result = ncStarterCatalog.validateTree({
       root: "r",

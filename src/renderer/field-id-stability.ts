@@ -2,7 +2,7 @@
 
 import type { UITree } from "@json-ui/core";
 
-const INPUT_TYPES = new Set(["TextField", "Checkbox"]);
+const INPUT_TYPES = new Set(["TextField", "Checkbox", "Select"]);
 
 export function collectFieldIdTypes(tree: UITree): Map<string, string> {
   const map = new Map<string, string>();

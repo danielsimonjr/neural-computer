@@ -3,9 +3,12 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
+import { tmpdir } from "node:os";
 import {
   createPythonRepl,
+  createWorkerSpawnOptions,
   NC_REPL_CONTEXT_NAME,
+  NC_REPL_MAX_LLM_PROMPT_BYTES,
   NCReplError,
   resolveWorkerPath,
   type NCPythonRepl,
@@ -38,6 +41,20 @@ describe("resolveWorkerPath", () => {
   it("finds worker.py next to the compute module", () => {
     expect(existsSync(resolveWorkerPath())).toBe(true);
     expect(resolveWorkerPath().endsWith("worker.py")).toBe(true);
+  });
+});
+
+describe("createWorkerSpawnOptions", () => {
+  it("does not forward host environment secrets", () => {
+    const { cwd, env } = createWorkerSpawnOptions();
+    expect(cwd).toBe(tmpdir());
+    expect(env.PATH).toBeTruthy();
+    expect(env.ANTHROPIC_API_KEY).toBeUndefined();
+    expect(env.AGENT_TRANSCRIPTS).toBeUndefined();
+    expect(env.NC_REPL_LEAK_PROBE).toBeUndefined();
+    expect(Object.keys(env).sort()).toEqual(
+      ["LANG", "LC_ALL", "PATH", "PYTHONIOENCODING", "TMPDIR"].sort(),
+    );
   });
 });
 
@@ -211,5 +228,21 @@ describeRepl("createPythonRepl", () => {
     expect(noOpen.ok).toBe(false);
     const noImport = await r.exec("import os");
     expect(noImport.ok).toBe(false);
+  });
+
+  it("does not allow mutating the restricted builtins mapping", async () => {
+    const r = await boot();
+    const result = await r.exec("__builtins__['open'] = len");
+    expect(result.ok).toBe(false);
+  });
+
+  it("rejects oversized llm_query prompts", async () => {
+    const r = await boot({
+      llmQuery: async () => "ok",
+    });
+    const result = await r.exec(
+      `llm_query(${JSON.stringify("x".repeat(NC_REPL_MAX_LLM_PROMPT_BYTES + 1))})`,
+    );
+    expect(result.ok).toBe(false);
   });
 });

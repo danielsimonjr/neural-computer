@@ -16,15 +16,17 @@ Treat every `UITree` as untrusted structured data. The starter catalog does not 
 
 ## Action allowlist
 
-`ncStarterCatalog` only permits `submit_form` and `cancel` as `Button.action.name`. Custom catalogs must constrain `action.name` the same way. The runtime does not execute shell commands. The LLM handler does not re-allowlist `action_name`; the catalog schema is the gate. The Python REPL is a separate subprocess (`createPythonRepl`); catalog actions do not spawn it. The handler may call `repl.exec` only when the host passed `repl`.
+`ncStarterCatalog` only permits `submit_form` and `cancel` as `Button.action.name`. Custom catalogs must constrain `action.name` the same way. The runtime does not execute shell commands. The LLM handler does not re-allowlist `action_name`; the catalog schema is the gate. The Python REPL is a separate subprocess (`createPythonRepl`); catalog actions do not spawn it. The handler may call `repl.exec` only when the host passed `repl`. `JSONUIProvider` receives a read-only durable-store wrapper so `extraRegistry` components cannot call `useData().set()`.
+
+Durable snapshots in the LLM observation include the full `durableStore.snapshot()`. Do not store API keys or other secrets in durable state that the model should not see.
 
 ## Staging payload size
 
-Text inputs are capped at 8192 characters (`NC_STRING_MAX_LENGTH`). Field ids cannot be empty, path-like, or `__proto__` / `constructor` / `prototype`.
+Text inputs are capped at 8192 characters (`NC_STRING_MAX_LENGTH`). Field ids cannot be empty, path-like, or `__proto__` / `constructor` / `prototype`. `durable_write` paths use the same reserved-segment rule (`isSafeDurablePath`). `action.params` keys cannot be those reserved names.
 
 ## Python REPL
 
-`createPythonRepl` spawns a CPython subprocess. Restricted `__builtins__` (no `eval`, `exec`, `open`, `__import__`) reduce accidents. They are **not** a jail. User code can still reach surprising objects through the remaining graph. The hard boundary is the host timeout: the worker is SIGKILL'd and replaced with an empty process. Production deployments that need isolation wrap `pythonPath` (container, seccomp, nsjail). Do not `set()` secrets into the REPL. `llm_query` sends the prompt to the host callback; treat that path like any other orchestrator-to-model channel.
+`createPythonRepl` spawns a CPython subprocess with a **minimal environment** (`PATH`, `LANG`, `LC_ALL`, `TMPDIR`, `PYTHONIOENCODING`) and `cwd` set to `os.tmpdir()`. It does not inherit `ANTHROPIC_API_KEY` or other host secrets. Restricted `__builtins__` (no `eval`, `exec`, `open`, `__import__`; mapping is immutable) reduce accidents. They are **not** a jail. User code can still reach surprising objects through the remaining graph. The hard boundary is the host timeout: the worker is SIGKILL'd and replaced with an empty process. Production deployments that need isolation wrap `pythonPath` (container, seccomp, nsjail). Do not `set()` secrets into the REPL. `llm_query` sends the prompt to the host callback (size-capped); treat that path like any other orchestrator-to-model channel.
 
 ## Prototype pollution
 
