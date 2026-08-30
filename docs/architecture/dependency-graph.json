@@ -2,10 +2,10 @@
   "metadata": {
     "name": "neural-computer",
     "version": "0.1.0",
-    "lastUpdated": "2026-08-29",
-    "totalFiles": 39,
+    "lastUpdated": "2026-08-30",
+    "totalFiles": 41,
     "totalModules": 11,
-    "totalExports": 282
+    "totalExports": 311
   },
   "entryPoints": [
     {
@@ -51,7 +51,6 @@
           {
             "package": "@json-ui/core",
             "imports": [
-              "Catalog",
               "UITree"
             ]
           },
@@ -73,6 +72,7 @@
           {
             "file": "../types",
             "imports": [
+              "AnyCatalog",
               "NCRuntime",
               "NCCatalogVersion",
               "NCIntentHandler"
@@ -92,6 +92,27 @@
       }
     },
     "catalog": {
+      "src/catalog/durable-path.ts": {
+        "description": "Durable-store paths are `/`-separated. Empty paths are a no-op in",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./limits",
+            "imports": [
+              "NC_DURABLE_PATH_MAX_LENGTH",
+              "NC_DURABLE_PATH_MAX_SEGMENTS",
+              "NC_RESERVED_FIELD_IDS"
+            ]
+          }
+        ],
+        "exports": [
+          "isSafeDurablePath"
+        ],
+        "functions": [
+          "isSafeDurablePath"
+        ]
+      },
       "src/catalog/field-id.ts": {
         "description": "Field IDs key the staging buffer. They must be non-empty, not a",
         "externalDependencies": [
@@ -146,6 +167,13 @@
             "reExport": true
           },
           {
+            "file": "./durable-path",
+            "imports": [
+              "isSafeDurablePath"
+            ],
+            "reExport": true
+          },
+          {
             "file": "./limits",
             "imports": [
               "NC_FIELD_ID_MAX_LENGTH",
@@ -154,6 +182,9 @@
               "NC_STAGING_MAX_FIELDS",
               "NC_SNAPSHOT_MAX_BYTES",
               "NC_SELECT_MAX_OPTIONS",
+              "NC_DURABLE_PATH_MAX_LENGTH",
+              "NC_DURABLE_PATH_MAX_SEGMENTS",
+              "NC_DURABLE_VALUE_MAX_BYTES",
               "NC_OBSERVER_STALE_THRESHOLD",
               "NC_STARTER_ACTIONS",
               "NC_RESERVED_FIELD_IDS",
@@ -168,12 +199,16 @@
           "NC_LLM_ACCEPTANCE_CONTRACT",
           "ncFieldIdSchema",
           "isSafeFieldId",
+          "isSafeDurablePath",
           "NC_FIELD_ID_MAX_LENGTH",
           "NC_STRING_MAX_LENGTH",
           "NC_ACTION_PARAM_MAX_KEYS",
           "NC_STAGING_MAX_FIELDS",
           "NC_SNAPSHOT_MAX_BYTES",
           "NC_SELECT_MAX_OPTIONS",
+          "NC_DURABLE_PATH_MAX_LENGTH",
+          "NC_DURABLE_PATH_MAX_SEGMENTS",
+          "NC_DURABLE_VALUE_MAX_BYTES",
           "NC_OBSERVER_STALE_THRESHOLD",
           "NC_STARTER_ACTIONS",
           "NC_RESERVED_FIELD_IDS",
@@ -185,12 +220,16 @@
           "NC_LLM_ACCEPTANCE_CONTRACT",
           "ncFieldIdSchema",
           "isSafeFieldId",
+          "isSafeDurablePath",
           "NC_FIELD_ID_MAX_LENGTH",
           "NC_STRING_MAX_LENGTH",
           "NC_ACTION_PARAM_MAX_KEYS",
           "NC_STAGING_MAX_FIELDS",
           "NC_SNAPSHOT_MAX_BYTES",
           "NC_SELECT_MAX_OPTIONS",
+          "NC_DURABLE_PATH_MAX_LENGTH",
+          "NC_DURABLE_PATH_MAX_SEGMENTS",
+          "NC_DURABLE_VALUE_MAX_BYTES",
           "NC_OBSERVER_STALE_THRESHOLD",
           "NC_STARTER_ACTIONS",
           "NC_RESERVED_FIELD_IDS",
@@ -209,6 +248,9 @@
           "NC_STAGING_MAX_FIELDS",
           "NC_SNAPSHOT_MAX_BYTES",
           "NC_SELECT_MAX_OPTIONS",
+          "NC_DURABLE_PATH_MAX_LENGTH",
+          "NC_DURABLE_PATH_MAX_SEGMENTS",
+          "NC_DURABLE_VALUE_MAX_BYTES",
           "NC_OBSERVER_STALE_THRESHOLD",
           "NC_STARTER_ACTIONS",
           "NC_RESERVED_FIELD_IDS"
@@ -220,6 +262,9 @@
           "NC_STAGING_MAX_FIELDS",
           "NC_SNAPSHOT_MAX_BYTES",
           "NC_SELECT_MAX_OPTIONS",
+          "NC_DURABLE_PATH_MAX_LENGTH",
+          "NC_DURABLE_PATH_MAX_SEGMENTS",
+          "NC_DURABLE_VALUE_MAX_BYTES",
           "NC_OBSERVER_STALE_THRESHOLD",
           "NC_STARTER_ACTIONS",
           "NC_RESERVED_FIELD_IDS"
@@ -259,6 +304,7 @@
             "file": "./limits",
             "imports": [
               "NC_ACTION_PARAM_MAX_KEYS",
+              "NC_RESERVED_FIELD_IDS",
               "NC_SELECT_MAX_OPTIONS",
               "NC_STRING_MAX_LENGTH",
               "NC_STARTER_ACTIONS"
@@ -293,6 +339,8 @@
               "NC_REPL_MAX_IDENT_LENGTH",
               "NC_REPL_MAX_STDOUT_BYTES",
               "NC_REPL_MAX_VALUE_BYTES",
+              "NC_REPL_MAX_LLM_PROMPT_BYTES",
+              "NC_REPL_MAX_LLM_REPLY_BYTES",
               "NC_REPL_PROTOCOL_VERSION"
             ],
             "reExport": true
@@ -308,7 +356,8 @@
           {
             "file": "./python-repl",
             "imports": [
-              "createPythonRepl"
+              "createPythonRepl",
+              "createWorkerSpawnOptions"
             ],
             "reExport": true
           },
@@ -328,10 +377,13 @@
           "NC_REPL_MAX_IDENT_LENGTH",
           "NC_REPL_MAX_STDOUT_BYTES",
           "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_MAX_LLM_PROMPT_BYTES",
+          "NC_REPL_MAX_LLM_REPLY_BYTES",
           "NC_REPL_PROTOCOL_VERSION",
           "NCReplError",
           "type NCReplErrorCode",
           "createPythonRepl",
+          "createWorkerSpawnOptions",
           "resolveWorkerPath"
         ],
         "reExported": [
@@ -342,10 +394,13 @@
           "NC_REPL_MAX_IDENT_LENGTH",
           "NC_REPL_MAX_STDOUT_BYTES",
           "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_MAX_LLM_PROMPT_BYTES",
+          "NC_REPL_MAX_LLM_REPLY_BYTES",
           "NC_REPL_PROTOCOL_VERSION",
           "NCReplError",
           "type NCReplErrorCode",
           "createPythonRepl",
+          "createWorkerSpawnOptions",
           "resolveWorkerPath"
         ]
       },
@@ -360,6 +415,8 @@
           "NC_REPL_MAX_STDOUT_BYTES",
           "NC_REPL_MAX_VALUE_BYTES",
           "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_MAX_LLM_PROMPT_BYTES",
+          "NC_REPL_MAX_LLM_REPLY_BYTES",
           "NC_REPL_PROTOCOL_VERSION",
           "NC_REPL_CONTEXT_NAME",
           "NC_REPL_DEFAULT_PYTHON"
@@ -370,13 +427,15 @@
           "NC_REPL_MAX_STDOUT_BYTES",
           "NC_REPL_MAX_VALUE_BYTES",
           "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_MAX_LLM_PROMPT_BYTES",
+          "NC_REPL_MAX_LLM_REPLY_BYTES",
           "NC_REPL_PROTOCOL_VERSION",
           "NC_REPL_CONTEXT_NAME",
           "NC_REPL_DEFAULT_PYTHON"
         ]
       },
       "src/compute/python-repl.ts": {
-        "description": "SPDX-License-Identifier: Apache-2.0",
+        "description": "Minimal env + cwd for the worker. The child must not inherit host",
         "externalDependencies": [],
         "nodeDependencies": [
           {
@@ -391,6 +450,12 @@
             "imports": [
               "randomUUID"
             ]
+          },
+          {
+            "module": "os",
+            "imports": [
+              "tmpdir"
+            ]
           }
         ],
         "internalDependencies": [
@@ -402,6 +467,8 @@
               "NC_REPL_DEFAULT_TIMEOUT_MS",
               "NC_REPL_MAX_CODE_BYTES",
               "NC_REPL_MAX_IDENT_LENGTH",
+              "NC_REPL_MAX_LLM_PROMPT_BYTES",
+              "NC_REPL_MAX_LLM_REPLY_BYTES",
               "NC_REPL_MAX_STDOUT_BYTES",
               "NC_REPL_MAX_VALUE_BYTES",
               "NC_REPL_PROTOCOL_VERSION"
@@ -424,6 +491,7 @@
           }
         ],
         "exports": [
+          "createWorkerSpawnOptions",
           "createPythonRepl",
           "PythonRepl"
         ],
@@ -431,6 +499,7 @@
           "PythonRepl"
         ],
         "functions": [
+          "createWorkerSpawnOptions",
           "createPythonRepl"
         ]
       },
@@ -505,6 +574,7 @@
               "NC_LLM_ACCEPTANCE_CONTRACT",
               "ncFieldIdSchema",
               "isSafeFieldId",
+              "isSafeDurablePath",
               "NC_FIELD_ID_MAX_LENGTH",
               "NC_STRING_MAX_LENGTH",
               "NC_STAGING_MAX_FIELDS",
@@ -552,6 +622,7 @@
               "NCLlmError",
               "NC_OBSERVATION_MAX_BYTES",
               "NC_LLM_DEFAULT_MAX_ROUNDS",
+              "NC_LLM_MAX_ROUNDS",
               "NC_LLM_DEFAULT_MAX_TOKENS",
               "NC_DEFAULT_ANTHROPIC_MODEL",
               "type CreateLlmIntentHandlerOptions",
@@ -587,6 +658,8 @@
               "NC_REPL_MAX_IDENT_LENGTH",
               "NC_REPL_MAX_STDOUT_BYTES",
               "NC_REPL_MAX_VALUE_BYTES",
+              "NC_REPL_MAX_LLM_PROMPT_BYTES",
+              "NC_REPL_MAX_LLM_REPLY_BYTES",
               "NC_REPL_PROTOCOL_VERSION",
               "type CreatePythonReplOptions",
               "type NCPythonRepl",
@@ -602,6 +675,7 @@
           "NC_LLM_ACCEPTANCE_CONTRACT",
           "ncFieldIdSchema",
           "isSafeFieldId",
+          "isSafeDurablePath",
           "NC_FIELD_ID_MAX_LENGTH",
           "NC_STRING_MAX_LENGTH",
           "NC_STAGING_MAX_FIELDS",
@@ -625,6 +699,7 @@
           "NCLlmError",
           "NC_OBSERVATION_MAX_BYTES",
           "NC_LLM_DEFAULT_MAX_ROUNDS",
+          "NC_LLM_MAX_ROUNDS",
           "NC_LLM_DEFAULT_MAX_TOKENS",
           "NC_DEFAULT_ANTHROPIC_MODEL",
           "type CreateLlmIntentHandlerOptions",
@@ -648,6 +723,8 @@
           "NC_REPL_MAX_IDENT_LENGTH",
           "NC_REPL_MAX_STDOUT_BYTES",
           "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_MAX_LLM_PROMPT_BYTES",
+          "NC_REPL_MAX_LLM_REPLY_BYTES",
           "NC_REPL_PROTOCOL_VERSION",
           "type CreatePythonReplOptions",
           "type NCPythonRepl",
@@ -660,6 +737,7 @@
           "NC_LLM_ACCEPTANCE_CONTRACT",
           "ncFieldIdSchema",
           "isSafeFieldId",
+          "isSafeDurablePath",
           "NC_FIELD_ID_MAX_LENGTH",
           "NC_STRING_MAX_LENGTH",
           "NC_STAGING_MAX_FIELDS",
@@ -683,6 +761,7 @@
           "NCLlmError",
           "NC_OBSERVATION_MAX_BYTES",
           "NC_LLM_DEFAULT_MAX_ROUNDS",
+          "NC_LLM_MAX_ROUNDS",
           "NC_LLM_DEFAULT_MAX_TOKENS",
           "NC_DEFAULT_ANTHROPIC_MODEL",
           "type CreateLlmIntentHandlerOptions",
@@ -706,6 +785,8 @@
           "NC_REPL_MAX_IDENT_LENGTH",
           "NC_REPL_MAX_STDOUT_BYTES",
           "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_MAX_LLM_PROMPT_BYTES",
+          "NC_REPL_MAX_LLM_REPLY_BYTES",
           "NC_REPL_PROTOCOL_VERSION",
           "type CreatePythonReplOptions",
           "type NCPythonRepl",
@@ -813,6 +894,7 @@
               "NC_LLM_ACCEPTANCE_CONTRACT",
               "ncFieldIdSchema",
               "isSafeFieldId",
+              "isSafeDurablePath",
               "NC_FIELD_ID_MAX_LENGTH",
               "NC_STRING_MAX_LENGTH",
               "NC_STAGING_MAX_FIELDS",
@@ -878,6 +960,7 @@
               "NCLlmError",
               "NC_OBSERVATION_MAX_BYTES",
               "NC_LLM_DEFAULT_MAX_ROUNDS",
+              "NC_LLM_MAX_ROUNDS",
               "NC_LLM_DEFAULT_MAX_TOKENS",
               "NC_DEFAULT_ANTHROPIC_MODEL",
               "type CreateLlmIntentHandlerOptions",
@@ -921,6 +1004,8 @@
               "NC_REPL_MAX_IDENT_LENGTH",
               "NC_REPL_MAX_STDOUT_BYTES",
               "NC_REPL_MAX_VALUE_BYTES",
+              "NC_REPL_MAX_LLM_PROMPT_BYTES",
+              "NC_REPL_MAX_LLM_REPLY_BYTES",
               "NC_REPL_PROTOCOL_VERSION",
               "type CreatePythonReplOptions",
               "type NCPythonRepl",
@@ -936,6 +1021,7 @@
           "NC_LLM_ACCEPTANCE_CONTRACT",
           "ncFieldIdSchema",
           "isSafeFieldId",
+          "isSafeDurablePath",
           "NC_FIELD_ID_MAX_LENGTH",
           "NC_STRING_MAX_LENGTH",
           "NC_STAGING_MAX_FIELDS",
@@ -971,6 +1057,7 @@
           "NCLlmError",
           "NC_OBSERVATION_MAX_BYTES",
           "NC_LLM_DEFAULT_MAX_ROUNDS",
+          "NC_LLM_MAX_ROUNDS",
           "NC_LLM_DEFAULT_MAX_TOKENS",
           "NC_DEFAULT_ANTHROPIC_MODEL",
           "type CreateLlmIntentHandlerOptions",
@@ -996,6 +1083,8 @@
           "NC_REPL_MAX_IDENT_LENGTH",
           "NC_REPL_MAX_STDOUT_BYTES",
           "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_MAX_LLM_PROMPT_BYTES",
+          "NC_REPL_MAX_LLM_REPLY_BYTES",
           "NC_REPL_PROTOCOL_VERSION",
           "type CreatePythonReplOptions",
           "type NCPythonRepl",
@@ -1008,6 +1097,7 @@
           "NC_LLM_ACCEPTANCE_CONTRACT",
           "ncFieldIdSchema",
           "isSafeFieldId",
+          "isSafeDurablePath",
           "NC_FIELD_ID_MAX_LENGTH",
           "NC_STRING_MAX_LENGTH",
           "NC_STAGING_MAX_FIELDS",
@@ -1043,6 +1133,7 @@
           "NCLlmError",
           "NC_OBSERVATION_MAX_BYTES",
           "NC_LLM_DEFAULT_MAX_ROUNDS",
+          "NC_LLM_MAX_ROUNDS",
           "NC_LLM_DEFAULT_MAX_TOKENS",
           "NC_DEFAULT_ANTHROPIC_MODEL",
           "type CreateLlmIntentHandlerOptions",
@@ -1068,6 +1159,8 @@
           "NC_REPL_MAX_IDENT_LENGTH",
           "NC_REPL_MAX_STDOUT_BYTES",
           "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_MAX_LLM_PROMPT_BYTES",
+          "NC_REPL_MAX_LLM_REPLY_BYTES",
           "NC_REPL_PROTOCOL_VERSION",
           "type CreatePythonReplOptions",
           "type NCPythonRepl",
@@ -1217,7 +1310,6 @@
           {
             "package": "@json-ui/core",
             "imports": [
-              "Catalog",
               "ObservableDataModel",
               "StagingBuffer",
               "UITree"
@@ -1247,6 +1339,7 @@
           {
             "file": "../types",
             "imports": [
+              "AnyCatalog",
               "NCObserver"
             ],
             "typeOnly": true
@@ -1328,7 +1421,6 @@
             "package": "@json-ui/core",
             "imports": [
               "collectFieldIds",
-              "Catalog",
               "IntentEvent",
               "UITree"
             ]
@@ -1339,6 +1431,7 @@
           {
             "file": "../types",
             "imports": [
+              "AnyCatalog",
               "NCIntentHandler"
             ],
             "typeOnly": true
@@ -1416,6 +1509,9 @@
             "imports": [
               "NC_OBSERVATION_MAX_BYTES",
               "NC_LLM_DEFAULT_MAX_ROUNDS",
+              "NC_LLM_MAX_ROUNDS",
+              "NC_LLM_MAX_TOOLS_PER_ROUND",
+              "NC_LLM_MAX_TOOL_RESULT_BYTES",
               "NC_LLM_DEFAULT_MAX_TOKENS",
               "NC_DEFAULT_ANTHROPIC_MODEL"
             ],
@@ -1445,6 +1541,9 @@
           "type CreateAnthropicTransportOptions",
           "NC_OBSERVATION_MAX_BYTES",
           "NC_LLM_DEFAULT_MAX_ROUNDS",
+          "NC_LLM_MAX_ROUNDS",
+          "NC_LLM_MAX_TOOLS_PER_ROUND",
+          "NC_LLM_MAX_TOOL_RESULT_BYTES",
           "NC_LLM_DEFAULT_MAX_TOKENS",
           "NC_DEFAULT_ANTHROPIC_MODEL"
         ],
@@ -1471,6 +1570,9 @@
           "type CreateAnthropicTransportOptions",
           "NC_OBSERVATION_MAX_BYTES",
           "NC_LLM_DEFAULT_MAX_ROUNDS",
+          "NC_LLM_MAX_ROUNDS",
+          "NC_LLM_MAX_TOOLS_PER_ROUND",
+          "NC_LLM_MAX_TOOL_RESULT_BYTES",
           "NC_LLM_DEFAULT_MAX_TOKENS",
           "NC_DEFAULT_ANTHROPIC_MODEL"
         ]
@@ -1483,12 +1585,18 @@
         "exports": [
           "NC_OBSERVATION_MAX_BYTES",
           "NC_LLM_DEFAULT_MAX_ROUNDS",
+          "NC_LLM_MAX_ROUNDS",
+          "NC_LLM_MAX_TOOLS_PER_ROUND",
+          "NC_LLM_MAX_TOOL_RESULT_BYTES",
           "NC_LLM_DEFAULT_MAX_TOKENS",
           "NC_DEFAULT_ANTHROPIC_MODEL"
         ],
         "constants": [
           "NC_OBSERVATION_MAX_BYTES",
           "NC_LLM_DEFAULT_MAX_ROUNDS",
+          "NC_LLM_MAX_ROUNDS",
+          "NC_LLM_MAX_TOOLS_PER_ROUND",
+          "NC_LLM_MAX_TOOL_RESULT_BYTES",
           "NC_LLM_DEFAULT_MAX_TOKENS",
           "NC_DEFAULT_ANTHROPIC_MODEL"
         ]
@@ -1500,7 +1608,7 @@
             "package": "@json-ui/core",
             "imports": [
               "generateCatalogPrompt",
-              "Catalog",
+              "validateJSONValue",
               "JSONValue",
               "UITree"
             ]
@@ -1511,6 +1619,8 @@
           {
             "file": "../catalog",
             "imports": [
+              "isSafeDurablePath",
+              "NC_DURABLE_VALUE_MAX_BYTES",
               "NC_LLM_ACCEPTANCE_CONTRACT"
             ]
           },
@@ -1524,6 +1634,7 @@
           {
             "file": "../types",
             "imports": [
+              "AnyCatalog",
               "NCIntentHandler",
               "NCRuntime"
             ],
@@ -1532,7 +1643,10 @@
           {
             "file": "./limits",
             "imports": [
-              "NC_LLM_DEFAULT_MAX_ROUNDS"
+              "NC_LLM_DEFAULT_MAX_ROUNDS",
+              "NC_LLM_MAX_ROUNDS",
+              "NC_LLM_MAX_TOOL_RESULT_BYTES",
+              "NC_LLM_MAX_TOOLS_PER_ROUND"
             ]
           },
           {
@@ -1841,15 +1955,13 @@
             "imports": [
               "JSONUIProvider",
               "Renderer",
-              "ComponentRegistry",
-              "ComponentRenderer"
+              "ComponentRegistry"
             ]
           },
           {
             "package": "@json-ui/core",
             "imports": [
               "collectFieldIds",
-              "Catalog",
               "IntentEvent",
               "UITree"
             ]
@@ -1871,6 +1983,7 @@
           {
             "file": "../types",
             "imports": [
+              "AnyCatalog",
               "NCRuntime",
               "NCCatalogVersion"
             ],
@@ -1896,6 +2009,12 @@
               "commitFieldIdTypes",
               "detectFieldIdTypeChanges"
             ]
+          },
+          {
+            "file": "./read-only-store",
+            "imports": [
+              "readOnlyDurableStore"
+            ]
           }
         ],
         "exports": [
@@ -1906,6 +2025,26 @@
         ],
         "functions": [
           "NCRenderer"
+        ]
+      },
+      "src/renderer/read-only-store.ts": {
+        "description": "React DataProvider must not mutate durable state. Built-in NC inputs",
+        "externalDependencies": [
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "JSONValue",
+              "ObservableDataModel"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "exports": [
+          "readOnlyDurableStore"
+        ],
+        "functions": [
+          "readOnlyDurableStore"
         ]
       },
       "src/renderer/use-committed-tree.ts": {
@@ -1938,8 +2077,7 @@
             "imports": [
               "createStagingBuffer",
               "IntentEvent",
-              "ObservableDataModel",
-              "Catalog"
+              "ObservableDataModel"
             ]
           },
           {
@@ -1974,6 +2112,7 @@
           {
             "file": "../types",
             "imports": [
+              "AnyCatalog",
               "NCCatalogVersion",
               "NCIntentHandler",
               "NCRuntime"
@@ -2072,7 +2211,7 @@
         ]
       },
       "src/types/nc-types.ts": {
-        "description": "An NC intent handler receives a fully-formed IntentEvent from the",
+        "description": "Re-export of `@json-ui/core`'s `AnyCatalog`. Method variance makes a",
         "externalDependencies": [
           {
             "package": "@json-ui/core",
@@ -2081,7 +2220,7 @@
               "StagingBuffer",
               "ObservableDataModel",
               "UITree",
-              "Catalog"
+              "AnyCatalog"
             ]
           },
           {
@@ -2127,6 +2266,7 @@
       {
         "name": "Catalog",
         "files": [
+          "src/catalog/durable-path.ts",
           "src/catalog/field-id.ts",
           "src/catalog/index.ts",
           "src/catalog/limits.ts",
@@ -2193,6 +2333,7 @@
           "src/renderer/input-components.tsx",
           "src/renderer/intent-flight-context.ts",
           "src/renderer/nc-renderer.tsx",
+          "src/renderer/read-only-store.ts",
           "src/renderer/use-committed-tree.ts"
         ]
       },
@@ -2214,17 +2355,17 @@
     ]
   },
   "statistics": {
-    "totalTypeScriptFiles": 39,
+    "totalTypeScriptFiles": 41,
     "totalModules": 11,
-    "totalLinesOfCode": 3430,
-    "totalExports": 282,
+    "totalLinesOfCode": 3714,
+    "totalExports": 311,
     "totalClasses": 5,
     "totalInterfaces": 24,
-    "totalFunctions": 21,
-    "totalTypeGuards": 2,
+    "totalFunctions": 24,
+    "totalTypeGuards": 3,
     "totalEnums": 0,
-    "totalConstants": 35,
-    "totalReExports": 221,
+    "totalConstants": 43,
+    "totalReExports": 239,
     "totalTypeOnlyImports": 9,
     "runtimeCircularDeps": 0,
     "typeOnlyCircularDeps": 0,

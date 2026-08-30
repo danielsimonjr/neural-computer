@@ -2,12 +2,15 @@
 
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
 import {
   NC_REPL_CONTEXT_NAME,
   NC_REPL_DEFAULT_PYTHON,
   NC_REPL_DEFAULT_TIMEOUT_MS,
   NC_REPL_MAX_CODE_BYTES,
   NC_REPL_MAX_IDENT_LENGTH,
+  NC_REPL_MAX_LLM_PROMPT_BYTES,
+  NC_REPL_MAX_LLM_REPLY_BYTES,
   NC_REPL_MAX_STDOUT_BYTES,
   NC_REPL_MAX_VALUE_BYTES,
   NC_REPL_PROTOCOL_VERSION,
@@ -35,6 +38,28 @@ const RESERVED_NAMES = new Set([
 ]);
 
 const MAX_LINE_BUFFER_BYTES = 2 * 1024 * 1024;
+
+/**
+ * Minimal env + cwd for the worker. The child must not inherit host
+ * secrets (`ANTHROPIC_API_KEY`, Cursor agent vars, etc.). `-I` only
+ * affects Python import paths, not `os.environ`.
+ */
+export function createWorkerSpawnOptions(): {
+  cwd: string;
+  env: NodeJS.ProcessEnv;
+} {
+  const cwd = tmpdir();
+  return {
+    cwd,
+    env: {
+      PATH: process.env.PATH ?? "/usr/bin:/bin",
+      LANG: process.env.LANG ?? "C.UTF-8",
+      LC_ALL: "C.UTF-8",
+      TMPDIR: cwd,
+      PYTHONIOENCODING: "utf-8",
+    },
+  };
+}
 
 interface Pending {
   id: string;
@@ -183,7 +208,16 @@ export class PythonRepl implements NCPythonRepl {
     this.failPending(
       new NCReplError("destroyed", "Python REPL destroy() was called"),
     );
+    const starting = this.starting;
     await this.killChild();
+    if (starting) {
+      try {
+        await starting;
+      } catch {
+        /* handshake may reject after we marked destroyed */
+      }
+      await this.killChild();
+    }
   }
 
   async start(): Promise<void> {
@@ -224,6 +258,7 @@ export class PythonRepl implements NCPythonRepl {
     }, this.timeoutMs);
     try {
       await this.ensureWorker();
+      this.assertNotDestroyed();
       this.write({ id, ...payload });
       return await result;
     } finally {
@@ -237,7 +272,16 @@ export class PythonRepl implements NCPythonRepl {
     if (!stdin || !this.child) {
       throw new NCReplError("protocol", "Python worker stdin is not available");
     }
-    stdin.write(`${JSON.stringify(msg)}\n`);
+    try {
+      stdin.write(`${JSON.stringify(msg)}\n`);
+    } catch (err) {
+      throw new NCReplError(
+        "protocol",
+        err instanceof Error
+          ? `Python worker stdin write failed: ${err.message}`
+          : "Python worker stdin write failed",
+      );
+    }
   }
 
   private async ensureWorker(): Promise<void> {
@@ -267,11 +311,18 @@ export class PythonRepl implements NCPythonRepl {
         ["-u", "-I", "-X", "utf8", this.workerPath],
         {
           stdio: ["pipe", "pipe", "pipe"],
+          ...createWorkerSpawnOptions(),
         },
       );
       this.child = child;
       this.lineBuf = "";
       this.stderrTail = "";
+      if (this.destroyed) {
+        child.kill("SIGKILL");
+        this.child = null;
+        reject(new NCReplError("destroyed", "Python REPL has been destroyed"));
+        return;
+      }
 
       const fail = (err: NCReplError) => {
         if (settled) return;
@@ -425,7 +476,14 @@ export class PythonRepl implements NCPythonRepl {
     }
     if (msg.op === "result") {
       const pending = this.pending;
-      if (!pending || (msg.id !== undefined && msg.id !== pending.id)) {
+      if (!pending) return;
+      if (msg.id !== undefined && msg.id !== pending.id) {
+        this.failPending(
+          new NCReplError(
+            "protocol",
+            `Python worker result id ${String(msg.id)} != ${pending.id}`,
+          ),
+        );
         return;
       }
       this.pending = null;
@@ -434,11 +492,30 @@ export class PythonRepl implements NCPythonRepl {
   }
 
   private async handleLlmQuery(msg: Record<string, unknown>): Promise<void> {
-    const prompt = typeof msg.prompt === "string" ? msg.prompt : "";
     const reply = (body: Record<string, unknown>): void => {
       if (this.destroyed || !this.child?.stdin) return;
-      this.write(body);
+      try {
+        this.write(body);
+      } catch {
+        // Worker already gone; the in-flight exec will time out or fail.
+      }
     };
+    if (typeof msg.prompt !== "string") {
+      reply({
+        op: "llm_reply",
+        ok: false,
+        error: "llm_query prompt must be a string",
+      });
+      return;
+    }
+    if (Buffer.byteLength(msg.prompt, "utf8") > NC_REPL_MAX_LLM_PROMPT_BYTES) {
+      reply({
+        op: "llm_reply",
+        ok: false,
+        error: `llm_query prompt exceeds ${NC_REPL_MAX_LLM_PROMPT_BYTES} bytes`,
+      });
+      return;
+    }
     if (!this.llmQuery) {
       reply({
         op: "llm_reply",
@@ -448,11 +525,20 @@ export class PythonRepl implements NCPythonRepl {
       return;
     }
     try {
-      const text = await this.llmQuery(prompt);
+      const raw = await this.llmQuery(msg.prompt);
+      const text = typeof raw === "string" ? raw : String(raw);
+      if (Buffer.byteLength(text, "utf8") > NC_REPL_MAX_LLM_REPLY_BYTES) {
+        reply({
+          op: "llm_reply",
+          ok: false,
+          error: `llm_query reply exceeds ${NC_REPL_MAX_LLM_REPLY_BYTES} bytes`,
+        });
+        return;
+      }
       reply({
         op: "llm_reply",
         ok: true,
-        text: typeof text === "string" ? text : String(text),
+        text,
       });
     } catch (err) {
       reply({
@@ -493,13 +579,18 @@ export class PythonRepl implements NCPythonRepl {
     this.child = null;
     if (!child || child.exitCode !== null) return Promise.resolve();
     return new Promise((resolve) => {
-      const timer = setTimeout(() => {
-        resolve();
-      }, 1000);
-      child.once("exit", () => {
+      let settled = false;
+      const done = () => {
+        if (settled) return;
+        settled = true;
         clearTimeout(timer);
         resolve();
-      });
+      };
+      const timer = setTimeout(() => {
+        child.kill("SIGKILL");
+        done();
+      }, this.timeoutMs);
+      child.once("exit", done);
       child.kill("SIGKILL");
     });
   }

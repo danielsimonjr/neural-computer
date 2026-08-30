@@ -37,6 +37,10 @@ Audit `docs/audits/2026-08-29-full-codebase-audit.md` (NC-001–NC-092). Highlig
 - Path C integration tests live at `src/integration/path-c.test.tsx`. Vitest `setupFiles` cleans up the Testing Library DOM between tests.
 - Architecture docs (`docs/architecture/`) rewritten to match this tree: seven state surfaces, catalog `nc-starter-0.3`, validation during render, public `isIntentInFlight`, `neural-computer/core` and `/react`. Plan files no longer contain author-machine Dropbox paths.
 - **CI `run: |` block indentation.** The typecheck / lint / format / test / build lines were less indented than `bun install`, so GitHub Actions could treat them as outside the script. The job also prints `python3 --version` and asserts `dist/worker.py` exists after build.
+- **`durable_write` path/value gates.** Reject empty paths, `__proto__` / `constructor` / `prototype` segments, and non-JSON or oversized values. Side-effect tools after a successful `commit_ui_tree` in the same assistant turn are ignored. Handler `catalog` must be `runtime.catalog`.
+- **REPL spawn isolation.** Worker gets a minimal env and `tmpdir` cwd (no inherited `ANTHROPIC_API_KEY`). `llm_query` prompt/reply are byte-capped. Restricted `__builtins__` is a `MappingProxyType`.
+- **Field-id type stability includes `Select`.** Same id cannot flip between TextField / Checkbox / Select.
+- **React cannot write durable state.** `JSONUIProvider` gets a read-only store wrapper. `extraRegistry` cannot override built-in Button (tested). `action.params` reserved keys are rejected.
 
 ### Known deferred items
 

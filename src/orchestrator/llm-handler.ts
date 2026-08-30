@@ -2,13 +2,23 @@
 
 import {
   generateCatalogPrompt,
+  validateJSONValue,
   type JSONValue,
   type UITree,
 } from "@json-ui/core";
-import { NC_LLM_ACCEPTANCE_CONTRACT } from "../catalog";
+import {
+  isSafeDurablePath,
+  NC_DURABLE_VALUE_MAX_BYTES,
+  NC_LLM_ACCEPTANCE_CONTRACT,
+} from "../catalog";
 import type { NCPythonRepl } from "../compute";
 import type { AnyCatalog, NCIntentHandler, NCRuntime } from "../types";
-import { NC_LLM_DEFAULT_MAX_ROUNDS } from "./limits";
+import {
+  NC_LLM_DEFAULT_MAX_ROUNDS,
+  NC_LLM_MAX_ROUNDS,
+  NC_LLM_MAX_TOOL_RESULT_BYTES,
+  NC_LLM_MAX_TOOLS_PER_ROUND,
+} from "./limits";
 import {
   NCLlmError,
   type NCLlmContent,
@@ -125,12 +135,26 @@ function toolResult(
   body: unknown,
   isError = false,
 ): NCLlmContent {
+  let content = JSON.stringify(body);
+  if (Buffer.byteLength(content, "utf8") > NC_LLM_MAX_TOOL_RESULT_BYTES) {
+    content = JSON.stringify({
+      ok: false,
+      error: `tool result exceeded ${NC_LLM_MAX_TOOL_RESULT_BYTES} bytes`,
+    });
+    isError = true;
+  }
   return {
     type: "tool_result",
     tool_use_id: toolUseId,
-    content: JSON.stringify(body),
+    content,
     is_error: isError || undefined,
   };
+}
+
+function clampMaxRounds(value: number | undefined): number {
+  const raw = value ?? NC_LLM_DEFAULT_MAX_ROUNDS;
+  if (!Number.isFinite(raw)) return NC_LLM_DEFAULT_MAX_ROUNDS;
+  return Math.min(NC_LLM_MAX_ROUNDS, Math.max(1, Math.floor(raw)));
 }
 
 /**
@@ -140,7 +164,13 @@ function toolResult(
 export function createLlmIntentHandler(
   options: CreateLlmIntentHandlerOptions,
 ): NCIntentHandler {
-  const maxRounds = options.maxRounds ?? NC_LLM_DEFAULT_MAX_ROUNDS;
+  if (options.catalog !== options.runtime.catalog) {
+    throw new NCLlmError(
+      "observation",
+      "createLlmIntentHandler catalog must be the same reference as runtime.catalog",
+    );
+  }
+  const maxRounds = clampMaxRounds(options.maxRounds);
   const tools = advertisedTools(options);
 
   return async (event) => {
@@ -201,8 +231,31 @@ export function createLlmIntentHandler(
 
       const results: NCLlmContent[] = [];
       let committed: UITree | null = null;
+      const capped = uses.slice(0, NC_LLM_MAX_TOOLS_PER_ROUND);
+      for (const extra of uses.slice(NC_LLM_MAX_TOOLS_PER_ROUND)) {
+        results.push(
+          toolResult(
+            extra.id,
+            {
+              ok: false,
+              error: `at most ${NC_LLM_MAX_TOOLS_PER_ROUND} tool calls per round`,
+            },
+            true,
+          ),
+        );
+      }
 
-      for (const use of uses) {
+      for (const use of capped) {
+        if (committed) {
+          results.push(
+            toolResult(
+              use.id,
+              { ok: false, error: "ignored after commit_ui_tree" },
+              true,
+            ),
+          );
+          continue;
+        }
         const handled = await handleTool(use, options);
         results.push(handled.result);
         if (handled.committed) committed = handled.committed;
@@ -320,15 +373,62 @@ async function handleTool(
           isRecord(use.input) && typeof use.input.path === "string"
             ? use.input.path
             : "";
-        const value = (isRecord(use.input) ? use.input.value : undefined) as
-          JSONValue | undefined;
+        if (!isSafeDurablePath(path)) {
+          return {
+            result: toolResult(
+              use.id,
+              {
+                ok: false,
+                error:
+                  "path must be a non-empty / path without reserved segments (__proto__, constructor, prototype)",
+              },
+              true,
+            ),
+            committed: null,
+          };
+        }
+        const value = isRecord(use.input) ? use.input.value : undefined;
+        try {
+          validateJSONValue(value, path);
+        } catch (err) {
+          return {
+            result: toolResult(
+              use.id,
+              {
+                ok: false,
+                error:
+                  err instanceof Error ? err.message : "value is not JSON-safe",
+              },
+              true,
+            ),
+            committed: null,
+          };
+        }
+        const encoded = JSON.stringify(value);
+        if (
+          encoded === undefined ||
+          Buffer.byteLength(encoded, "utf8") > NC_DURABLE_VALUE_MAX_BYTES
+        ) {
+          return {
+            result: toolResult(
+              use.id,
+              {
+                ok: false,
+                error: `value exceeds ${NC_DURABLE_VALUE_MAX_BYTES} bytes`,
+              },
+              true,
+            ),
+            committed: null,
+          };
+        }
+        const jsonValue = value as JSONValue;
         const store = options.runtime.durableStore;
         if (options.onDurableWrite) {
-          await options.onDurableWrite({ path, value: value as JSONValue });
+          await options.onDurableWrite({ path, value: jsonValue });
         } else if (typeof store.write === "function") {
-          await store.write(path, value as JSONValue);
+          await store.write(path, jsonValue);
         } else {
-          store.set(path, value as JSONValue);
+          store.set(path, jsonValue);
         }
         return { result: toolResult(use.id, { ok: true }), committed: null };
       }

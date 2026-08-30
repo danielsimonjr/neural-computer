@@ -22,6 +22,17 @@ const checkbox = (id: string): UITree => ({
   },
 });
 
+const select = (id: string): UITree => ({
+  root: "r",
+  elements: {
+    r: {
+      key: "r",
+      type: "Select",
+      props: { id, label: "E", options: ["a"] },
+    },
+  },
+});
+
 describe("field id type stability", () => {
   it("detects a type change for a reused id", () => {
     const history = new Map<string, string>();
@@ -34,6 +45,18 @@ describe("field id type stability", () => {
     expect(err?.fieldId).toBe("email");
     expect(err?.previousType).toBe("TextField");
     expect(err?.nextType).toBe("Checkbox");
+  });
+
+  it("detects TextField to Select reuse of the same id", () => {
+    const history = new Map<string, string>();
+    commitFieldIdTypes(history, collectFieldIdTypes(textField("color")));
+    const err = detectFieldIdTypeChanges(
+      history,
+      collectFieldIdTypes(select("color")),
+    );
+    expect(err).not.toBeNull();
+    expect(err?.previousType).toBe("TextField");
+    expect(err?.nextType).toBe("Select");
   });
 
   it("allows the same id to keep the same type", () => {

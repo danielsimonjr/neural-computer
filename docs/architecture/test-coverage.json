@@ -1,11 +1,11 @@
 {
   "metadata": {
-    "generatedAt": "2026-08-29T01:46:17.895Z",
-    "totalSourceFiles": 39,
-    "totalTestFiles": 20,
-    "testedCount": 31,
+    "generatedAt": "2026-08-30T03:32:58.315Z",
+    "totalSourceFiles": 41,
+    "totalTestFiles": 22,
+    "testedCount": 33,
     "untestedCount": 8,
-    "coveragePercent": "79.5"
+    "coveragePercent": "80.5"
   },
   "untestedFiles": [
     "src/app/index.ts",
@@ -19,6 +19,7 @@
   ],
   "testedFiles": [
     "src/app/nc-app.tsx",
+    "src/catalog/durable-path.ts",
     "src/catalog/field-id.ts",
     "src/catalog/index.ts",
     "src/catalog/limits.ts",
@@ -43,6 +44,7 @@
     "src/renderer/index.ts",
     "src/renderer/input-components.tsx",
     "src/renderer/nc-renderer.tsx",
+    "src/renderer/read-only-store.ts",
     "src/renderer/use-committed-tree.ts",
     "src/runtime/context.ts",
     "src/runtime/freeze.ts",
@@ -54,6 +56,17 @@
     "src/app/index.ts": [],
     "src/app/nc-app.tsx": [
       "src/app/nc-app.test.tsx"
+    ],
+    "src/catalog/durable-path.ts": [
+      "src/app/nc-app.test.tsx",
+      "src/catalog/durable-path.test.ts",
+      "src/integration/path-c.test.tsx",
+      "src/observer/nc-observer.test.ts",
+      "src/orchestrator/handle-intent.test.ts",
+      "src/orchestrator/llm-handler.test.ts",
+      "src/orchestrator/observation.test.ts",
+      "src/renderer/nc-renderer.test.tsx",
+      "src/runtime/context.test.ts"
     ],
     "src/catalog/field-id.ts": [
       "src/app/nc-app.test.tsx",
@@ -178,6 +191,9 @@
       "src/integration/path-c.test.tsx",
       "src/renderer/nc-renderer.test.tsx"
     ],
+    "src/renderer/read-only-store.ts": [
+      "src/renderer/read-only-store.test.ts"
+    ],
     "src/renderer/use-committed-tree.ts": [
       "src/integration/path-c.test.tsx",
       "src/renderer/use-committed-tree.test.tsx"
@@ -219,6 +235,7 @@
       "src/catalog/index.ts",
       "src/catalog/nc-catalog.ts",
       "src/catalog/field-id.ts",
+      "src/catalog/durable-path.ts",
       "src/catalog/limits.ts",
       "src/orchestrator/index.ts",
       "src/orchestrator/handle-intent.ts",
@@ -227,6 +244,9 @@
       "src/orchestrator/llm-transport.ts",
       "src/orchestrator/anthropic-transport.ts",
       "src/orchestrator/limits.ts"
+    ],
+    "src/catalog/durable-path.test.ts": [
+      "src/catalog/durable-path.ts"
     ],
     "src/catalog/field-id.test.ts": [
       "src/catalog/field-id.ts",
@@ -251,6 +271,7 @@
       "src/catalog/index.ts",
       "src/catalog/nc-catalog.ts",
       "src/catalog/field-id.ts",
+      "src/catalog/durable-path.ts",
       "src/catalog/limits.ts",
       "src/renderer/index.ts",
       "src/renderer/input-components.tsx",
@@ -271,6 +292,7 @@
       "src/catalog/index.ts",
       "src/catalog/nc-catalog.ts",
       "src/catalog/field-id.ts",
+      "src/catalog/durable-path.ts",
       "src/catalog/limits.ts"
     ],
     "src/orchestrator/anthropic-transport.test.ts": [
@@ -283,12 +305,14 @@
       "src/catalog/index.ts",
       "src/catalog/nc-catalog.ts",
       "src/catalog/field-id.ts",
+      "src/catalog/durable-path.ts",
       "src/catalog/limits.ts"
     ],
     "src/orchestrator/llm-handler.test.ts": [
       "src/catalog/index.ts",
       "src/catalog/nc-catalog.ts",
       "src/catalog/field-id.ts",
+      "src/catalog/durable-path.ts",
       "src/catalog/limits.ts",
       "src/runtime/index.ts",
       "src/runtime/context.ts",
@@ -305,6 +329,7 @@
       "src/catalog/index.ts",
       "src/catalog/nc-catalog.ts",
       "src/catalog/field-id.ts",
+      "src/catalog/durable-path.ts",
       "src/catalog/limits.ts",
       "src/orchestrator/observation.ts"
     ],
@@ -322,7 +347,11 @@
       "src/catalog/index.ts",
       "src/catalog/nc-catalog.ts",
       "src/catalog/field-id.ts",
+      "src/catalog/durable-path.ts",
       "src/catalog/limits.ts"
+    ],
+    "src/renderer/read-only-store.test.ts": [
+      "src/renderer/read-only-store.ts"
     ],
     "src/renderer/use-committed-tree.test.tsx": [
       "src/renderer/use-committed-tree.ts"
@@ -332,6 +361,7 @@
       "src/catalog/index.ts",
       "src/catalog/nc-catalog.ts",
       "src/catalog/field-id.ts",
+      "src/catalog/durable-path.ts",
       "src/catalog/limits.ts"
     ],
     "src/types/nc-types.test.ts": [
