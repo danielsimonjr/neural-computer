@@ -8,6 +8,17 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Changed
+
+- **Bun pinned to 1.4.2** in `packageManager`, `engines.bun` and the CI workflow, and
+  `tsconfig.json` now declares `"types": ["node"]` explicitly rather than relying on a
+  dependency to drag node types in.
+
+- **TypeScript stays at `5.9.2`: TypeScript 7 is BLOCKED here TWICE over.** `tsup`'s
+  declaration emitter crashes on it (`useCaseSensitiveFileNames`, upstream tsup #1405 /
+  #1408) and `typescript-eslint` refuses it outright. Both trace to the same cause --
+  TS 7.0 shipped without the stable programmatic Compiler API, expected in 7.1.
+
 ### Breaking
 
 - **`createNCRuntime` is synchronous.** There was never any I/O; `await createNCRuntime(...)` still works.
