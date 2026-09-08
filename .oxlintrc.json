@@ -1,0 +1,41 @@
+{
+  "plugins": ["typescript", "oxc"],
+  "env": { "node": true, "es2022": true },
+  "categories": { "correctness": "error" },
+  "ignorePatterns": ["dist/", "node_modules/", "coverage/", "docs/", "tools/"],
+  "rules": {
+    "typescript/no-explicit-any": "off"
+  },
+  "overrides": [
+    {
+      "files": ["src/orchestrator/**/*.ts", "src/compute/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              "react",
+              "react-dom",
+              "react/jsx-runtime",
+              "react/jsx-dev-runtime",
+              "@json-ui/react",
+              "@json-ui/headless"
+            ],
+            "patterns": [
+              "../renderer",
+              "../app",
+              "../observer",
+              "../renderer/*",
+              "../app/*",
+              "../observer/*",
+              "react/*",
+              "react-dom/*",
+              "@json-ui/react/*",
+              "@json-ui/headless/*"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -13,7 +13,11 @@ function copyPythonWorker() {
 
 const shared = {
   format: ["esm", "cjs"] as const,
-  dts: true,
+  // Declarations come from tsc, not tsup: rollup-plugin-dts needs TypeScript's
+  // programmatic Compiler API, which TS 7.0 does not ship. src/index.ts, src/core.ts
+  // and src/react.ts are real top-level files, so tsc emits exactly the flat
+  // dist/*.d.ts names the exports map already points at.
+  dts: false,
   sourcemap: true,
   clean: true,
   target: "es2022" as const,

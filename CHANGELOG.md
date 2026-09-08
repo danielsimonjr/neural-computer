@@ -10,6 +10,30 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ### Changed
 
+- **TypeScript raised to `^7.0.2`.** This repo hit BOTH TS 7 blockers; both are gone.
+
+  **Build:** declarations now come from `tsc --emitDeclarationOnly` rather than tsup.
+  tsup emits them via `rollup-plugin-dts`, which needs TypeScript's programmatic
+  Compiler API -- TS 7.0 does not ship it (expected in 7.1). tsup's bundling is
+  esbuild and unaffected. `src/index.ts`, `src/core.ts` and `src/react.ts` are real
+  top-level files, so tsc produces exactly the flat `dist/*.d.ts` names the `exports`
+  map already points at -- verified file by file against all three subpaths.
+
+  **Lint:** ESLint replaced by `oxlint`. The layering guard is preserved in full --
+  `src/orchestrator/**` and `src/compute/**` still may not import react, react-dom,
+  the `@json-ui` UI packages, or reach sideways into `../renderer`, `../app` or
+  `../observer`. Control-tested: a probe importing react from `src/orchestrator`
+  is rejected, and removing it returns exit 0.
+
+### Fixed
+
+- **A dead import in `src/runtime/context.ts`.** `NC_OBSERVER_STALE_THRESHOLD` was
+  imported but referenced only inside a comment. The old config used `extends: []`,
+  so no preset ever enabled `no-unused-vars` and nothing had ever checked. Found by
+  the new linter on its first run.
+
+### Changed
+
 - **Bun pinned to 1.4.2** in `packageManager`, `engines.bun` and the CI workflow, and
   `tsconfig.json` now declares `"types": ["node"]` explicitly rather than relying on a
   dependency to drag node types in.

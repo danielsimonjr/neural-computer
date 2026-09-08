@@ -8,7 +8,6 @@ import {
 import type { HeadlessRegistry } from "@json-ui/headless";
 import { createNCObserver } from "../observer";
 import {
-  NC_OBSERVER_STALE_THRESHOLD,
   NC_SNAPSHOT_MAX_BYTES,
   NC_STAGING_MAX_FIELDS,
 } from "../catalog/limits";
