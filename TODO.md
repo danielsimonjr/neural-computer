@@ -15,14 +15,14 @@ record what changed and why in `CHANGELOG.md`.
 - [x] **CI was building against the WRONG MemoryJS major.** `.github/workflows/ci.yml` pinned the
       sibling checkout to `af11456` (v3.4.0) while every local run resolved `file:../memoryjs` to the
       4.2.0 clone. That pin is the only place a MemoryJS version is written down in this repo, so a
-      green CI proved nothing about 4.x. Now pinned to `2e10299` (v4.2.0). *Found mid-flight, by the
-      first CI run on the branch — not plannable in advance.*
+      green CI proved nothing about 4.x. Now pinned to `2e10299` (v4.2.0). _Found mid-flight, by the
+      first CI run on the branch — not plannable in advance._
 - [x] **The format gate held generated files to a hand-written style.** `.prettierignore` excluded the
       four generated JSON/YAML artifacts but not the three generated markdown reports that
       `bun run docs:deps` owns byte for byte, so every regeneration broke CI until someone ran
       `bun run format` — and the next regeneration broke it again. The three reports are now ignored
       for the same reason their JSON siblings already were. Hand-written docs stay in the gate.
-      *Found mid-flight: it is what failed the first push.*
+      _Found mid-flight: it is what failed the first push._
 - [x] **Both doc gates driven to exit 0** (were: 9 architecture findings, 46 code-docs MUST).
       code-docs now reports 72/72 exported symbols documented.
 - [x] **Personal attribution and hand-maintained doc stamps removed.** Repos are products written for
