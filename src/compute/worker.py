@@ -30,6 +30,12 @@ DEFAULT_MAX_LLM_PROMPT = 32 * 1024
 
 
 def clamp_limit(raw: object, default: int, cap: int) -> int:
+    """Coerce a host-supplied limit into the range 1..cap.
+
+    A value that is not an integer, or is less than 1, falls back to
+    `default`. A value above `cap` clamps to `cap`. The worker never
+    trusts a limit that the host sends.
+    """
     try:
         n = int(raw)  # type: ignore[arg-type]
     except (TypeError, ValueError):
@@ -114,11 +120,24 @@ SAFE_BUILTINS: dict[str, Any] = {
 
 
 def write_msg(obj: dict[str, Any]) -> None:
+    """Write one protocol message to the real stdout and flush it.
+
+    The worker redirects `sys.stdout` while user code runs, so this
+    function holds the original stream. User output can therefore never
+    corrupt the protocol.
+    """
     REAL_STDOUT.write(json.dumps(obj, ensure_ascii=False, separators=(",", ":")) + "\n")
     REAL_STDOUT.flush()
 
 
 def llm_query(prompt: object) -> str:
+    """Ask the host to run one LLM query and return the reply text.
+
+    This is the in-REPL helper that user code calls. The call blocks
+    until the host answers. Raise `TypeError` for a non-string prompt,
+    `ValueError` for a prompt above the byte cap, and `RuntimeError`
+    when the host closes or answers with a failure.
+    """
     if not isinstance(prompt, str):
         raise TypeError("llm_query prompt must be a str")
     if len(prompt.encode("utf-8")) > DEFAULT_MAX_LLM_PROMPT:
@@ -139,6 +158,12 @@ def llm_query(prompt: object) -> str:
 
 
 def make_namespace() -> dict[str, Any]:
+    """Build the execution namespace for user code.
+
+    Builtins are a read-only mapping of the safe subset. The namespace
+    also exposes `json`, `math`, `re` and `llm_query`. A reset builds a
+    new namespace, which discards every user variable.
+    """
     return {
         "__builtins__": MappingProxyType(dict(SAFE_BUILTINS)),
         "json": json,
@@ -149,6 +174,12 @@ def make_namespace() -> dict[str, Any]:
 
 
 def valid_ident(name: object) -> str:
+    """Return `name` when it is a safe variable name, else raise.
+
+    A safe name is 1 to 64 characters, matches the identifier pattern,
+    does not start with a double underscore, and is not reserved. This
+    keeps `set` and `get` away from the namespace internals.
+    """
     if not isinstance(name, str):
         raise ValueError("name must be a str")
     if not (1 <= len(name) <= 64) or not IDENT_RE.match(name):
@@ -159,6 +190,12 @@ def valid_ident(name: object) -> str:
 
 
 def truncate(s: str, limit: int) -> tuple[str, bool]:
+    """Cut `s` to at most `limit` bytes of UTF-8.
+
+    Return the text and a flag that is true when a cut happened. The
+    cut steps back off a continuation byte, so the result never splits
+    a multi-byte character.
+    """
     raw = s.encode("utf-8")
     if len(raw) <= limit:
         return s, False
@@ -169,6 +206,12 @@ def truncate(s: str, limit: int) -> tuple[str, bool]:
 
 
 def handle_exec(ns: dict[str, Any], msg: dict[str, Any]) -> None:
+    """Run one `exec` request and write its result message.
+
+    User-code failures are reported as a result with `ok: false` and
+    the exception type and message. They are not protocol errors, so
+    the worker stays alive and keeps the namespace.
+    """
     code = msg.get("code")
     if not isinstance(code, str):
         write_msg(
@@ -228,6 +271,11 @@ def handle_exec(ns: dict[str, Any], msg: dict[str, Any]) -> None:
 
 
 def main() -> None:
+    """Announce readiness, then serve protocol messages until stdin ends.
+
+    The loop dispatches `exec`, `set`, `get` and `reset`. The worker
+    exits when the host closes stdin.
+    """
     ns = make_namespace()
     write_msg({"op": "ready", "version": PROTOCOL_VERSION})
     while True:

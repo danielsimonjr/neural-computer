@@ -18,6 +18,11 @@ import { useUIStream, type UseUIStreamOptions } from "@json-ui/react";
  */
 export type UseCommittedTreeOptions = Omit<UseUIStreamOptions, "commitMode">;
 
+/**
+ * Subscribe to a streamed UI tree in atomic commit mode. The hook
+ * forces `commitMode: "atomic"`, so a consumer cannot opt into partial
+ * trees. See {@link UseCommittedTreeOptions}.
+ */
 export function useCommittedTree(options: UseCommittedTreeOptions) {
   return useUIStream({ ...options, commitMode: "atomic" });
 }

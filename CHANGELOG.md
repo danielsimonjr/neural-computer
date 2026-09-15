@@ -8,6 +8,111 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Verified
+
+- **NC is correct against MemoryJS 4.2.0.** The `@danielsimonjr/memoryjs`
+  dependency is a `file:../memoryjs` link, so the version is whatever the
+  sibling clone holds. The link resolves live: `node_modules/@danielsimonjr/memoryjs`
+  is a junction into that clone, and the clone reports `4.2.0`. Against that
+  code the full gate is green — typecheck, lint, 147 tests in 22 files, and
+  the build.
+
+  The 4.0.0 change with the most reach is the `loadGraph()` ownership
+  contract: the result is now a read-only borrowed view, deep-frozen outside
+  production, so a consumer that edits it throws `TypeError`. **NC calls
+  `loadGraph()` nowhere.** It consumes memoryjs through types only (`Entity`,
+  `Relation`, `GraphProjection`, `JSONValue` in `src/memory/projection.ts`)
+  plus the `ObservableDataModel` adapter, which owns the load itself. The
+  projection is a pure read: it copies `observations` and builds new objects,
+  so it never writes through the borrowed arrays. The other four changes
+  (project-scoped API keys, fixed REST 4xx bodies, RateLimiter TTL/LRU
+  defaults, `DurableReplaceError`) sit behind APIs NC does not call. No
+  `src/` change was needed for the upgrade.
+
+  The CI workflow did need one, and that is the real version bump in this
+  change. See the first entry under Fixed: the `file:` link and CI disagreed
+  about which MemoryJS this repository builds against.
+
+### Documentation
+
+- **Every exported symbol now carries a doc comment.** `code_docs.py check src`
+  reported **46 MUST issues** (exported symbols with no doc comment) and
+  exited 1. Every one is now documented by hand, not stubbed: 72/72 exported
+  symbols, 0 MUST. The stub generator was not used, because every stub it
+  writes carries a `TODO:` marker that the same gate fails on.
+- **The architecture-docs gate now exits 0.** `repo_map.py check` reported
+  **9 findings** and exited 1: every document in `docs/architecture/` lacked
+  a `## Verification` section, so the gate could not check a single one of
+  them. A document the gate cannot check must not look like a document the
+  gate checked and matched, which is why the tool reports that as a failure
+  rather than a pass. The six hand-written documents now carry a Verification
+  table built from real `repo_map` metrics.
+- **The generator writes its own gate opt-out.** `DEPENDENCY_GRAPH.md`,
+  `TEST_COVERAGE.md` and `unused-analysis.md` are generated and hold no
+  hand-written claim, so they declare `<!-- repo-map:no-verification -->`
+  plus a do-not-edit banner. `tools/create-dependency-graph` emits both
+  lines. A marker added by hand would survive only until the next
+  `bun run docs:deps` and the gate would then fail a full cycle later,
+  looking like a new defect.
+- **Added the two missing canonical documents**, `FILE_INVENTORY.md` and
+  `duplicate-symbols.md`, and a Documentation section in the README that
+  links the whole set.
+- **Removed the personal maintainer attribution.** `OVERVIEW.md` ended with a
+  `Maintained by` line naming a person. A repository is a product written for
+  a general reader, and a documentation footer is not one of the places a name
+  belongs — those are `LICENSE` and copyright lines, the `package.json` author
+  field, git commit authorship, and the organisation name inside URLs and
+  package names. The line is deleted, not replaced.
+
+  The 2026-08-29 audit records the same thing as finding NC-084, and its
+  heading quoted the line verbatim. Deleting that heading would have orphaned
+  the finding, so the heading keeps the finding and drops the name. The
+  companion `docs/audits/2026-08-29-findings.md` already summarised NC-084
+  without it.
+
+- **Removed the hand-maintained `Version` and `Last Updated` stamps** from all
+  eight hand-written architecture documents. A stamp that a person edits, kept
+  beside a `CHANGELOG.md` that records the same thing, is a second source of
+  truth: it drifts by construction, and every one of these had already drifted
+  to 2026-08-29. Nothing consumed them — the only code that touches such a
+  stamp is `tools/create-dependency-graph`, which writes its own, and neither
+  doc gate reads one.
+
+  The stamps in `DEPENDENCY_GRAPH.md`, `TEST_COVERAGE.md` and
+  `unused-analysis.md` stay. The generator rewrites those on every
+  `bun run docs:deps`, so they are maintained by a tool rather than by hand
+  and cannot drift.
+
+### Fixed
+
+- **CI built MemoryJS v3.4.0 while local development built 4.2.0.**
+  `.github/workflows/ci.yml` checks the sibling repositories out at pinned
+  SHAs, and the memoryjs pin was `af11456` — v3.4.0. The `file:../memoryjs`
+  link has no version to bump, so this pin was the only place a MemoryJS
+  version is actually written down, and it had drifted a major version
+  behind the clone every local run used. A green CI therefore proved nothing
+  about 4.x. Pinned to `2e10299` (v4.2.0), so CI now builds what development
+  builds.
+- **The format gate held generated documents to a hand-written style.**
+  `.prettierignore` already excluded the four generated JSON and YAML
+  artifacts but not the three generated markdown reports, so `prettier`
+  checked output that `bun run docs:deps` owns byte for byte. Every
+  regeneration therefore broke CI until somebody ran `bun run format`, and
+  the next regeneration broke it again. This is what failed CI on the first
+  push of this branch. The three reports are now ignored for the same reason
+  their JSON siblings already were.
+- **Stale counts in the hand-written architecture documents.** `OVERVIEW.md`
+  and `ARCHITECTURE.md` both claimed "20" test files and `INVARIANTS.md`
+  claimed "15 test files; 84 `it`/`test` cases". The tree holds 22 test
+  files and the suite runs 147 cases. None of the three claims was gated,
+  because the gate reads only a Verification table and no document had one.
+- **Two file counts that look like a contradiction now carry their scope.**
+  `file-inventory.json` files a `.tsx` test under the `src` area, not under
+  `tests`, so area `tests` reads 17 while the tree holds 22 test files. Both
+  numbers are correct and describe different sets. The documents now give the
+  scope and the source of each, and record that the areas still sum to the
+  whole: 41 non-test source + 22 test + 1 tool + 2 config = 66.
+
 ### Changed
 
 - **TypeScript raised to `^7.0.2`.** This repo hit BOTH TS 7 blockers; both are gone.

@@ -1,8 +1,5 @@
 # Neural Computer - Project Overview
 
-**Version**: 0.1.0 (docs refreshed 2026-08-29)
-**Last Updated**: 2026-08-29
-
 ## What Is This?
 
 Neural Computer (NC) is a **catalog-constrained React form runtime**. It owns a staging buffer for in-progress input, a one-at-a-time intent gate, a stub or LLM-backed intent handler, a headless observer cache that shadows successful tree commits, and an optional Python REPL (`createPythonRepl`) for the RLM compute arm. It is inspired by Zhuge et al., _Neural Computers_ (arXiv:2604.04625). The LLM handler is transport-injected (Anthropic is one adapter); unit tests do not call a network. The REPL is not attached to `NCRuntime`.
@@ -138,14 +135,25 @@ Access discipline: the LLM orchestrator sees exactly durable state plus intent p
 
 ## Key Statistics (after 2026-08-29 remediation)
 
-| Metric                | Value                                                                |
-| --------------------- | -------------------------------------------------------------------- |
-| Source files          | TypeScript files under `src/` excluding tests (see DEPENDENCY_GRAPH) |
-| Test files            | 20 under `src/**/*.test.*`                                           |
-| Catalog version       | `nc-starter-0.3`                                                     |
-| Named state surfaces  | 7 (compute is a tool, not a surface)                                 |
-| Spec invariants       | 13 UI-runtime + compute rules                                        |
-| Circular dependencies | 0                                                                    |
+| Metric                | Value                                | Scope                     | Source                                                                |
+| --------------------- | ------------------------------------ | ------------------------- | --------------------------------------------------------------------- |
+| Files, whole repo     | 66                                   | repo-wide                 | `file-inventory.json` (`totalFiles`)                                  |
+| Non-test source files | 41                                   | `src/`, tests excluded    | `file-inventory.json` (area `src`, 46, minus the 5 `.tsx` test files) |
+| Test files            | 22                                   | `src/**/*.test.*`         | `git ls-files`; vitest runs the same 22                               |
+| Tool files            | 1                                    | `tools/`                  | `file-inventory.json` (area `tools`)                                  |
+| Config files          | 2                                    | repo-wide                 | `file-inventory.json` (area `config`)                                 |
+| Lines of code         | 9694                                 | repo-wide                 | `dependency-graph.json` (`totalLinesOfCode`)                          |
+| Exports               | 361                                  | repo-wide, tests included | `dependency-graph.json` (`totalExports`)                              |
+| Catalog version       | `nc-starter-0.3`                     | —                         | a direct read of `src/catalog`, not a `repo_map` metric               |
+| Named state surfaces  | 7 (compute is a tool, not a surface) | —                         | the spec, not a `repo_map` metric                                     |
+| Spec invariants       | 13 UI-runtime + compute rules        | —                         | `INVARIANTS.md`, not a `repo_map` metric                              |
+| Circular dependencies | 0                                    | runtime imports           | `dependency-graph.json` (`runtimeCircularDeps`)                       |
+
+The area counts and the test-file count use different rules, so read the
+scope before comparing them. `file-inventory.json` files a `.tsx` test under
+the `src` area, not under `tests`: area `tests` is 17 and counts only
+`.test.ts`. The five `.tsx` test files make up the difference. The four areas
+still sum to the whole: 41 non-test source + 22 test + 1 tool + 2 config = 66.
 
 `tsconfig.json` sets `"skipLibCheck": false`. Zod is pinned to `4.4.3` so sibling `.d.ts` drift surfaces (NC-042 / NC-066).
 
@@ -193,4 +201,24 @@ Node / orchestrator processes should import `neural-computer/core` so they do no
 
 ---
 
-**Maintained by**: Daniel Simon Jr.
+## Verification
+
+Generated 2026-09-15 by `repo_map.py map`.
+Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
+
+| Claim               | Value | Source                 |
+| ------------------- | ----- | ---------------------- |
+| totalFiles          | 66    | file-inventory.json    |
+| totalSourceFiles    | 66    | dependency-graph.json  |
+| totalLinesOfCode    | 9694  | dependency-graph.json  |
+| totalExports        | 361   | dependency-graph.json  |
+| totalModules        | 4     | dependency-graph.json  |
+| runtimeCircularDeps | 0     | dependency-graph.json  |
+| unusedExportCount   | 3     | unused-analysis.json   |
+| noImporterFileCount | 6     | unused-analysis.json   |
+| duplicateCount      | 0     | duplicate-symbols.json |
+
+A file with no importer is not dead code by that fact alone. A static parser
+cannot see a dynamic `import()`, and an export that nothing in this repository
+uses can still be public API. To remove such an export from an entry point or
+a barrel file is a breaking change. See `unused-analysis.md`.

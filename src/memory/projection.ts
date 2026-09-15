@@ -29,6 +29,10 @@ export interface NCProjectedRelation {
   [key: string]: JSONValue;
 }
 
+/**
+ * The full projected snapshot that DataProvider reads. `relationCount`
+ * duplicates `relations.length` so a template can bind a scalar.
+ */
 export interface NCProjectedData {
   entitiesByType: Record<string, Array<NCProjectedEntity>>;
   entities: Record<string, NCProjectedEntity>;
@@ -37,6 +41,11 @@ export interface NCProjectedData {
   [key: string]: JSONValue;
 }
 
+/**
+ * One entity in the projection. `observations` is a copy, so the
+ * projection never aliases the borrowed graph view that memoryjs
+ * passes in. Absent timestamps become null to satisfy `JSONValue`.
+ */
 export interface NCProjectedEntity {
   name: string;
   entityType: string;

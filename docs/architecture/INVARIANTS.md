@@ -1,7 +1,5 @@
 # Neural Computer - Spec Invariants
 
-**Version**: 0.1.0 (docs refreshed 2026-08-29)
-**Last Updated**: 2026-08-29
 **Source**: `docs/specs/2026-04-11-ephemeral-ui-state-design.md` plus Path C (`2026-04-16-headless-dual-backend-design.md`)
 
 The NC spec defines 13 testable invariants. Each maps to tests in the tree. A change that violates one is a bug.
@@ -166,4 +164,24 @@ These belong to `src/compute/` and do not extend the UI-runtime invariant list. 
 | 12  | Observer shadows React (both walk stripped data) | Covered | `nc-observer.test.ts`, `nc-renderer.test.tsx`, `integration/path-c.test.tsx`   |
 | 13  | Observer failure best-effort / detectable        | Covered | `nc-observer.test.ts`                                                          |
 
-15 test files under `src/**/*.test.*`; 84 `it`/`test` cases as of the 2026-08-29 documentation refresh. Compute tests (`python-repl.test.ts`, `isolation.test.ts`) are additional and cover the REPL rules above.
+The suite holds 22 test files under `src/**/*.test.*` and 147 test cases.
+Both come from a vitest run, not from a `repo_map` metric: `repo_map` counts
+files, never test cases. Compute tests (`python-repl.test.ts`,
+`isolation.test.ts`) are part of that total and cover the REPL rules above.
+
+---
+
+## Verification
+
+Generated 2026-09-15 by `repo_map.py map`.
+Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
+
+| Claim               | Value | Source                |
+| ------------------- | ----- | --------------------- |
+| totalFiles          | 66    | file-inventory.json   |
+| totalSourceFiles    | 66    | dependency-graph.json |
+| runtimeCircularDeps | 0     | dependency-graph.json |
+
+Invariant 7 (buffer isolation) is a layering rule, so the import graph is the
+evidence for it. The test-file and test-case counts above are a vitest result
+and are not gate-checked.

@@ -108,6 +108,13 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+/**
+ * A persistent CPython worker driven over a newline-delimited JSON
+ * protocol on stdin and stdout. The class owns the child process and
+ * enforces the byte caps and the wall-clock timeout. A timeout kills
+ * the worker and respawns it empty, so the namespace does not survive.
+ * Prefer {@link createPythonRepl}, which awaits the handshake.
+ */
 export class PythonRepl implements NCPythonRepl {
   private readonly pythonPath: string;
   private readonly timeoutMs: number;
@@ -596,6 +603,11 @@ export class PythonRepl implements NCPythonRepl {
   }
 }
 
+/**
+ * Spawn a Python worker and await its ready handshake. The REPL is
+ * usable when the promise fulfils. A failed start destroys the child
+ * before the error propagates, so no process leaks.
+ */
 export async function createPythonRepl(
   options: CreatePythonReplOptions = {},
 ): Promise<NCPythonRepl> {

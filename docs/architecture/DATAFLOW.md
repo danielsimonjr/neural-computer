@@ -1,8 +1,5 @@
 # Neural Computer - Data Flow
 
-**Version**: 0.1.0 (docs refreshed 2026-08-29)
-**Last Updated**: 2026-08-29
-
 This document traces data from user input through intent dispatch, tree commit, validation during render, last-good display, reconcile, and observer shadow.
 
 ---
@@ -157,3 +154,20 @@ Click 1 sets `isIntentInFlight` true; subscribers re-render; buttons disable. Cl
 | DynamicValue resolves from staging   | Single-segment paths prefer staging (Invariant 11)                    |
 
 The Python REPL is outside this loop. `createLlmIntentHandler` may call `repl.exec` via the `python_exec` tool while handling an `IntentEvent`. `NCRenderer` does not spawn Python.
+
+---
+
+## Verification
+
+Generated 2026-09-15 by `repo_map.py map`.
+Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
+
+| Claim                | Value | Source                |
+| -------------------- | ----- | --------------------- |
+| totalFiles           | 66    | file-inventory.json   |
+| totalModules         | 4     | dependency-graph.json |
+| runtimeCircularDeps  | 0     | dependency-graph.json |
+| typeOnlyCircularDeps | 0     | dependency-graph.json |
+| totalTypeOnlyImports | 15    | dependency-graph.json |
+
+The loop has one direction: staging, then intent, then commit, then render. `runtimeCircularDeps` of 0 is what makes that direction checkable.

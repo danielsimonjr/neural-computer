@@ -25,6 +25,7 @@ export const NC_DURABLE_VALUE_MAX_BYTES = 64 * 1024;
 export const NC_OBSERVER_STALE_THRESHOLD = 3;
 
 export const NC_STARTER_ACTIONS = ["submit_form", "cancel"] as const;
+/** The action names that the starter catalog allows on a Button. */
 export type NCStarterActionName = (typeof NC_STARTER_ACTIONS)[number];
 
 export const NC_RESERVED_FIELD_IDS: ReadonlySet<string> = new Set([

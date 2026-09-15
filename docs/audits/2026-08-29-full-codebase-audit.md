@@ -497,7 +497,7 @@ No visibility pruning in NC's headless components. If JSON-UI's walker supports 
 
 AGENTS.md correctly points at the April-15 plan. An agent that glob-reads `docs/plans/` will follow the April-11 plan that hand-rolls a staging buffer JSON-UI already shipped. The April-11 plan itself is honest that Invariant 10 cannot be implemented at the buffer layer. Good plan, wrong time. Needs a one-line SUPERSEDED header if it doesn't have one at a glance — the v2 plan says it supersedes; the April-11 file's own status should scream.
 
-### NC-084 — OVERVIEW "Maintained by: Daniel Simon Jr." and no CODEOWNERS
+### NC-084 — OVERVIEW carried a personal maintainer line, and there is no CODEOWNERS
 
 Not a bug. Ownership of a private 0.1.0.
 

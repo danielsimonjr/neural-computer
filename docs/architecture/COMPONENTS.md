@@ -1,8 +1,5 @@
 # Neural Computer - Component Reference
 
-**Version**: 0.1.0 (docs refreshed 2026-08-29)
-**Last Updated**: 2026-08-29
-
 This document covers every source file in the NC runtime, grouped by module in dependency order (leaves first). Catalog version is `nc-starter-0.3`. `NCButton` forwards `action.params` to `execute()`. Validation of trees happens during render (`useMemo`), not in `useLayoutEffect`.
 
 ---
@@ -258,3 +255,19 @@ Root package export: catalog, types, runtime, memory, renderer, orchestrator (st
 ## Integration Test (`src/integration/path-c.test.tsx`)
 
 End-to-end Path C: type → submit → IntentEvent with snapshot + catalog_version; reconcile across trees; Invariant 6 key collision; Invariant 11 DynamicValue; Invariant 10 backpressure; observer populated after commit; cancel clears staging.
+
+---
+
+## Verification
+
+Generated 2026-09-15 by `repo_map.py map`.
+Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
+
+| Claim            | Value | Source                 |
+| ---------------- | ----- | ---------------------- |
+| totalFiles       | 66    | file-inventory.json    |
+| totalSourceFiles | 66    | dependency-graph.json  |
+| totalLinesOfCode | 9694  | dependency-graph.json  |
+| totalModules     | 4     | dependency-graph.json  |
+| totalSymbols     | 104   | duplicate-symbols.json |
+| duplicateCount   | 0     | duplicate-symbols.json |
