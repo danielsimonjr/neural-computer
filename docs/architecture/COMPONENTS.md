@@ -258,3 +258,19 @@ Root package export: catalog, types, runtime, memory, renderer, orchestrator (st
 ## Integration Test (`src/integration/path-c.test.tsx`)
 
 End-to-end Path C: type → submit → IntentEvent with snapshot + catalog_version; reconcile across trees; Invariant 6 key collision; Invariant 11 DynamicValue; Invariant 10 backpressure; observer populated after commit; cancel clears staging.
+
+---
+
+## Verification
+
+Generated 2026-09-15 by `repo_map.py map`.
+Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
+
+| Claim | Value | Source |
+|---|---|---|
+| totalFiles | 66 | file-inventory.json |
+| totalSourceFiles | 66 | dependency-graph.json |
+| totalLinesOfCode | 9694 | dependency-graph.json |
+| totalModules | 4 | dependency-graph.json |
+| totalSymbols | 104 | duplicate-symbols.json |
+| duplicateCount | 0 | duplicate-symbols.json |

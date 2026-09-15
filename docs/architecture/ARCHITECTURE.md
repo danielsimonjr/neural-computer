@@ -28,13 +28,18 @@ Key properties: every tree is validated against a Zod-typed catalog before JSON-
 
 ### Key Statistics
 
-| Metric                | Value                                         |
-| --------------------- | --------------------------------------------- |
-| Test files            | 20 under `src/**/*.test.*`                    |
-| Catalog version       | `nc-starter-0.3`                              |
-| Named state surfaces  | 7 (compute is a tool, not a surface)          |
-| Spec invariants       | 13 UI-runtime, all tested, plus compute rules |
-| Circular dependencies | 0                                             |
+| Metric                | Value | Scope | Source |
+| --------------------- | ----- | ----- | ------ |
+| Files, whole repo     | 66    | repo-wide | `file-inventory.json` (`totalFiles`) |
+| Test files            | 22    | `src/**/*.test.*` | `git ls-files`; vitest runs the same 22 |
+| Modules               | 4     | repo-wide | `dependency-graph.json` (`totalModules`) |
+| Catalog version       | `nc-starter-0.3` | — | a direct read of `src/catalog`, not a `repo_map` metric |
+| Named state surfaces  | 7 (compute is a tool, not a surface) | — | the spec, not a `repo_map` metric |
+| Spec invariants       | 13 UI-runtime, all tested, plus compute rules | — | `INVARIANTS.md`, not a `repo_map` metric |
+| Circular dependencies | 0     | runtime imports | `dependency-graph.json` (`runtimeCircularDeps`) |
+
+`OVERVIEW.md` gives the per-area breakdown and explains why the area count for
+tests (17) is smaller than the test-file count (22).
 
 `tsconfig.json` sets `"skipLibCheck": false`. Zod is pinned to `4.4.3`. React 19 is a peer dependency; host apps must dedupe React (this package's `overrides` do not protect consumers).
 
@@ -251,3 +256,25 @@ Still deferred: catalog migration from `nc-starter-0.1`, persistent staging, a m
 
 _Last Updated_: 2026-08-29
 _Version_: 0.1.0
+
+---
+
+## Verification
+
+Generated 2026-09-15 by `repo_map.py map`.
+Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
+
+| Claim | Value | Source |
+|---|---|---|
+| totalFiles | 66 | file-inventory.json |
+| totalModules | 4 | dependency-graph.json |
+| totalLinesOfCode | 9694 | dependency-graph.json |
+| runtimeCircularDeps | 0 | dependency-graph.json |
+| typeOnlyCircularDeps | 0 | dependency-graph.json |
+| entryRoots | 3 | dependency-graph.json |
+
+The three entry roots are `src/index.ts`, `src/core.ts` and `src/react.ts`.
+They are what makes the layering rule checkable: `src/orchestrator/**` and
+`src/compute/**` must not import React, the `@json-ui` UI packages, or reach
+sideways into `../renderer`, `../app` or `../observer`. The lint rules enforce
+that; `runtimeCircularDeps` of 0 shows the import graph stays a DAG.

@@ -266,3 +266,20 @@ Same signature as the stub. Requires `runtime`, `catalog`, `onTreeCommit`, and a
 `createAnthropicIntentHandler` / `createAnthropicTransport` map this onto Anthropic Messages. Inject `send` in tests. This handler commits complete trees; it does not POST JSON patches to `useCommittedTree`.
 
 `durable_write` is always advertised. It prefers `onDurableWrite`, then `durableStore.write` (memoryjs `onWrite`), then `durableStore.set` (in-memory).
+
+---
+
+## Verification
+
+Generated 2026-09-15 by `repo_map.py map`.
+Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
+
+| Claim | Value | Source |
+|---|---|---|
+| totalFiles | 66 | file-inventory.json |
+| totalSourceFiles | 66 | dependency-graph.json |
+| totalExports | 361 | dependency-graph.json |
+| totalModules | 4 | dependency-graph.json |
+| runtimeCircularDeps | 0 | dependency-graph.json |
+
+`totalExports` counts every export in the repository, tests included. It is not the size of the public surface. The public surface is the three entry points that this document lists, and a direct read of `src/index.ts`, `src/core.ts` and `src/react.ts` confirms them. That is a hand check, not a `repo_map` metric.

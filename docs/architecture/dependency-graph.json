@@ -2,7 +2,7 @@
   "metadata": {
     "name": "neural-computer",
     "version": "0.1.0",
-    "lastUpdated": "2026-08-30",
+    "lastUpdated": "2026-09-15",
     "totalFiles": 41,
     "totalModules": 11,
     "totalExports": 311
@@ -40,7 +40,7 @@
         ]
       },
       "src/app/nc-app.tsx": {
-        "description": "Tree shown before any intent commits a replacement. Changing this",
+        "description": "Props for `NCApp`, the ready-made composition of the runtime, the",
         "externalDependencies": [
           {
             "package": "react",
@@ -504,7 +504,7 @@
         ]
       },
       "src/compute/types.ts": {
-        "description": "Host implementation of the in-REPL `llm_query(prompt)` helper.",
+        "description": "Why one REPL operation failed. `busy` means a second call arrived",
         "externalDependencies": [],
         "nodeDependencies": [],
         "internalDependencies": [],
@@ -1295,7 +1295,7 @@
         ]
       },
       "src/observer/nc-observer.ts": {
-        "description": "Additional headless components merged under ncHeadlessRegistry.",
+        "description": "Options for {@link createNCObserver}. The catalog binds once, at",
         "externalDependencies": [
           {
             "package": "@json-ui/headless",
@@ -1358,7 +1358,7 @@
     },
     "orchestrator": {
       "src/orchestrator/anthropic-transport.ts": {
-        "description": "Inject a send function to avoid constructing a real client (tests).",
+        "description": "Options for {@link createAnthropicTransport}. `model` and",
         "externalDependencies": [
           {
             "package": "@anthropic-ai/sdk",
@@ -1602,7 +1602,7 @@
         ]
       },
       "src/orchestrator/llm-handler.ts": {
-        "description": "LLM-backed intent handler. Same signature as the stub. Commits one",
+        "description": "One `durable_write` request from the model. `path` is a `/`-separated",
         "externalDependencies": [
           {
             "package": "@json-ui/core",
@@ -1679,7 +1679,7 @@
         ]
       },
       "src/orchestrator/llm-transport.ts": {
-        "description": "One model round. Tests inject a fake; production uses",
+        "description": "A model request to call one tool. `id` correlates the call with the",
         "externalDependencies": [],
         "nodeDependencies": [],
         "internalDependencies": [],
@@ -1698,7 +1698,7 @@
         ]
       },
       "src/orchestrator/observation.ts": {
-        "description": "Build the stable system prompt and the size-capped user JSON for one",
+        "description": "Input for {@link composeNcObservation}. `maxBytes` defaults to",
         "externalDependencies": [
           {
             "package": "@json-ui/core",
@@ -1749,7 +1749,7 @@
         ]
       },
       "src/renderer/field-id-stability.ts": {
-        "description": "SPDX-License-Identifier: Apache-2.0",
+        "description": "Map every input field id in `tree` to its component type. Only",
         "externalDependencies": [
           {
             "package": "@json-ui/core",
@@ -2098,7 +2098,6 @@
           {
             "file": "../catalog/limits",
             "imports": [
-              "NC_OBSERVER_STALE_THRESHOLD",
               "NC_SNAPSHOT_MAX_BYTES",
               "NC_STAGING_MAX_FIELDS"
             ]
@@ -2357,7 +2356,7 @@
   "statistics": {
     "totalTypeScriptFiles": 41,
     "totalModules": 11,
-    "totalLinesOfCode": 3714,
+    "totalLinesOfCode": 3866,
     "totalExports": 311,
     "totalClasses": 5,
     "totalInterfaces": 24,

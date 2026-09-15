@@ -62,6 +62,24 @@ Shipped: `src/compute/` — Python subprocess dispatch via the RLM pattern (`cre
 - [`docs/specs/2026-08-29-sibling-api-surface.md`](./docs/specs/2026-08-29-sibling-api-surface.md) — JSON-UI / memoryjs seams (`AnyCatalog`, `store.write`, registry context, memoryjs `onWrite`).
 - [`docs/plans/2026-04-15-neural-computer-v2-plan.md`](./docs/plans/2026-04-15-neural-computer-v2-plan.md) — the v1 implementation plan, 13 tasks, shipped 2026-04-15.
 
+## Documentation
+
+The canonical architecture set lives in [`docs/architecture/`](./docs/architecture/).
+
+- [`OVERVIEW.md`](./docs/architecture/OVERVIEW.md) — what NC is, the layout, and the numbers
+- [`ARCHITECTURE.md`](./docs/architecture/ARCHITECTURE.md) — principles, layers, and the key decisions
+- [`COMPONENTS.md`](./docs/architecture/COMPONENTS.md) — every module, with real signatures
+- [`DATAFLOW.md`](./docs/architecture/DATAFLOW.md) — one intent from keystroke to render
+- [`API.md`](./docs/architecture/API.md) — the public surface of the three entry points
+- [`FILE_INVENTORY.md`](./docs/architecture/FILE_INVENTORY.md) — every file, its disposition, per-area counts
+- [`TEST_COVERAGE.md`](./docs/architecture/TEST_COVERAGE.md) — what is tested and what is not (generated)
+- [`DEPENDENCY_GRAPH.md`](./docs/architecture/DEPENDENCY_GRAPH.md) — who imports whom (generated)
+- [`unused-analysis.md`](./docs/architecture/unused-analysis.md) — files and exports with no importer (generated)
+- [`duplicate-symbols.md`](./docs/architecture/duplicate-symbols.md) — names defined more than once
+- [`INVARIANTS.md`](./docs/architecture/INVARIANTS.md) — the 13 spec invariants and the compute rules
+
+Regenerate the generated reports with `bun run docs:deps`. Do not edit them by hand.
+
 ## Development
 
 ```bash

@@ -36,6 +36,37 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
   exited 1. Every one is now documented by hand, not stubbed: 72/72 exported
   symbols, 0 MUST. The stub generator was not used, because every stub it
   writes carries a `TODO:` marker that the same gate fails on.
+- **The architecture-docs gate now exits 0.** `repo_map.py check` reported
+  **9 findings** and exited 1: every document in `docs/architecture/` lacked
+  a `## Verification` section, so the gate could not check a single one of
+  them. A document the gate cannot check must not look like a document the
+  gate checked and matched, which is why the tool reports that as a failure
+  rather than a pass. The six hand-written documents now carry a Verification
+  table built from real `repo_map` metrics.
+- **The generator writes its own gate opt-out.** `DEPENDENCY_GRAPH.md`,
+  `TEST_COVERAGE.md` and `unused-analysis.md` are generated and hold no
+  hand-written claim, so they declare `<!-- repo-map:no-verification -->`
+  plus a do-not-edit banner. `tools/create-dependency-graph` emits both
+  lines. A marker added by hand would survive only until the next
+  `bun run docs:deps` and the gate would then fail a full cycle later,
+  looking like a new defect.
+- **Added the two missing canonical documents**, `FILE_INVENTORY.md` and
+  `duplicate-symbols.md`, and a Documentation section in the README that
+  links the whole set.
+
+### Fixed
+
+- **Stale counts in the hand-written architecture documents.** `OVERVIEW.md`
+  and `ARCHITECTURE.md` both claimed "20" test files and `INVARIANTS.md`
+  claimed "15 test files; 84 `it`/`test` cases". The tree holds 22 test
+  files and the suite runs 147 cases. None of the three claims was gated,
+  because the gate reads only a Verification table and no document had one.
+- **Two file counts that look like a contradiction now carry their scope.**
+  `file-inventory.json` files a `.tsx` test under the `src` area, not under
+  `tests`, so area `tests` reads 17 while the tree holds 22 test files. Both
+  numbers are correct and describe different sets. The documents now give the
+  scope and the source of each, and record that the areas still sum to the
+  whole: 41 non-test source + 22 test + 1 tool + 2 config = 66.
 
 ### Changed
 
