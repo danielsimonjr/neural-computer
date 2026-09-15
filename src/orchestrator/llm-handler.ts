@@ -29,11 +29,21 @@ import {
 } from "./llm-transport";
 import { composeNcObservation } from "./observation";
 
+/**
+ * One `durable_write` request from the model. `path` is a `/`-separated
+ * durable path; the handler rejects an unsafe path before the write.
+ */
 export interface DurableWrite {
   path: string;
   value: JSONValue;
 }
 
+/**
+ * Options for `createLlmIntentHandler`. `repl` advertises the Python
+ * tools when present. `onDurableWrite` overrides the default durable
+ * store. `maxRounds` defaults to `NC_LLM_DEFAULT_MAX_ROUNDS` and is
+ * capped at `NC_LLM_MAX_ROUNDS`.
+ */
 export interface CreateLlmIntentHandlerOptions {
   runtime: NCRuntime;
   catalog: AnyCatalog;

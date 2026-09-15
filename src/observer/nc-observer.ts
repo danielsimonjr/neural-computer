@@ -13,6 +13,10 @@ import { NC_OBSERVER_STALE_THRESHOLD } from "../catalog/limits";
 import { freezeDeep } from "../runtime/freeze";
 import type { AnyCatalog, NCObserver } from "../types";
 
+/**
+ * Options for {@link createNCObserver}. The catalog binds once, at
+ * construction, because `HeadlessRenderer.render` takes only the tree.
+ */
 export interface CreateNCObserverOptions {
   // Catalog is required per HeadlessRendererOptions (renderer.ts:27 in
   // @json-ui/headless). Bound once at construction — HeadlessRenderer.render
@@ -39,6 +43,11 @@ interface ObserverFactoryOptions extends CreateNCObserverOptions {
   registry?: HeadlessRegistry;
 }
 
+/**
+ * Build the headless observer that shadows every successful tree
+ * commit. `getLastRender()` returns a frozen graph. A built-in
+ * registry key cannot be overridden, so Invariant 12 holds.
+ */
 export function createNCObserver(options: ObserverFactoryOptions): NCObserver {
   const builtinKeys = new Set(Object.keys(ncHeadlessRegistry));
   if (options.extraRegistry) {

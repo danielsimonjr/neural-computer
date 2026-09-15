@@ -38,6 +38,11 @@ export type NCCatalogVersion = string & {
 
 const NC_CATALOG_VERSION_MAX = 64;
 
+/**
+ * Type guard for {@link NCCatalogVersion}. A valid version is a
+ * non-empty string of at most 64 characters. Use `asNCCatalogVersion`
+ * when an invalid value must throw instead of returning false.
+ */
 export function isNCCatalogVersion(value: unknown): value is NCCatalogVersion {
   return (
     typeof value === "string" &&

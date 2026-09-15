@@ -18,6 +18,10 @@ import {
 } from "./llm-handler";
 import type { NCIntentHandler } from "../types";
 
+/**
+ * Options for {@link createAnthropicTransport}. `model` and
+ * `maxTokens` fall back to the NC defaults.
+ */
 export interface CreateAnthropicTransportOptions {
   apiKey?: string;
   model?: string;
@@ -89,6 +93,11 @@ function fromAnthropicContent(
   return out;
 }
 
+/**
+ * Build an {@link NCLlmTransport} backed by the Anthropic SDK. The
+ * client is constructed once, on the first call, and only when the
+ * caller supplies no `send` function.
+ */
 export function createAnthropicTransport(
   options: CreateAnthropicTransportOptions = {},
 ): NCLlmTransport {
@@ -119,6 +128,12 @@ export function createAnthropicTransport(
   };
 }
 
+/**
+ * Build an LLM intent handler that speaks to Anthropic. This is the
+ * convenience pairing of {@link createAnthropicTransport} with
+ * `createLlmIntentHandler`; the transport options are split out and
+ * every other option passes through unchanged.
+ */
 export function createAnthropicIntentHandler(
   options: Omit<CreateLlmIntentHandlerOptions, "transport"> &
     CreateAnthropicTransportOptions,

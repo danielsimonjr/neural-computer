@@ -13,6 +13,10 @@ import type {
   NCIntentHandler,
 } from "../types";
 
+/**
+ * Props for `NCApp`, the ready-made composition of the runtime, the
+ * renderer and the starter catalog.
+ */
 export interface NCAppProps {
   runtime: NCRuntime;
   catalog: AnyCatalog;

@@ -3,6 +3,10 @@
 import type { IntentEvent } from "@json-ui/core";
 import { NC_OBSERVATION_MAX_BYTES } from "./limits";
 
+/**
+ * Input for {@link composeNcObservation}. `maxBytes` defaults to
+ * `NC_OBSERVATION_MAX_BYTES`.
+ */
 export interface ComposeNcObservationInput {
   event: IntentEvent;
   catalogPrompt: string;
@@ -14,6 +18,10 @@ export interface ComposeNcObservationInput {
   maxBytes?: number;
 }
 
+/**
+ * One composed observation. `truncated` is true when the composer
+ * dropped the observer JSON or the durable snapshot to meet the cap.
+ */
 export interface NcObservation {
   system: string;
   userJson: string;

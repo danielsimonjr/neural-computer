@@ -72,6 +72,7 @@ function mergeRegistry(extraRegistry?: ComponentRegistry): ComponentRegistry {
   return { ...(extraRegistry ?? {}), ...buildDefaultRegistry() };
 }
 
+/** Props for `NCRenderer`, the catalog-constrained tree renderer. */
 export interface NCRendererProps {
   /**
    * The committed tree to render. Must come from a successful stream

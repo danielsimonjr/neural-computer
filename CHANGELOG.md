@@ -8,6 +8,35 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Verified
+
+- **NC is correct against MemoryJS 4.2.0.** The `@danielsimonjr/memoryjs`
+  dependency is a `file:../memoryjs` link, so the version is whatever the
+  sibling clone holds. The link resolves live: `node_modules/@danielsimonjr/memoryjs`
+  is a junction into that clone, and the clone reports `4.2.0`. Against that
+  code the full gate is green — typecheck, lint, 147 tests in 22 files, and
+  the build.
+
+  The 4.0.0 change with the most reach is the `loadGraph()` ownership
+  contract: the result is now a read-only borrowed view, deep-frozen outside
+  production, so a consumer that edits it throws `TypeError`. **NC calls
+  `loadGraph()` nowhere.** It consumes memoryjs through types only (`Entity`,
+  `Relation`, `GraphProjection`, `JSONValue` in `src/memory/projection.ts`)
+  plus the `ObservableDataModel` adapter, which owns the load itself. The
+  projection is a pure read: it copies `observations` and builds new objects,
+  so it never writes through the borrowed arrays. The other four changes
+  (project-scoped API keys, fixed REST 4xx bodies, RateLimiter TTL/LRU
+  defaults, `DurableReplaceError`) sit behind APIs NC does not call. No
+  source change was needed for the upgrade.
+
+### Documentation
+
+- **Every exported symbol now carries a doc comment.** `code_docs.py check src`
+  reported **46 MUST issues** (exported symbols with no doc comment) and
+  exited 1. Every one is now documented by hand, not stubbed: 72/72 exported
+  symbols, 0 MUST. The stub generator was not used, because every stub it
+  writes carries a `TODO:` marker that the same gate fails on.
+
 ### Changed
 
 - **TypeScript raised to `^7.0.2`.** This repo hit BOTH TS 7 blockers; both are gone.
