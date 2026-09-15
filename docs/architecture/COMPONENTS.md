@@ -1,8 +1,5 @@
 # Neural Computer - Component Reference
 
-**Version**: 0.1.0 (docs refreshed 2026-08-29)
-**Last Updated**: 2026-08-29
-
 This document covers every source file in the NC runtime, grouped by module in dependency order (leaves first). Catalog version is `nc-starter-0.3`. `NCButton` forwards `action.params` to `execute()`. Validation of trees happens during render (`useMemo`), not in `useLayoutEffect`.
 
 ---

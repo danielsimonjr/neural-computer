@@ -1,7 +1,5 @@
 # Neural Computer - Spec Invariants
 
-**Version**: 0.1.0 (docs refreshed 2026-08-29)
-**Last Updated**: 2026-08-29
 **Source**: `docs/specs/2026-04-11-ephemeral-ui-state-design.md` plus Path C (`2026-04-16-headless-dual-backend-design.md`)
 
 The NC spec defines 13 testable invariants. Each maps to tests in the tree. A change that violates one is a bug.

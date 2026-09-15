@@ -1,8 +1,5 @@
 # Neural Computer - Data Flow
 
-**Version**: 0.1.0 (docs refreshed 2026-08-29)
-**Last Updated**: 2026-08-29
-
 This document traces data from user input through intent dispatch, tree commit, validation during render, last-good display, reconcile, and observer shadow.
 
 ---

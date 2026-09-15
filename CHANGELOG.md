@@ -57,6 +57,31 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 - **Added the two missing canonical documents**, `FILE_INVENTORY.md` and
   `duplicate-symbols.md`, and a Documentation section in the README that
   links the whole set.
+- **Removed the personal maintainer attribution.** `OVERVIEW.md` ended with a
+  `Maintained by` line naming a person. A repository is a product written for
+  a general reader, and a documentation footer is not one of the places a name
+  belongs — those are `LICENSE` and copyright lines, the `package.json` author
+  field, git commit authorship, and the organisation name inside URLs and
+  package names. The line is deleted, not replaced.
+
+  The 2026-08-29 audit records the same thing as finding NC-084, and its
+  heading quoted the line verbatim. Deleting that heading would have orphaned
+  the finding, so the heading keeps the finding and drops the name. The
+  companion `docs/audits/2026-08-29-findings.md` already summarised NC-084
+  without it.
+
+- **Removed the hand-maintained `Version` and `Last Updated` stamps** from all
+  eight hand-written architecture documents. A stamp that a person edits, kept
+  beside a `CHANGELOG.md` that records the same thing, is a second source of
+  truth: it drifts by construction, and every one of these had already drifted
+  to 2026-08-29. Nothing consumed them — the only code that touches such a
+  stamp is `tools/create-dependency-graph`, which writes its own, and neither
+  doc gate reads one.
+
+  The stamps in `DEPENDENCY_GRAPH.md`, `TEST_COVERAGE.md` and
+  `unused-analysis.md` stay. The generator rewrites those on every
+  `bun run docs:deps`, so they are maintained by a tool rather than by hand
+  and cannot drift.
 
 ### Fixed
 

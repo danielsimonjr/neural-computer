@@ -1,8 +1,5 @@
 # Neural Computer - Project Overview
 
-**Version**: 0.1.0 (docs refreshed 2026-08-29)
-**Last Updated**: 2026-08-29
-
 ## What Is This?
 
 Neural Computer (NC) is a **catalog-constrained React form runtime**. It owns a staging buffer for in-progress input, a one-at-a-time intent gate, a stub or LLM-backed intent handler, a headless observer cache that shadows successful tree commits, and an optional Python REPL (`createPythonRepl`) for the RLM compute arm. It is inspired by Zhuge et al., _Neural Computers_ (arXiv:2604.04625). The LLM handler is transport-injected (Anthropic is one adapter); unit tests do not call a network. The REPL is not attached to `NCRuntime`.
@@ -201,10 +198,6 @@ Node / orchestrator processes should import `neural-computer/core` so they do no
 - **[Invariants Reference](./INVARIANTS.md)** — all 13 NC spec invariants
 - **[Dependency Graph](./DEPENDENCY_GRAPH.md)** — file-level map (regenerate after install)
 - **[Test Coverage](./TEST_COVERAGE.md)** — test file inventory
-
----
-
-**Maintained by**: Daniel Simon Jr.
 
 ---
 

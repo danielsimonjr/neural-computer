@@ -1,7 +1,5 @@
 # Neural Computer - Duplicate Symbols
 
-**Version**: 0.1.0
-
 This document answers one question: does any exported name get defined by more
 than one source file? A duplicated name is not always a defect, but it is
 always worth knowing about, because two definitions of one name make an import

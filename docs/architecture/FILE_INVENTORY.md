@@ -1,7 +1,5 @@
 # Neural Computer - File Inventory
 
-**Version**: 0.1.0
-
 This document gives every area of the tree, the disposition of the files in
 it, and the counts. It answers "what is in this repository, and what is each
 file for". `COMPONENTS.md` describes what each module does.

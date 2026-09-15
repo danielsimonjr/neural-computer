@@ -1,8 +1,5 @@
 # Neural Computer - System Architecture
 
-**Version**: 0.1.0 (docs refreshed 2026-08-29)
-**Last Updated**: 2026-08-29
-
 ---
 
 ## Table of Contents
@@ -251,11 +248,6 @@ Path C (plan `2026-04-16-headless-dual-backend`) runs `@json-ui/headless` alongs
 `FORBIDDEN_IMPORTS` includes `@json-ui/headless` and `../observer` so the orchestrator consumes `NormalizedNode` output via `runtime.observer` without importing the observer module. Observer render is a second full tree walk on the layout path (NC-087); it is skipped when the same `tree` reference was already shadowed.
 
 Still deferred: catalog migration from `nc-starter-0.1`, persistent staging, a memoryjs graph mutation DSL. Python REPL and the LLM intent handler shipped 2026-08-29.
-
----
-
-_Last Updated_: 2026-08-29
-_Version_: 0.1.0
 
 ---
 

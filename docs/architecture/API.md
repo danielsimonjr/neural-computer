@@ -1,8 +1,5 @@
 # Neural Computer - API Reference
 
-**Version**: 0.1.0 (docs refreshed 2026-08-29)
-**Last Updated**: 2026-08-29
-
 The package exposes three entry points via `exports` in `package.json`.
 
 ```typescript
