@@ -7,4 +7,13 @@ docs/architecture/dependency-graph.json
 docs/architecture/dependency-graph.yaml
 docs/architecture/dependency-summary.compact.json
 docs/architecture/test-coverage.json
+# The markdown reports from the same generator, for the same reason as the
+# JSON and YAML above: `bun run docs:deps` owns this output byte for byte.
+# Without these lines the format gate holds generated files to a hand-written
+# style, so every regeneration breaks CI until somebody runs `bun run format`
+# -- and the next regeneration breaks it again. The generator stamps each of
+# these with a do-not-edit banner.
+docs/architecture/DEPENDENCY_GRAPH.md
+docs/architecture/TEST_COVERAGE.md
+docs/architecture/unused-analysis.md
 tools/**/package-lock.json

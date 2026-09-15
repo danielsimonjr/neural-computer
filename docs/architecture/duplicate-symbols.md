@@ -14,10 +14,10 @@ ambiguous to a reader and make a rename unsafe to automate.
 **No duplicate symbols.** The tree owns 104 exported symbol names across the
 `src` area and each name is defined once.
 
-| Metric | Value |
-| --- | --- |
-| Duplicate name groups | 0 |
-| Symbol names examined | 104 |
+| Metric                | Value |
+| --------------------- | ----- |
+| Duplicate name groups | 0     |
+| Symbol names examined | 104   |
 
 Source: `duplicate-symbols.json` (`summary`).
 
@@ -61,12 +61,12 @@ collides with an existing name shows up here as a group of 2.
 Generated 2026-09-15 by `repo_map.py map`.
 Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
 
-| Claim | Value | Source |
-|---|---|---|
-| duplicateCount | 0 | duplicate-symbols.json |
-| totalSymbols | 104 | duplicate-symbols.json |
-| totalExports | 361 | dependency-graph.json |
-| totalFiles | 66 | file-inventory.json |
+| Claim          | Value | Source                 |
+| -------------- | ----- | ---------------------- |
+| duplicateCount | 0     | duplicate-symbols.json |
+| totalSymbols   | 104   | duplicate-symbols.json |
+| totalExports   | 361   | dependency-graph.json  |
+| totalFiles     | 66    | file-inventory.json    |
 
 `totalSymbols` (104) and `totalExports` (361) count different things and must
 not be compared as one number. `totalSymbols` is the set of distinct

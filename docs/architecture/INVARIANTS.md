@@ -178,11 +178,11 @@ files, never test cases. Compute tests (`python-repl.test.ts`,
 Generated 2026-09-15 by `repo_map.py map`.
 Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
 
-| Claim | Value | Source |
-|---|---|---|
-| totalFiles | 66 | file-inventory.json |
-| totalSourceFiles | 66 | dependency-graph.json |
-| runtimeCircularDeps | 0 | dependency-graph.json |
+| Claim               | Value | Source                |
+| ------------------- | ----- | --------------------- |
+| totalFiles          | 66    | file-inventory.json   |
+| totalSourceFiles    | 66    | dependency-graph.json |
+| runtimeCircularDeps | 0     | dependency-graph.json |
 
 Invariant 7 (buffer isolation) is a layering rule, so the import graph is the
 evidence for it. The test-file and test-case counts above are a vitest result

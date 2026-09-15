@@ -165,12 +165,12 @@ The Python REPL is outside this loop. `createLlmIntentHandler` may call `repl.ex
 Generated 2026-09-15 by `repo_map.py map`.
 Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
 
-| Claim | Value | Source |
-|---|---|---|
-| totalFiles | 66 | file-inventory.json |
-| totalModules | 4 | dependency-graph.json |
-| runtimeCircularDeps | 0 | dependency-graph.json |
-| typeOnlyCircularDeps | 0 | dependency-graph.json |
-| totalTypeOnlyImports | 15 | dependency-graph.json |
+| Claim                | Value | Source                |
+| -------------------- | ----- | --------------------- |
+| totalFiles           | 66    | file-inventory.json   |
+| totalModules         | 4     | dependency-graph.json |
+| runtimeCircularDeps  | 0     | dependency-graph.json |
+| typeOnlyCircularDeps | 0     | dependency-graph.json |
+| totalTypeOnlyImports | 15    | dependency-graph.json |
 
 The loop has one direction: staging, then intent, then commit, then render. `runtimeCircularDeps` of 0 is what makes that direction checkable.

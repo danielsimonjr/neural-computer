@@ -27,7 +27,11 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
   so it never writes through the borrowed arrays. The other four changes
   (project-scoped API keys, fixed REST 4xx bodies, RateLimiter TTL/LRU
   defaults, `DurableReplaceError`) sit behind APIs NC does not call. No
-  source change was needed for the upgrade.
+  `src/` change was needed for the upgrade.
+
+  The CI workflow did need one, and that is the real version bump in this
+  change. See the first entry under Fixed: the `file:` link and CI disagreed
+  about which MemoryJS this repository builds against.
 
 ### Documentation
 
@@ -56,6 +60,22 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ### Fixed
 
+- **CI built MemoryJS v3.4.0 while local development built 4.2.0.**
+  `.github/workflows/ci.yml` checks the sibling repositories out at pinned
+  SHAs, and the memoryjs pin was `af11456` — v3.4.0. The `file:../memoryjs`
+  link has no version to bump, so this pin was the only place a MemoryJS
+  version is actually written down, and it had drifted a major version
+  behind the clone every local run used. A green CI therefore proved nothing
+  about 4.x. Pinned to `2e10299` (v4.2.0), so CI now builds what development
+  builds.
+- **The format gate held generated documents to a hand-written style.**
+  `.prettierignore` already excluded the four generated JSON and YAML
+  artifacts but not the three generated markdown reports, so `prettier`
+  checked output that `bun run docs:deps` owns byte for byte. Every
+  regeneration therefore broke CI until somebody ran `bun run format`, and
+  the next regeneration broke it again. This is what failed CI on the first
+  push of this branch. The three reports are now ignored for the same reason
+  their JSON siblings already were.
 - **Stale counts in the hand-written architecture documents.** `OVERVIEW.md`
   and `ARCHITECTURE.md` both claimed "20" test files and `INVARIANTS.md`
   claimed "15 test files; 84 `it`/`test` cases". The tree holds 22 test

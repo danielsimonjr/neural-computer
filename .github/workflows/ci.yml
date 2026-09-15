@@ -24,8 +24,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: danielsimonjr/memoryjs
-          # v3.4.0 + adapter.write / onWrite (#114)
-          ref: af11456d07c0710bf3c4751cd592b3fd896df770
+          # v4.2.0 (chore(release): v4.2.0, on master).
+          # 4.x made loadGraph() return a read-only borrowed view, deep-frozen
+          # outside production. NC never calls loadGraph(): it consumes memoryjs
+          # through types plus the ObservableDataModel adapter, which owns the
+          # load. Bumped from af11456 (v3.4.0), which is what CI actually built
+          # against while the local file: link already resolved to 4.2.0.
+          ref: 2e10299f49447c14ff732196e05b9ed9b6a4169f
           path: memoryjs
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

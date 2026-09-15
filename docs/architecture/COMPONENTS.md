@@ -266,11 +266,11 @@ End-to-end Path C: type → submit → IntentEvent with snapshot + catalog_versi
 Generated 2026-09-15 by `repo_map.py map`.
 Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
 
-| Claim | Value | Source |
-|---|---|---|
-| totalFiles | 66 | file-inventory.json |
-| totalSourceFiles | 66 | dependency-graph.json |
-| totalLinesOfCode | 9694 | dependency-graph.json |
-| totalModules | 4 | dependency-graph.json |
-| totalSymbols | 104 | duplicate-symbols.json |
-| duplicateCount | 0 | duplicate-symbols.json |
+| Claim            | Value | Source                 |
+| ---------------- | ----- | ---------------------- |
+| totalFiles       | 66    | file-inventory.json    |
+| totalSourceFiles | 66    | dependency-graph.json  |
+| totalLinesOfCode | 9694  | dependency-graph.json  |
+| totalModules     | 4     | dependency-graph.json  |
+| totalSymbols     | 104   | duplicate-symbols.json |
+| duplicateCount   | 0     | duplicate-symbols.json |
