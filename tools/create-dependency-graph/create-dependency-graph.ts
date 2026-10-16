@@ -1136,7 +1136,7 @@ function generateMarkdown(files: ParsedFile[], modules: ModuleMap, stats: Statis
   const lines: string[] = [];
   const projectName = packageJson.name || 'Project';
 
-  // The architecture-docs gate (repo_map.py check) fails any doc that has
+  // The architecture-docs gate (repo-tools check) fails any doc that has
   // no '## Verification' section. This report holds no hand-written claim
   // to verify, so it declares the opt-out. The GENERATOR must write the
   // marker: a hand-added one survives only until the next run, and the
