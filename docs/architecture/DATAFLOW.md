@@ -159,8 +159,8 @@ The Python REPL is outside this loop. `createLlmIntentHandler` may call `repl.ex
 
 ## Verification
 
-Generated 2026-09-15 by `repo_map.py map`.
-Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
+Generated 2026-10-16 by `repo-tools map`.
+Regenerate: `repo-tools map <repo> --out=<dir>` · Check: `repo-tools check <repo> --docs=docs/architecture`
 
 | Claim                | Value | Source                |
 | -------------------- | ----- | --------------------- |

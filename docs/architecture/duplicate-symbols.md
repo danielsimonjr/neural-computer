@@ -1,72 +1,65 @@
-# Neural Computer - Duplicate Symbols
+<!-- repo-map:no-verification -->
+<!-- GENERATED FILE -- do not edit by hand.
+     Regenerate with `repo-tools map`. -->
 
-This document answers one question: does any exported name get defined by more
-than one source file? A duplicated name is not always a defect, but it is
-always worth knowing about, because two definitions of one name make an import
-ambiguous to a reader and make a rename unsafe to automate.
+# Duplicate Symbols
 
----
+Names that are OWN-DEFINED (not merely re-exported) by >= 2 distinct files across the monorepo, then CLASSIFIED (see `DupEntryTag`) so the actionable subset is clear: `TRUE_DUPLICATE` (real merge targets) vs `DISPATCH_VARIANT` (>=2 `mathTyped(...)` registrations of the same public name — distinct dispatch surfaces, Bucket C delegation candidates, not copy-paste bodies), `ALIAS_DELEGATION` (a `const X = importedY` forward, excluded once <2 real bodies remain), and `ALLOWLISTED` (matches `duplicate-allowlist.json`: hot-path `is*` guards, AssemblyScript mirrors, per-package `VERSION` strings).
 
-## Result
+> **Note:** This report groups names by OWN definition, not by call graph, then classifies each flagged name (see DupEntryTag): TRUE_DUPLICATE (the actionable merge targets), DISPATCH_VARIANT (>=2 mathTyped(...) registrations of the same public name — distinct dispatch surfaces, Bucket C delegation candidates, not copy-paste bodies), ALIAS_DELEGATION (a const-alias forward to an imported symbol, not an independent body — excluded once fewer than 2 real bodies remain), and ALLOWLISTED (matches duplicate-allowlist.json: hot-path is* guards, AssemblyScript mirrors, per-package VERSION strings). NOT detected: same-file typed-dispatch overload polymorphism for different argument shapes within one registration — a human still triages TRUE_DUPLICATE entries using the defining files + public flags before merging anything.
 
-**No duplicate symbols.** The tree owns 104 exported symbol names across the
-`src` area and each name is defined once.
+## Summary — runtime (function/constant/class)
 
-| Metric                | Value |
-| --------------------- | ----- |
-| Duplicate name groups | 0     |
-| Symbol names examined | 104   |
+| Category | Count |
+| --- | --: |
+| **TRUE_DUPLICATE** (actionable) | 0 |
+| DISPATCH_VARIANT | 0 |
+| ALIAS_DELEGATION | 0 |
+| ALLOWLISTED | 0 |
+| _Total flagged names_ | 0 |
 
-Source: `duplicate-symbols.json` (`summary`).
+## Summary — types (interface/type/enum)
 
-## What the check covers, and what it does not
+| Category | Count |
+| --- | --: |
+| **TRUE_DUPLICATE** (actionable) | 0 |
+| DISPATCH_VARIANT | 0 |
+| ALIAS_DELEGATION | 0 |
+| ALLOWLISTED | 0 |
+| _Total flagged names_ | 0 |
 
-The check groups names that two or more `src` files **own-export**, by name
-alone. Three limits follow from that, and each one matters when reading a
-non-zero result:
+## Runtime duplicates
 
-- It compares names, never bodies. It cannot tell a true duplicate from an
-  alias that delegates to one implementation.
-- It does not classify an entry or mark it public. A non-empty result is a
-  list for human triage, never a pre-sorted verdict.
-- A re-export (`export { X as Y } from "./a"`) is a disclosed gap in the
-  underlying parse. A barrel file can therefore be counted as a second
-  definer of a name it only forwards.
+### TRUE_DUPLICATE — actionable merge targets
 
-The count is 0 here, so none of the three limits changes the conclusion. They
-are recorded because they govern how to read this document the first time the
-count is not 0.
+_None._
 
-## Why this stays at 0
+### DISPATCH_VARIANT — distinct public typed-dispatch surfaces (Bucket C candidates)
 
-The three entry points (`src/index.ts`, `src/core.ts`, `src/react.ts`) are
-barrels: they re-export, and they define nothing of their own. Each module
-owns its names, and `COMPONENTS.md` gives the owner of each. A new symbol that
-collides with an existing name shows up here as a group of 2.
+_None._
 
----
+### ALIAS_DELEGATION — const-alias forwards (not independent bodies)
 
-## Related documentation
+_None._
 
-- [`COMPONENTS.md`](./COMPONENTS.md) — the owning module for each symbol
-- [`API.md`](./API.md) — the public surface of the three entry points
-- [`FILE_INVENTORY.md`](./FILE_INVENTORY.md) — every file and its disposition
+### ALLOWLISTED — accepted layering (see duplicate-allowlist.json)
 
----
+_None._
 
-## Verification
+## Type duplicates (lower priority)
 
-Generated 2026-09-15 by `repo_map.py map`.
-Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
+### TRUE_DUPLICATE
 
-| Claim          | Value | Source                 |
-| -------------- | ----- | ---------------------- |
-| duplicateCount | 0     | duplicate-symbols.json |
-| totalSymbols   | 104   | duplicate-symbols.json |
-| totalExports   | 361   | dependency-graph.json  |
-| totalFiles     | 66    | file-inventory.json    |
+_None._
 
-`totalSymbols` (104) and `totalExports` (361) count different things and must
-not be compared as one number. `totalSymbols` is the set of distinct
-own-exported names in the `src` area that this check examines. `totalExports`
-counts every export in every file of the repository, tests included.
+### DISPATCH_VARIANT
+
+_None._
+
+### ALIAS_DELEGATION
+
+_None._
+
+### ALLOWLISTED
+
+_None._

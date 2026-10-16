@@ -16,4 +16,5 @@ docs/architecture/test-coverage.json
 docs/architecture/DEPENDENCY_GRAPH.md
 docs/architecture/TEST_COVERAGE.md
 docs/architecture/unused-analysis.md
+docs/architecture/duplicate-symbols.md
 tools/**/package-lock.json

@@ -1,0 +1,2473 @@
+{
+  "metadata": {
+    "name": "neural-computer",
+    "version": "0.1.0",
+    "schemaVersion": "2.0.0",
+    "language": "typescript"
+  },
+  "entryPoints": [
+    {
+      "file": "src/index.ts",
+      "type": "main",
+      "description": "Neural Computer \u2014 public entry point."
+    }
+  ],
+  "modules": {
+    "app": {
+      "src/app/index.ts": {
+        "description": "SPDX-License-Identifier: Apache-2.0",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./nc-app",
+            "imports": [
+              "NCApp",
+              "NCAppProps"
+            ],
+            "reExport": true
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "NCApp",
+          "NCAppProps"
+        ],
+        "reExported": [
+          "NCApp",
+          "NCAppProps"
+        ]
+      },
+      "src/app/nc-app.tsx": {
+        "description": "Props for `NCApp`, the ready-made composition of the runtime, the",
+        "externalDependencies": [
+          {
+            "package": "react",
+            "imports": [
+              "default"
+            ]
+          },
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "UITree"
+            ]
+          },
+          {
+            "package": "@json-ui/react",
+            "imports": [
+              "ComponentRegistry"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "../renderer/nc-renderer",
+            "imports": [
+              "NCRenderer"
+            ]
+          },
+          {
+            "file": "../types",
+            "imports": [
+              "AnyCatalog",
+              "NCRuntime",
+              "NCCatalogVersion",
+              "NCIntentHandler"
+            ],
+            "typeOnly": true
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "NCApp"
+        ],
+        "interfaces": [
+          "NCAppProps"
+        ],
+        "functions": [
+          "NCApp"
+        ]
+      }
+    },
+    "catalog": {
+      "src/catalog/durable-path.ts": {
+        "description": "Durable-store paths are `/`-separated. Empty paths are a no-op in",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./limits",
+            "imports": [
+              "NC_DURABLE_PATH_MAX_LENGTH",
+              "NC_DURABLE_PATH_MAX_SEGMENTS",
+              "NC_RESERVED_FIELD_IDS"
+            ]
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "isSafeDurablePath"
+        ],
+        "functions": [
+          "isSafeDurablePath"
+        ]
+      },
+      "src/catalog/field-id.ts": {
+        "description": "Field IDs key the staging buffer. They must be non-empty, not a",
+        "externalDependencies": [
+          {
+            "package": "zod",
+            "imports": [
+              "z"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./limits",
+            "imports": [
+              "NC_FIELD_ID_MAX_LENGTH",
+              "NC_RESERVED_FIELD_IDS"
+            ]
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "isSafeFieldId",
+          "ncFieldIdSchema"
+        ],
+        "functions": [
+          "isSafeFieldId"
+        ],
+        "constants": [
+          "ncFieldIdSchema"
+        ]
+      },
+      "src/catalog/index.ts": {
+        "description": "SPDX-License-Identifier: Apache-2.0",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./nc-catalog",
+            "imports": [
+              "ncStarterCatalog",
+              "NC_CATALOG_VERSION",
+              "NC_LLM_ACCEPTANCE_CONTRACT"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./field-id",
+            "imports": [
+              "ncFieldIdSchema",
+              "isSafeFieldId"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./durable-path",
+            "imports": [
+              "isSafeDurablePath"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./limits",
+            "imports": [
+              "NC_FIELD_ID_MAX_LENGTH",
+              "NC_STRING_MAX_LENGTH",
+              "NC_ACTION_PARAM_MAX_KEYS",
+              "NC_STAGING_MAX_FIELDS",
+              "NC_SNAPSHOT_MAX_BYTES",
+              "NC_SELECT_MAX_OPTIONS",
+              "NC_DURABLE_PATH_MAX_LENGTH",
+              "NC_DURABLE_PATH_MAX_SEGMENTS",
+              "NC_DURABLE_VALUE_MAX_BYTES",
+              "NC_OBSERVER_STALE_THRESHOLD",
+              "NC_STARTER_ACTIONS",
+              "NC_RESERVED_FIELD_IDS",
+              "NCStarterActionName"
+            ],
+            "reExport": true
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "ncStarterCatalog",
+          "NC_CATALOG_VERSION",
+          "NC_LLM_ACCEPTANCE_CONTRACT",
+          "ncFieldIdSchema",
+          "isSafeFieldId",
+          "isSafeDurablePath",
+          "NC_FIELD_ID_MAX_LENGTH",
+          "NC_STRING_MAX_LENGTH",
+          "NC_ACTION_PARAM_MAX_KEYS",
+          "NC_STAGING_MAX_FIELDS",
+          "NC_SNAPSHOT_MAX_BYTES",
+          "NC_SELECT_MAX_OPTIONS",
+          "NC_DURABLE_PATH_MAX_LENGTH",
+          "NC_DURABLE_PATH_MAX_SEGMENTS",
+          "NC_DURABLE_VALUE_MAX_BYTES",
+          "NC_OBSERVER_STALE_THRESHOLD",
+          "NC_STARTER_ACTIONS",
+          "NC_RESERVED_FIELD_IDS",
+          "NCStarterActionName"
+        ],
+        "reExported": [
+          "ncStarterCatalog",
+          "NC_CATALOG_VERSION",
+          "NC_LLM_ACCEPTANCE_CONTRACT",
+          "ncFieldIdSchema",
+          "isSafeFieldId",
+          "isSafeDurablePath",
+          "NC_FIELD_ID_MAX_LENGTH",
+          "NC_STRING_MAX_LENGTH",
+          "NC_ACTION_PARAM_MAX_KEYS",
+          "NC_STAGING_MAX_FIELDS",
+          "NC_SNAPSHOT_MAX_BYTES",
+          "NC_SELECT_MAX_OPTIONS",
+          "NC_DURABLE_PATH_MAX_LENGTH",
+          "NC_DURABLE_PATH_MAX_SEGMENTS",
+          "NC_DURABLE_VALUE_MAX_BYTES",
+          "NC_OBSERVER_STALE_THRESHOLD",
+          "NC_STARTER_ACTIONS",
+          "NC_RESERVED_FIELD_IDS",
+          "NCStarterActionName"
+        ]
+      },
+      "src/catalog/limits.ts": {
+        "description": "Caps for catalog strings and staging-bound input. Unbounded LLM-emitted",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "workspaceDependencies": [],
+        "exports": [
+          "NC_FIELD_ID_MAX_LENGTH",
+          "NC_STRING_MAX_LENGTH",
+          "NC_ACTION_PARAM_MAX_KEYS",
+          "NC_STAGING_MAX_FIELDS",
+          "NC_SNAPSHOT_MAX_BYTES",
+          "NC_SELECT_MAX_OPTIONS",
+          "NC_DURABLE_PATH_MAX_LENGTH",
+          "NC_DURABLE_PATH_MAX_SEGMENTS",
+          "NC_DURABLE_VALUE_MAX_BYTES",
+          "NC_OBSERVER_STALE_THRESHOLD",
+          "NC_STARTER_ACTIONS",
+          "NC_RESERVED_FIELD_IDS"
+        ],
+        "constants": [
+          "NC_FIELD_ID_MAX_LENGTH",
+          "NC_STRING_MAX_LENGTH",
+          "NC_ACTION_PARAM_MAX_KEYS",
+          "NC_STAGING_MAX_FIELDS",
+          "NC_SNAPSHOT_MAX_BYTES",
+          "NC_SELECT_MAX_OPTIONS",
+          "NC_DURABLE_PATH_MAX_LENGTH",
+          "NC_DURABLE_PATH_MAX_SEGMENTS",
+          "NC_DURABLE_VALUE_MAX_BYTES",
+          "NC_OBSERVER_STALE_THRESHOLD",
+          "NC_STARTER_ACTIONS",
+          "NC_RESERVED_FIELD_IDS"
+        ]
+      },
+      "src/catalog/nc-catalog.ts": {
+        "description": "Version string threaded through every emitted IntentEvent.catalog_version",
+        "externalDependencies": [
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "createCatalog"
+            ]
+          },
+          {
+            "package": "zod",
+            "imports": [
+              "z"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "../types",
+            "imports": [
+              "asNCCatalogVersion"
+            ]
+          },
+          {
+            "file": "./field-id",
+            "imports": [
+              "ncFieldIdSchema"
+            ]
+          },
+          {
+            "file": "./limits",
+            "imports": [
+              "NC_ACTION_PARAM_MAX_KEYS",
+              "NC_RESERVED_FIELD_IDS",
+              "NC_SELECT_MAX_OPTIONS",
+              "NC_STRING_MAX_LENGTH",
+              "NC_STARTER_ACTIONS"
+            ]
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "NC_CATALOG_VERSION",
+          "NC_LLM_ACCEPTANCE_CONTRACT",
+          "ncStarterCatalog"
+        ],
+        "constants": [
+          "NC_CATALOG_VERSION",
+          "NC_LLM_ACCEPTANCE_CONTRACT",
+          "ncStarterCatalog"
+        ]
+      }
+    },
+    "compute": {
+      "src/compute/index.ts": {
+        "description": "SPDX-License-Identifier: Apache-2.0",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./limits",
+            "imports": [
+              "NC_REPL_CONTEXT_NAME",
+              "NC_REPL_DEFAULT_PYTHON",
+              "NC_REPL_DEFAULT_TIMEOUT_MS",
+              "NC_REPL_MAX_CODE_BYTES",
+              "NC_REPL_MAX_IDENT_LENGTH",
+              "NC_REPL_MAX_STDOUT_BYTES",
+              "NC_REPL_MAX_VALUE_BYTES",
+              "NC_REPL_MAX_LLM_PROMPT_BYTES",
+              "NC_REPL_MAX_LLM_REPLY_BYTES",
+              "NC_REPL_PROTOCOL_VERSION"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./types",
+            "imports": [
+              "NCReplError",
+              "NCReplErrorCode"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./types",
+            "imports": [
+              "CreatePythonReplOptions",
+              "NCPythonRepl",
+              "NCReplExecResult"
+            ],
+            "reExport": true,
+            "typeOnly": true
+          },
+          {
+            "file": "./python-repl",
+            "imports": [
+              "createPythonRepl",
+              "createWorkerSpawnOptions"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./worker-path",
+            "imports": [
+              "resolveWorkerPath"
+            ],
+            "reExport": true
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "NC_REPL_CONTEXT_NAME",
+          "NC_REPL_DEFAULT_PYTHON",
+          "NC_REPL_DEFAULT_TIMEOUT_MS",
+          "NC_REPL_MAX_CODE_BYTES",
+          "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_MAX_STDOUT_BYTES",
+          "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_MAX_LLM_PROMPT_BYTES",
+          "NC_REPL_MAX_LLM_REPLY_BYTES",
+          "NC_REPL_PROTOCOL_VERSION",
+          "NCReplError",
+          "NCReplErrorCode",
+          "CreatePythonReplOptions",
+          "NCPythonRepl",
+          "NCReplExecResult",
+          "createPythonRepl",
+          "createWorkerSpawnOptions",
+          "resolveWorkerPath"
+        ],
+        "reExported": [
+          "NC_REPL_CONTEXT_NAME",
+          "NC_REPL_DEFAULT_PYTHON",
+          "NC_REPL_DEFAULT_TIMEOUT_MS",
+          "NC_REPL_MAX_CODE_BYTES",
+          "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_MAX_STDOUT_BYTES",
+          "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_MAX_LLM_PROMPT_BYTES",
+          "NC_REPL_MAX_LLM_REPLY_BYTES",
+          "NC_REPL_PROTOCOL_VERSION",
+          "NCReplError",
+          "NCReplErrorCode",
+          "CreatePythonReplOptions",
+          "NCPythonRepl",
+          "NCReplExecResult",
+          "createPythonRepl",
+          "createWorkerSpawnOptions",
+          "resolveWorkerPath"
+        ]
+      },
+      "src/compute/limits.ts": {
+        "description": "Caps for the Python REPL worker. Unbounded snippets and prints would",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "workspaceDependencies": [],
+        "exports": [
+          "NC_REPL_DEFAULT_TIMEOUT_MS",
+          "NC_REPL_MAX_CODE_BYTES",
+          "NC_REPL_MAX_STDOUT_BYTES",
+          "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_MAX_LLM_PROMPT_BYTES",
+          "NC_REPL_MAX_LLM_REPLY_BYTES",
+          "NC_REPL_PROTOCOL_VERSION",
+          "NC_REPL_CONTEXT_NAME",
+          "NC_REPL_DEFAULT_PYTHON"
+        ],
+        "constants": [
+          "NC_REPL_DEFAULT_TIMEOUT_MS",
+          "NC_REPL_MAX_CODE_BYTES",
+          "NC_REPL_MAX_STDOUT_BYTES",
+          "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_MAX_LLM_PROMPT_BYTES",
+          "NC_REPL_MAX_LLM_REPLY_BYTES",
+          "NC_REPL_PROTOCOL_VERSION",
+          "NC_REPL_CONTEXT_NAME",
+          "NC_REPL_DEFAULT_PYTHON"
+        ]
+      },
+      "src/compute/python-repl.ts": {
+        "description": "Minimal env + cwd for the worker. The child must not inherit host",
+        "externalDependencies": [],
+        "nodeDependencies": [
+          {
+            "module": "child_process",
+            "imports": [
+              "spawn",
+              "ChildProcess"
+            ]
+          },
+          {
+            "module": "crypto",
+            "imports": [
+              "randomUUID"
+            ]
+          },
+          {
+            "module": "os",
+            "imports": [
+              "tmpdir"
+            ]
+          }
+        ],
+        "internalDependencies": [
+          {
+            "file": "./limits",
+            "imports": [
+              "NC_REPL_CONTEXT_NAME",
+              "NC_REPL_DEFAULT_PYTHON",
+              "NC_REPL_DEFAULT_TIMEOUT_MS",
+              "NC_REPL_MAX_CODE_BYTES",
+              "NC_REPL_MAX_IDENT_LENGTH",
+              "NC_REPL_MAX_LLM_PROMPT_BYTES",
+              "NC_REPL_MAX_LLM_REPLY_BYTES",
+              "NC_REPL_MAX_STDOUT_BYTES",
+              "NC_REPL_MAX_VALUE_BYTES",
+              "NC_REPL_PROTOCOL_VERSION"
+            ]
+          },
+          {
+            "file": "./types",
+            "imports": [
+              "NCReplError",
+              "CreatePythonReplOptions",
+              "NCPythonRepl",
+              "NCReplExecResult"
+            ]
+          },
+          {
+            "file": "./worker-path",
+            "imports": [
+              "resolveWorkerPath"
+            ]
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "createWorkerSpawnOptions",
+          "PythonRepl",
+          "createPythonRepl"
+        ],
+        "classes": [
+          "PythonRepl"
+        ],
+        "functions": [
+          "createWorkerSpawnOptions",
+          "createPythonRepl"
+        ]
+      },
+      "src/compute/types.ts": {
+        "description": "Why one REPL operation failed. `busy` means a second call arrived",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "workspaceDependencies": [],
+        "exports": [
+          "NCReplError"
+        ],
+        "classes": [
+          "NCReplError"
+        ],
+        "interfaces": [
+          "CreatePythonReplOptions",
+          "NCReplExecResult",
+          "NCPythonRepl"
+        ]
+      },
+      "src/compute/worker-path.ts": {
+        "description": "Locate worker.py next to this module (source tree) or next to the",
+        "externalDependencies": [],
+        "nodeDependencies": [
+          {
+            "module": "fs",
+            "imports": [
+              "existsSync"
+            ]
+          },
+          {
+            "module": "path",
+            "imports": [
+              "dirname",
+              "join"
+            ]
+          },
+          {
+            "module": "url",
+            "imports": [
+              "fileURLToPath"
+            ]
+          }
+        ],
+        "internalDependencies": [
+          {
+            "file": "./types",
+            "imports": [
+              "NCReplError"
+            ]
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "resolveWorkerPath"
+        ],
+        "functions": [
+          "resolveWorkerPath"
+        ]
+      }
+    },
+    "root": {
+      "src/core.ts": {
+        "description": "React-free entry for Node / orchestrator processes.",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./catalog",
+            "imports": [
+              "ncStarterCatalog",
+              "NC_CATALOG_VERSION",
+              "NC_LLM_ACCEPTANCE_CONTRACT",
+              "ncFieldIdSchema",
+              "isSafeFieldId",
+              "isSafeDurablePath",
+              "NC_FIELD_ID_MAX_LENGTH",
+              "NC_STRING_MAX_LENGTH",
+              "NC_STAGING_MAX_FIELDS",
+              "NC_SNAPSHOT_MAX_BYTES",
+              "NC_STARTER_ACTIONS"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./types",
+            "imports": [
+              "NCIntentHandler",
+              "NCCatalogVersion",
+              "NCObserver",
+              "NCRuntime",
+              "AnyCatalog"
+            ],
+            "reExport": true,
+            "typeOnly": true
+          },
+          {
+            "file": "./types",
+            "imports": [
+              "asNCCatalogVersion",
+              "isNCCatalogVersion"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./runtime",
+            "imports": [
+              "createNCRuntime",
+              "CreateNCRuntimeOptions"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./memory",
+            "imports": [
+              "defaultNCProjection",
+              "NCProjectedData",
+              "NCProjectedEntity",
+              "NCProjectedRelation"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./orchestrator",
+            "imports": [
+              "createStubIntentHandler",
+              "submittedFieldsStillPresent",
+              "CreateStubIntentHandlerOptions",
+              "createLlmIntentHandler",
+              "composeNcObservation",
+              "createAnthropicTransport",
+              "createAnthropicIntentHandler",
+              "NCLlmError",
+              "NC_OBSERVATION_MAX_BYTES",
+              "NC_LLM_DEFAULT_MAX_ROUNDS",
+              "NC_LLM_MAX_ROUNDS",
+              "NC_LLM_DEFAULT_MAX_TOKENS",
+              "NC_DEFAULT_ANTHROPIC_MODEL",
+              "CreateLlmIntentHandlerOptions",
+              "DurableWrite",
+              "NCLlmTransport",
+              "NCLlmMessage",
+              "NCLlmContent",
+              "NCLlmTool",
+              "CreateAnthropicTransportOptions",
+              "NCLlmErrorCode"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./observer",
+            "imports": [
+              "createNCObserver",
+              "ncHeadlessRegistry",
+              "CreateNCObserverOptions"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./compute",
+            "imports": [
+              "createPythonRepl",
+              "resolveWorkerPath",
+              "NCReplError",
+              "NC_REPL_CONTEXT_NAME",
+              "NC_REPL_DEFAULT_PYTHON",
+              "NC_REPL_DEFAULT_TIMEOUT_MS",
+              "NC_REPL_MAX_CODE_BYTES",
+              "NC_REPL_MAX_IDENT_LENGTH",
+              "NC_REPL_MAX_STDOUT_BYTES",
+              "NC_REPL_MAX_VALUE_BYTES",
+              "NC_REPL_MAX_LLM_PROMPT_BYTES",
+              "NC_REPL_MAX_LLM_REPLY_BYTES",
+              "NC_REPL_PROTOCOL_VERSION",
+              "CreatePythonReplOptions",
+              "NCPythonRepl",
+              "NCReplExecResult",
+              "NCReplErrorCode"
+            ],
+            "reExport": true
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "ncStarterCatalog",
+          "NC_CATALOG_VERSION",
+          "NC_LLM_ACCEPTANCE_CONTRACT",
+          "ncFieldIdSchema",
+          "isSafeFieldId",
+          "isSafeDurablePath",
+          "NC_FIELD_ID_MAX_LENGTH",
+          "NC_STRING_MAX_LENGTH",
+          "NC_STAGING_MAX_FIELDS",
+          "NC_SNAPSHOT_MAX_BYTES",
+          "NC_STARTER_ACTIONS",
+          "NCIntentHandler",
+          "NCCatalogVersion",
+          "NCObserver",
+          "NCRuntime",
+          "AnyCatalog",
+          "asNCCatalogVersion",
+          "isNCCatalogVersion",
+          "createNCRuntime",
+          "CreateNCRuntimeOptions",
+          "defaultNCProjection",
+          "NCProjectedData",
+          "NCProjectedEntity",
+          "NCProjectedRelation",
+          "createStubIntentHandler",
+          "submittedFieldsStillPresent",
+          "CreateStubIntentHandlerOptions",
+          "createLlmIntentHandler",
+          "composeNcObservation",
+          "createAnthropicTransport",
+          "createAnthropicIntentHandler",
+          "NCLlmError",
+          "NC_OBSERVATION_MAX_BYTES",
+          "NC_LLM_DEFAULT_MAX_ROUNDS",
+          "NC_LLM_MAX_ROUNDS",
+          "NC_LLM_DEFAULT_MAX_TOKENS",
+          "NC_DEFAULT_ANTHROPIC_MODEL",
+          "CreateLlmIntentHandlerOptions",
+          "DurableWrite",
+          "NCLlmTransport",
+          "NCLlmMessage",
+          "NCLlmContent",
+          "NCLlmTool",
+          "CreateAnthropicTransportOptions",
+          "NCLlmErrorCode",
+          "createNCObserver",
+          "ncHeadlessRegistry",
+          "CreateNCObserverOptions",
+          "createPythonRepl",
+          "resolveWorkerPath",
+          "NCReplError",
+          "NC_REPL_CONTEXT_NAME",
+          "NC_REPL_DEFAULT_PYTHON",
+          "NC_REPL_DEFAULT_TIMEOUT_MS",
+          "NC_REPL_MAX_CODE_BYTES",
+          "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_MAX_STDOUT_BYTES",
+          "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_MAX_LLM_PROMPT_BYTES",
+          "NC_REPL_MAX_LLM_REPLY_BYTES",
+          "NC_REPL_PROTOCOL_VERSION",
+          "CreatePythonReplOptions",
+          "NCPythonRepl",
+          "NCReplExecResult",
+          "NCReplErrorCode"
+        ],
+        "reExported": [
+          "ncStarterCatalog",
+          "NC_CATALOG_VERSION",
+          "NC_LLM_ACCEPTANCE_CONTRACT",
+          "ncFieldIdSchema",
+          "isSafeFieldId",
+          "isSafeDurablePath",
+          "NC_FIELD_ID_MAX_LENGTH",
+          "NC_STRING_MAX_LENGTH",
+          "NC_STAGING_MAX_FIELDS",
+          "NC_SNAPSHOT_MAX_BYTES",
+          "NC_STARTER_ACTIONS",
+          "NCIntentHandler",
+          "NCCatalogVersion",
+          "NCObserver",
+          "NCRuntime",
+          "AnyCatalog",
+          "asNCCatalogVersion",
+          "isNCCatalogVersion",
+          "createNCRuntime",
+          "CreateNCRuntimeOptions",
+          "defaultNCProjection",
+          "NCProjectedData",
+          "NCProjectedEntity",
+          "NCProjectedRelation",
+          "createStubIntentHandler",
+          "submittedFieldsStillPresent",
+          "CreateStubIntentHandlerOptions",
+          "createLlmIntentHandler",
+          "composeNcObservation",
+          "createAnthropicTransport",
+          "createAnthropicIntentHandler",
+          "NCLlmError",
+          "NC_OBSERVATION_MAX_BYTES",
+          "NC_LLM_DEFAULT_MAX_ROUNDS",
+          "NC_LLM_MAX_ROUNDS",
+          "NC_LLM_DEFAULT_MAX_TOKENS",
+          "NC_DEFAULT_ANTHROPIC_MODEL",
+          "CreateLlmIntentHandlerOptions",
+          "DurableWrite",
+          "NCLlmTransport",
+          "NCLlmMessage",
+          "NCLlmContent",
+          "NCLlmTool",
+          "CreateAnthropicTransportOptions",
+          "NCLlmErrorCode",
+          "createNCObserver",
+          "ncHeadlessRegistry",
+          "CreateNCObserverOptions",
+          "createPythonRepl",
+          "resolveWorkerPath",
+          "NCReplError",
+          "NC_REPL_CONTEXT_NAME",
+          "NC_REPL_DEFAULT_PYTHON",
+          "NC_REPL_DEFAULT_TIMEOUT_MS",
+          "NC_REPL_MAX_CODE_BYTES",
+          "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_MAX_STDOUT_BYTES",
+          "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_MAX_LLM_PROMPT_BYTES",
+          "NC_REPL_MAX_LLM_REPLY_BYTES",
+          "NC_REPL_PROTOCOL_VERSION",
+          "CreatePythonReplOptions",
+          "NCPythonRepl",
+          "NCReplExecResult",
+          "NCReplErrorCode"
+        ]
+      },
+      "src/react.ts": {
+        "description": "SPDX-License-Identifier: Apache-2.0",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./renderer",
+            "imports": [
+              "NCRenderer",
+              "NCContainer",
+              "NCText",
+              "NCTextField",
+              "NCCheckbox",
+              "NCSelect",
+              "NCButton",
+              "useCommittedTree",
+              "NCErrorBoundary",
+              "NCRendererProps",
+              "NCComponentProps",
+              "UseCommittedTreeOptions"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./app",
+            "imports": [
+              "NCApp",
+              "NCAppProps"
+            ],
+            "reExport": true
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "NCRenderer",
+          "NCContainer",
+          "NCText",
+          "NCTextField",
+          "NCCheckbox",
+          "NCSelect",
+          "NCButton",
+          "useCommittedTree",
+          "NCErrorBoundary",
+          "NCRendererProps",
+          "NCComponentProps",
+          "UseCommittedTreeOptions",
+          "NCApp",
+          "NCAppProps"
+        ],
+        "reExported": [
+          "NCRenderer",
+          "NCContainer",
+          "NCText",
+          "NCTextField",
+          "NCCheckbox",
+          "NCSelect",
+          "NCButton",
+          "useCommittedTree",
+          "NCErrorBoundary",
+          "NCRendererProps",
+          "NCComponentProps",
+          "UseCommittedTreeOptions",
+          "NCApp",
+          "NCAppProps"
+        ]
+      },
+      "src/test-setup.ts": {
+        "description": "SPDX-License-Identifier: Apache-2.0",
+        "externalDependencies": [
+          {
+            "package": "vitest",
+            "imports": [
+              "afterEach"
+            ]
+          },
+          {
+            "package": "@testing-library/react",
+            "imports": [
+              "cleanup"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "workspaceDependencies": [],
+        "exports": []
+      }
+    },
+    "entry": {
+      "src/index.ts": {
+        "description": "Neural Computer \u2014 public entry point.",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./catalog",
+            "imports": [
+              "ncStarterCatalog",
+              "NC_CATALOG_VERSION",
+              "NC_LLM_ACCEPTANCE_CONTRACT",
+              "ncFieldIdSchema",
+              "isSafeFieldId",
+              "isSafeDurablePath",
+              "NC_FIELD_ID_MAX_LENGTH",
+              "NC_STRING_MAX_LENGTH",
+              "NC_STAGING_MAX_FIELDS",
+              "NC_SNAPSHOT_MAX_BYTES",
+              "NC_STARTER_ACTIONS"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./types",
+            "imports": [
+              "NCIntentHandler",
+              "NCCatalogVersion",
+              "NCObserver",
+              "NCRuntime",
+              "AnyCatalog"
+            ],
+            "reExport": true,
+            "typeOnly": true
+          },
+          {
+            "file": "./types",
+            "imports": [
+              "asNCCatalogVersion",
+              "isNCCatalogVersion"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./runtime",
+            "imports": [
+              "createNCRuntime",
+              "CreateNCRuntimeOptions"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./memory",
+            "imports": [
+              "defaultNCProjection",
+              "NCProjectedData",
+              "NCProjectedEntity",
+              "NCProjectedRelation"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./renderer",
+            "imports": [
+              "NCRenderer",
+              "NCContainer",
+              "NCText",
+              "NCTextField",
+              "NCCheckbox",
+              "NCSelect",
+              "NCButton",
+              "useCommittedTree",
+              "NCErrorBoundary",
+              "NCRendererProps",
+              "NCComponentProps",
+              "UseCommittedTreeOptions"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./orchestrator",
+            "imports": [
+              "createStubIntentHandler",
+              "submittedFieldsStillPresent",
+              "CreateStubIntentHandlerOptions",
+              "createLlmIntentHandler",
+              "composeNcObservation",
+              "createAnthropicTransport",
+              "createAnthropicIntentHandler",
+              "NCLlmError",
+              "NC_OBSERVATION_MAX_BYTES",
+              "NC_LLM_DEFAULT_MAX_ROUNDS",
+              "NC_LLM_MAX_ROUNDS",
+              "NC_LLM_DEFAULT_MAX_TOKENS",
+              "NC_DEFAULT_ANTHROPIC_MODEL",
+              "CreateLlmIntentHandlerOptions",
+              "DurableWrite",
+              "NCLlmTransport",
+              "NCLlmMessage",
+              "NCLlmContent",
+              "NCLlmTool",
+              "CreateAnthropicTransportOptions",
+              "NCLlmErrorCode"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./app",
+            "imports": [
+              "NCApp",
+              "NCAppProps"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./observer",
+            "imports": [
+              "createNCObserver",
+              "ncHeadlessRegistry",
+              "CreateNCObserverOptions"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./compute",
+            "imports": [
+              "createPythonRepl",
+              "resolveWorkerPath",
+              "NCReplError",
+              "NC_REPL_CONTEXT_NAME",
+              "NC_REPL_DEFAULT_PYTHON",
+              "NC_REPL_DEFAULT_TIMEOUT_MS",
+              "NC_REPL_MAX_CODE_BYTES",
+              "NC_REPL_MAX_IDENT_LENGTH",
+              "NC_REPL_MAX_STDOUT_BYTES",
+              "NC_REPL_MAX_VALUE_BYTES",
+              "NC_REPL_MAX_LLM_PROMPT_BYTES",
+              "NC_REPL_MAX_LLM_REPLY_BYTES",
+              "NC_REPL_PROTOCOL_VERSION",
+              "CreatePythonReplOptions",
+              "NCPythonRepl",
+              "NCReplExecResult",
+              "NCReplErrorCode"
+            ],
+            "reExport": true
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "ncStarterCatalog",
+          "NC_CATALOG_VERSION",
+          "NC_LLM_ACCEPTANCE_CONTRACT",
+          "ncFieldIdSchema",
+          "isSafeFieldId",
+          "isSafeDurablePath",
+          "NC_FIELD_ID_MAX_LENGTH",
+          "NC_STRING_MAX_LENGTH",
+          "NC_STAGING_MAX_FIELDS",
+          "NC_SNAPSHOT_MAX_BYTES",
+          "NC_STARTER_ACTIONS",
+          "NCIntentHandler",
+          "NCCatalogVersion",
+          "NCObserver",
+          "NCRuntime",
+          "AnyCatalog",
+          "asNCCatalogVersion",
+          "isNCCatalogVersion",
+          "createNCRuntime",
+          "CreateNCRuntimeOptions",
+          "defaultNCProjection",
+          "NCProjectedData",
+          "NCProjectedEntity",
+          "NCProjectedRelation",
+          "NCRenderer",
+          "NCContainer",
+          "NCText",
+          "NCTextField",
+          "NCCheckbox",
+          "NCSelect",
+          "NCButton",
+          "useCommittedTree",
+          "NCErrorBoundary",
+          "NCRendererProps",
+          "NCComponentProps",
+          "UseCommittedTreeOptions",
+          "createStubIntentHandler",
+          "submittedFieldsStillPresent",
+          "CreateStubIntentHandlerOptions",
+          "createLlmIntentHandler",
+          "composeNcObservation",
+          "createAnthropicTransport",
+          "createAnthropicIntentHandler",
+          "NCLlmError",
+          "NC_OBSERVATION_MAX_BYTES",
+          "NC_LLM_DEFAULT_MAX_ROUNDS",
+          "NC_LLM_MAX_ROUNDS",
+          "NC_LLM_DEFAULT_MAX_TOKENS",
+          "NC_DEFAULT_ANTHROPIC_MODEL",
+          "CreateLlmIntentHandlerOptions",
+          "DurableWrite",
+          "NCLlmTransport",
+          "NCLlmMessage",
+          "NCLlmContent",
+          "NCLlmTool",
+          "CreateAnthropicTransportOptions",
+          "NCLlmErrorCode",
+          "NCApp",
+          "NCAppProps",
+          "createNCObserver",
+          "ncHeadlessRegistry",
+          "CreateNCObserverOptions",
+          "createPythonRepl",
+          "resolveWorkerPath",
+          "NCReplError",
+          "NC_REPL_CONTEXT_NAME",
+          "NC_REPL_DEFAULT_PYTHON",
+          "NC_REPL_DEFAULT_TIMEOUT_MS",
+          "NC_REPL_MAX_CODE_BYTES",
+          "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_MAX_STDOUT_BYTES",
+          "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_MAX_LLM_PROMPT_BYTES",
+          "NC_REPL_MAX_LLM_REPLY_BYTES",
+          "NC_REPL_PROTOCOL_VERSION",
+          "CreatePythonReplOptions",
+          "NCPythonRepl",
+          "NCReplExecResult",
+          "NCReplErrorCode"
+        ],
+        "reExported": [
+          "ncStarterCatalog",
+          "NC_CATALOG_VERSION",
+          "NC_LLM_ACCEPTANCE_CONTRACT",
+          "ncFieldIdSchema",
+          "isSafeFieldId",
+          "isSafeDurablePath",
+          "NC_FIELD_ID_MAX_LENGTH",
+          "NC_STRING_MAX_LENGTH",
+          "NC_STAGING_MAX_FIELDS",
+          "NC_SNAPSHOT_MAX_BYTES",
+          "NC_STARTER_ACTIONS",
+          "NCIntentHandler",
+          "NCCatalogVersion",
+          "NCObserver",
+          "NCRuntime",
+          "AnyCatalog",
+          "asNCCatalogVersion",
+          "isNCCatalogVersion",
+          "createNCRuntime",
+          "CreateNCRuntimeOptions",
+          "defaultNCProjection",
+          "NCProjectedData",
+          "NCProjectedEntity",
+          "NCProjectedRelation",
+          "NCRenderer",
+          "NCContainer",
+          "NCText",
+          "NCTextField",
+          "NCCheckbox",
+          "NCSelect",
+          "NCButton",
+          "useCommittedTree",
+          "NCErrorBoundary",
+          "NCRendererProps",
+          "NCComponentProps",
+          "UseCommittedTreeOptions",
+          "createStubIntentHandler",
+          "submittedFieldsStillPresent",
+          "CreateStubIntentHandlerOptions",
+          "createLlmIntentHandler",
+          "composeNcObservation",
+          "createAnthropicTransport",
+          "createAnthropicIntentHandler",
+          "NCLlmError",
+          "NC_OBSERVATION_MAX_BYTES",
+          "NC_LLM_DEFAULT_MAX_ROUNDS",
+          "NC_LLM_MAX_ROUNDS",
+          "NC_LLM_DEFAULT_MAX_TOKENS",
+          "NC_DEFAULT_ANTHROPIC_MODEL",
+          "CreateLlmIntentHandlerOptions",
+          "DurableWrite",
+          "NCLlmTransport",
+          "NCLlmMessage",
+          "NCLlmContent",
+          "NCLlmTool",
+          "CreateAnthropicTransportOptions",
+          "NCLlmErrorCode",
+          "NCApp",
+          "NCAppProps",
+          "createNCObserver",
+          "ncHeadlessRegistry",
+          "CreateNCObserverOptions",
+          "createPythonRepl",
+          "resolveWorkerPath",
+          "NCReplError",
+          "NC_REPL_CONTEXT_NAME",
+          "NC_REPL_DEFAULT_PYTHON",
+          "NC_REPL_DEFAULT_TIMEOUT_MS",
+          "NC_REPL_MAX_CODE_BYTES",
+          "NC_REPL_MAX_IDENT_LENGTH",
+          "NC_REPL_MAX_STDOUT_BYTES",
+          "NC_REPL_MAX_VALUE_BYTES",
+          "NC_REPL_MAX_LLM_PROMPT_BYTES",
+          "NC_REPL_MAX_LLM_REPLY_BYTES",
+          "NC_REPL_PROTOCOL_VERSION",
+          "CreatePythonReplOptions",
+          "NCPythonRepl",
+          "NCReplExecResult",
+          "NCReplErrorCode"
+        ]
+      }
+    },
+    "memory": {
+      "src/memory/index.ts": {
+        "description": "SPDX-License-Identifier: Apache-2.0",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./projection",
+            "imports": [
+              "defaultNCProjection",
+              "NCProjectedData",
+              "NCProjectedEntity",
+              "NCProjectedRelation"
+            ],
+            "reExport": true
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "defaultNCProjection",
+          "NCProjectedData",
+          "NCProjectedEntity",
+          "NCProjectedRelation"
+        ],
+        "reExported": [
+          "defaultNCProjection",
+          "NCProjectedData",
+          "NCProjectedEntity",
+          "NCProjectedRelation"
+        ]
+      },
+      "src/memory/projection.ts": {
+        "description": "The flat view NC exposes to @json-ui/react's DataProvider via the",
+        "externalDependencies": [
+          {
+            "package": "@danielsimonjr/memoryjs",
+            "imports": [
+              "Entity",
+              "Relation",
+              "GraphProjection",
+              "JSONValue"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "../runtime/freeze",
+            "imports": [
+              "dict"
+            ]
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "defaultNCProjection"
+        ],
+        "interfaces": [
+          "NCProjectedRelation",
+          "NCProjectedData",
+          "NCProjectedEntity"
+        ],
+        "constants": [
+          "defaultNCProjection"
+        ]
+      }
+    },
+    "observer": {
+      "src/observer/index.ts": {
+        "description": "SPDX-License-Identifier: Apache-2.0",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./nc-observer",
+            "imports": [
+              "createNCObserver",
+              "CreateNCObserverOptions"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./nc-headless-components",
+            "imports": [
+              "ncHeadlessRegistry"
+            ],
+            "reExport": true
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "createNCObserver",
+          "CreateNCObserverOptions",
+          "ncHeadlessRegistry"
+        ],
+        "reExported": [
+          "createNCObserver",
+          "CreateNCObserverOptions",
+          "ncHeadlessRegistry"
+        ]
+      },
+      "src/observer/nc-headless-components.ts": {
+        "description": "Six headless components mirroring NC's React input-components surface.",
+        "externalDependencies": [
+          {
+            "package": "@json-ui/headless",
+            "imports": [
+              "HeadlessComponent",
+              "HeadlessRegistry"
+            ]
+          },
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "JSONValue",
+              "UIElement"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "workspaceDependencies": [],
+        "exports": [
+          "ncHeadlessRegistry"
+        ],
+        "constants": [
+          "ncHeadlessRegistry"
+        ]
+      },
+      "src/observer/nc-observer.ts": {
+        "description": "Options for {@link createNCObserver}. The catalog binds once, at",
+        "externalDependencies": [
+          {
+            "package": "@json-ui/headless",
+            "imports": [
+              "createHeadlessRenderer",
+              "JsonStringSerializer",
+              "createHtmlSerializer",
+              "HeadlessRegistry",
+              "NormalizedNode"
+            ]
+          },
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "ObservableDataModel",
+              "StagingBuffer",
+              "UITree"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./nc-headless-components",
+            "imports": [
+              "ncHeadlessRegistry"
+            ]
+          },
+          {
+            "file": "../catalog/limits",
+            "imports": [
+              "NC_OBSERVER_STALE_THRESHOLD"
+            ]
+          },
+          {
+            "file": "../runtime/freeze",
+            "imports": [
+              "freezeDeep"
+            ]
+          },
+          {
+            "file": "../types",
+            "imports": [
+              "AnyCatalog",
+              "NCObserver"
+            ],
+            "typeOnly": true
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "createNCObserver"
+        ],
+        "interfaces": [
+          "CreateNCObserverOptions"
+        ],
+        "functions": [
+          "createNCObserver"
+        ]
+      }
+    },
+    "orchestrator": {
+      "src/orchestrator/anthropic-transport.ts": {
+        "description": "Options for {@link createAnthropicTransport}. `model` and",
+        "externalDependencies": [
+          {
+            "package": "@anthropic-ai/sdk",
+            "imports": [
+              "default"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./limits",
+            "imports": [
+              "NC_DEFAULT_ANTHROPIC_MODEL",
+              "NC_LLM_DEFAULT_MAX_TOKENS"
+            ]
+          },
+          {
+            "file": "./llm-transport",
+            "imports": [
+              "NCLlmCompleteRequest",
+              "NCLlmContent",
+              "NCLlmToolResultContent",
+              "NCLlmToolUseContent",
+              "NCLlmTransport"
+            ],
+            "typeOnly": true
+          },
+          {
+            "file": "./llm-handler",
+            "imports": [
+              "createLlmIntentHandler",
+              "CreateLlmIntentHandlerOptions"
+            ]
+          },
+          {
+            "file": "../types",
+            "imports": [
+              "NCIntentHandler"
+            ],
+            "typeOnly": true
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "createAnthropicTransport",
+          "createAnthropicIntentHandler"
+        ],
+        "interfaces": [
+          "CreateAnthropicTransportOptions"
+        ],
+        "functions": [
+          "createAnthropicTransport",
+          "createAnthropicIntentHandler"
+        ]
+      },
+      "src/orchestrator/handle-intent.ts": {
+        "description": "Options for the stub intent handler. The stub is deterministic \u2014",
+        "externalDependencies": [
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "collectFieldIds",
+              "IntentEvent",
+              "UITree"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "../types",
+            "imports": [
+              "AnyCatalog",
+              "NCIntentHandler"
+            ],
+            "typeOnly": true
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "createStubIntentHandler",
+          "submittedFieldsStillPresent"
+        ],
+        "interfaces": [
+          "CreateStubIntentHandlerOptions"
+        ],
+        "functions": [
+          "createStubIntentHandler",
+          "submittedFieldsStillPresent"
+        ]
+      },
+      "src/orchestrator/index.ts": {
+        "description": "SPDX-License-Identifier: Apache-2.0",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./handle-intent",
+            "imports": [
+              "createStubIntentHandler",
+              "submittedFieldsStillPresent",
+              "CreateStubIntentHandlerOptions"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./observation",
+            "imports": [
+              "composeNcObservation",
+              "ComposeNcObservationInput",
+              "NcObservation"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./llm-handler",
+            "imports": [
+              "createLlmIntentHandler",
+              "CreateLlmIntentHandlerOptions",
+              "DurableWrite"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./llm-transport",
+            "imports": [
+              "NCLlmError",
+              "NCLlmErrorCode",
+              "NCLlmTransport",
+              "NCLlmMessage",
+              "NCLlmContent",
+              "NCLlmTool",
+              "NCLlmCompleteRequest",
+              "NCLlmCompleteResponse"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./anthropic-transport",
+            "imports": [
+              "createAnthropicTransport",
+              "createAnthropicIntentHandler",
+              "CreateAnthropicTransportOptions"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./limits",
+            "imports": [
+              "NC_OBSERVATION_MAX_BYTES",
+              "NC_LLM_DEFAULT_MAX_ROUNDS",
+              "NC_LLM_MAX_ROUNDS",
+              "NC_LLM_MAX_TOOLS_PER_ROUND",
+              "NC_LLM_MAX_TOOL_RESULT_BYTES",
+              "NC_LLM_DEFAULT_MAX_TOKENS",
+              "NC_DEFAULT_ANTHROPIC_MODEL"
+            ],
+            "reExport": true
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "createStubIntentHandler",
+          "submittedFieldsStillPresent",
+          "CreateStubIntentHandlerOptions",
+          "composeNcObservation",
+          "ComposeNcObservationInput",
+          "NcObservation",
+          "createLlmIntentHandler",
+          "CreateLlmIntentHandlerOptions",
+          "DurableWrite",
+          "NCLlmError",
+          "NCLlmErrorCode",
+          "NCLlmTransport",
+          "NCLlmMessage",
+          "NCLlmContent",
+          "NCLlmTool",
+          "NCLlmCompleteRequest",
+          "NCLlmCompleteResponse",
+          "createAnthropicTransport",
+          "createAnthropicIntentHandler",
+          "CreateAnthropicTransportOptions",
+          "NC_OBSERVATION_MAX_BYTES",
+          "NC_LLM_DEFAULT_MAX_ROUNDS",
+          "NC_LLM_MAX_ROUNDS",
+          "NC_LLM_MAX_TOOLS_PER_ROUND",
+          "NC_LLM_MAX_TOOL_RESULT_BYTES",
+          "NC_LLM_DEFAULT_MAX_TOKENS",
+          "NC_DEFAULT_ANTHROPIC_MODEL"
+        ],
+        "reExported": [
+          "createStubIntentHandler",
+          "submittedFieldsStillPresent",
+          "CreateStubIntentHandlerOptions",
+          "composeNcObservation",
+          "ComposeNcObservationInput",
+          "NcObservation",
+          "createLlmIntentHandler",
+          "CreateLlmIntentHandlerOptions",
+          "DurableWrite",
+          "NCLlmError",
+          "NCLlmErrorCode",
+          "NCLlmTransport",
+          "NCLlmMessage",
+          "NCLlmContent",
+          "NCLlmTool",
+          "NCLlmCompleteRequest",
+          "NCLlmCompleteResponse",
+          "createAnthropicTransport",
+          "createAnthropicIntentHandler",
+          "CreateAnthropicTransportOptions",
+          "NC_OBSERVATION_MAX_BYTES",
+          "NC_LLM_DEFAULT_MAX_ROUNDS",
+          "NC_LLM_MAX_ROUNDS",
+          "NC_LLM_MAX_TOOLS_PER_ROUND",
+          "NC_LLM_MAX_TOOL_RESULT_BYTES",
+          "NC_LLM_DEFAULT_MAX_TOKENS",
+          "NC_DEFAULT_ANTHROPIC_MODEL"
+        ]
+      },
+      "src/orchestrator/limits.ts": {
+        "description": "SPDX-License-Identifier: Apache-2.0",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "workspaceDependencies": [],
+        "exports": [
+          "NC_OBSERVATION_MAX_BYTES",
+          "NC_LLM_DEFAULT_MAX_ROUNDS",
+          "NC_LLM_MAX_ROUNDS",
+          "NC_LLM_MAX_TOOLS_PER_ROUND",
+          "NC_LLM_MAX_TOOL_RESULT_BYTES",
+          "NC_LLM_DEFAULT_MAX_TOKENS",
+          "NC_DEFAULT_ANTHROPIC_MODEL"
+        ],
+        "constants": [
+          "NC_OBSERVATION_MAX_BYTES",
+          "NC_LLM_DEFAULT_MAX_ROUNDS",
+          "NC_LLM_MAX_ROUNDS",
+          "NC_LLM_MAX_TOOLS_PER_ROUND",
+          "NC_LLM_MAX_TOOL_RESULT_BYTES",
+          "NC_LLM_DEFAULT_MAX_TOKENS",
+          "NC_DEFAULT_ANTHROPIC_MODEL"
+        ]
+      },
+      "src/orchestrator/llm-handler.ts": {
+        "description": "One `durable_write` request from the model. `path` is a `/`-separated",
+        "externalDependencies": [
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "generateCatalogPrompt",
+              "validateJSONValue",
+              "JSONValue",
+              "UITree"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "../catalog",
+            "imports": [
+              "isSafeDurablePath",
+              "NC_DURABLE_VALUE_MAX_BYTES",
+              "NC_LLM_ACCEPTANCE_CONTRACT"
+            ]
+          },
+          {
+            "file": "../compute",
+            "imports": [
+              "NCPythonRepl"
+            ],
+            "typeOnly": true
+          },
+          {
+            "file": "../types",
+            "imports": [
+              "AnyCatalog",
+              "NCIntentHandler",
+              "NCRuntime"
+            ],
+            "typeOnly": true
+          },
+          {
+            "file": "./limits",
+            "imports": [
+              "NC_LLM_DEFAULT_MAX_ROUNDS",
+              "NC_LLM_MAX_ROUNDS",
+              "NC_LLM_MAX_TOOL_RESULT_BYTES",
+              "NC_LLM_MAX_TOOLS_PER_ROUND"
+            ]
+          },
+          {
+            "file": "./llm-transport",
+            "imports": [
+              "NCLlmError",
+              "NCLlmContent",
+              "NCLlmMessage",
+              "NCLlmTool",
+              "NCLlmToolUseContent",
+              "NCLlmTransport"
+            ]
+          },
+          {
+            "file": "./observation",
+            "imports": [
+              "composeNcObservation"
+            ]
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "createLlmIntentHandler"
+        ],
+        "interfaces": [
+          "DurableWrite",
+          "CreateLlmIntentHandlerOptions"
+        ],
+        "functions": [
+          "createLlmIntentHandler"
+        ]
+      },
+      "src/orchestrator/llm-transport.ts": {
+        "description": "A model request to call one tool. `id` correlates the call with the",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "workspaceDependencies": [],
+        "exports": [
+          "NCLlmError"
+        ],
+        "classes": [
+          "NCLlmError"
+        ],
+        "interfaces": [
+          "NCLlmMessage",
+          "NCLlmTool",
+          "NCLlmCompleteRequest",
+          "NCLlmCompleteResponse",
+          "NCLlmTransport"
+        ]
+      },
+      "src/orchestrator/observation.ts": {
+        "description": "Input for {@link composeNcObservation}. `maxBytes` defaults to",
+        "externalDependencies": [
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "IntentEvent"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./limits",
+            "imports": [
+              "NC_OBSERVATION_MAX_BYTES"
+            ]
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "composeNcObservation"
+        ],
+        "interfaces": [
+          "ComposeNcObservationInput",
+          "NcObservation"
+        ],
+        "functions": [
+          "composeNcObservation"
+        ]
+      }
+    },
+    "renderer": {
+      "src/renderer/error-boundary.tsx": {
+        "description": "Catches render throws from NC components so a single bad cast cannot",
+        "externalDependencies": [
+          {
+            "package": "react",
+            "imports": [
+              "default"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "workspaceDependencies": [],
+        "exports": [
+          "NCErrorBoundary"
+        ],
+        "classes": [
+          "NCErrorBoundary"
+        ]
+      },
+      "src/renderer/field-id-stability.ts": {
+        "description": "Map every input field id in `tree` to its component type. Only",
+        "externalDependencies": [
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "UITree"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "workspaceDependencies": [],
+        "exports": [
+          "collectFieldIdTypes",
+          "FieldIdTypeChangeError",
+          "detectFieldIdTypeChanges",
+          "commitFieldIdTypes"
+        ],
+        "classes": [
+          "FieldIdTypeChangeError"
+        ],
+        "functions": [
+          "collectFieldIdTypes",
+          "detectFieldIdTypeChanges",
+          "commitFieldIdTypes"
+        ]
+      },
+      "src/renderer/index.ts": {
+        "description": "SPDX-License-Identifier: Apache-2.0",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./input-components",
+            "imports": [
+              "NCContainer",
+              "NCText",
+              "NCTextField",
+              "NCCheckbox",
+              "NCSelect",
+              "NCButton",
+              "NCComponentProps"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./nc-renderer",
+            "imports": [
+              "NCRenderer",
+              "NCRendererProps"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./use-committed-tree",
+            "imports": [
+              "useCommittedTree",
+              "UseCommittedTreeOptions"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./error-boundary",
+            "imports": [
+              "NCErrorBoundary"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./field-id-stability",
+            "imports": [
+              "collectFieldIdTypes",
+              "detectFieldIdTypeChanges",
+              "FieldIdTypeChangeError"
+            ],
+            "reExport": true
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "NCContainer",
+          "NCText",
+          "NCTextField",
+          "NCCheckbox",
+          "NCSelect",
+          "NCButton",
+          "NCComponentProps",
+          "NCRenderer",
+          "NCRendererProps",
+          "useCommittedTree",
+          "UseCommittedTreeOptions",
+          "NCErrorBoundary",
+          "collectFieldIdTypes",
+          "detectFieldIdTypeChanges",
+          "FieldIdTypeChangeError"
+        ],
+        "reExported": [
+          "NCContainer",
+          "NCText",
+          "NCTextField",
+          "NCCheckbox",
+          "NCSelect",
+          "NCButton",
+          "NCComponentProps",
+          "NCRenderer",
+          "NCRendererProps",
+          "useCommittedTree",
+          "UseCommittedTreeOptions",
+          "NCErrorBoundary",
+          "collectFieldIdTypes",
+          "detectFieldIdTypeChanges",
+          "FieldIdTypeChangeError"
+        ]
+      },
+      "src/renderer/input-components.tsx": {
+        "description": "Props shape used by all NC-authored React components. Matches the",
+        "externalDependencies": [
+          {
+            "package": "react",
+            "imports": [
+              "default"
+            ]
+          },
+          {
+            "package": "@json-ui/react",
+            "imports": [
+              "useStagingField",
+              "useActions"
+            ]
+          },
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "UIElement"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "../catalog/limits",
+            "imports": [
+              "NC_STRING_MAX_LENGTH"
+            ]
+          },
+          {
+            "file": "./intent-flight-context",
+            "imports": [
+              "FocusFieldContext",
+              "IntentFlightContext"
+            ]
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "NCContainer",
+          "NCText",
+          "NCTextField",
+          "NCCheckbox",
+          "NCSelect",
+          "NCButton"
+        ],
+        "interfaces": [
+          "NCComponentProps"
+        ],
+        "constants": [
+          "NCContainer",
+          "NCText",
+          "NCTextField",
+          "NCCheckbox",
+          "NCSelect",
+          "NCButton"
+        ]
+      },
+      "src/renderer/intent-flight-context.ts": {
+        "description": "True while createNCRuntime is awaiting a handler. NCButton reads this",
+        "externalDependencies": [
+          {
+            "package": "react",
+            "imports": [
+              "default"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "workspaceDependencies": [],
+        "exports": [
+          "IntentFlightContext",
+          "FocusFieldContext"
+        ],
+        "constants": [
+          "IntentFlightContext",
+          "FocusFieldContext"
+        ]
+      },
+      "src/renderer/nc-renderer.tsx": {
+        "description": "The committed tree to render. Must come from a successful stream",
+        "externalDependencies": [
+          {
+            "package": "react",
+            "imports": [
+              "default"
+            ]
+          },
+          {
+            "package": "@json-ui/react",
+            "imports": [
+              "JSONUIProvider",
+              "Renderer",
+              "ComponentRegistry"
+            ]
+          },
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "collectFieldIds",
+              "IntentEvent",
+              "UITree"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./input-components",
+            "imports": [
+              "NCContainer",
+              "NCText",
+              "NCTextField",
+              "NCCheckbox",
+              "NCSelect",
+              "NCButton"
+            ]
+          },
+          {
+            "file": "../types",
+            "imports": [
+              "AnyCatalog",
+              "NCRuntime",
+              "NCCatalogVersion"
+            ],
+            "typeOnly": true
+          },
+          {
+            "file": "./error-boundary",
+            "imports": [
+              "NCErrorBoundary"
+            ]
+          },
+          {
+            "file": "./intent-flight-context",
+            "imports": [
+              "FocusFieldContext",
+              "IntentFlightContext"
+            ]
+          },
+          {
+            "file": "./field-id-stability",
+            "imports": [
+              "collectFieldIdTypes",
+              "commitFieldIdTypes",
+              "detectFieldIdTypeChanges"
+            ]
+          },
+          {
+            "file": "./read-only-store",
+            "imports": [
+              "readOnlyDurableStore"
+            ]
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "NCRenderer"
+        ],
+        "interfaces": [
+          "NCRendererProps"
+        ],
+        "functions": [
+          "NCRenderer"
+        ]
+      },
+      "src/renderer/read-only-store.ts": {
+        "description": "React DataProvider must not mutate durable state. Built-in NC inputs",
+        "externalDependencies": [
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "JSONValue",
+              "ObservableDataModel"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "workspaceDependencies": [],
+        "exports": [
+          "readOnlyDurableStore"
+        ],
+        "functions": [
+          "readOnlyDurableStore"
+        ]
+      },
+      "src/renderer/use-committed-tree.ts": {
+        "description": "Thin wrapper around @json-ui/react's useUIStream that pre-selects",
+        "externalDependencies": [
+          {
+            "package": "@json-ui/react",
+            "imports": [
+              "useUIStream",
+              "UseUIStreamOptions"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "workspaceDependencies": [],
+        "exports": [
+          "useCommittedTree"
+        ],
+        "functions": [
+          "useCommittedTree"
+        ]
+      }
+    },
+    "runtime": {
+      "src/runtime/context.ts": {
+        "description": "Options for createNCRuntime. The caller supplies an",
+        "externalDependencies": [
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "createStagingBuffer",
+              "IntentEvent",
+              "ObservableDataModel"
+            ]
+          },
+          {
+            "package": "@json-ui/headless",
+            "imports": [
+              "HeadlessRegistry"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "../observer",
+            "imports": [
+              "createNCObserver"
+            ]
+          },
+          {
+            "file": "../catalog/limits",
+            "imports": [
+              "NC_SNAPSHOT_MAX_BYTES",
+              "NC_STAGING_MAX_FIELDS"
+            ]
+          },
+          {
+            "file": "../types",
+            "imports": [
+              "asNCCatalogVersion"
+            ]
+          },
+          {
+            "file": "../types",
+            "imports": [
+              "AnyCatalog",
+              "NCCatalogVersion",
+              "NCIntentHandler",
+              "NCRuntime"
+            ],
+            "typeOnly": true
+          },
+          {
+            "file": "../catalog",
+            "imports": [
+              "NC_CATALOG_VERSION"
+            ]
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "createNCRuntime"
+        ],
+        "interfaces": [
+          "CreateNCRuntimeOptions"
+        ],
+        "functions": [
+          "createNCRuntime"
+        ]
+      },
+      "src/runtime/freeze.ts": {
+        "description": "SPDX-License-Identifier: Apache-2.0",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "workspaceDependencies": [],
+        "exports": [
+          "freezeDeep",
+          "dict"
+        ],
+        "functions": [
+          "freezeDeep",
+          "dict"
+        ]
+      },
+      "src/runtime/index.ts": {
+        "description": "SPDX-License-Identifier: Apache-2.0",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./context",
+            "imports": [
+              "createNCRuntime",
+              "CreateNCRuntimeOptions"
+            ],
+            "reExport": true
+          },
+          {
+            "file": "./freeze",
+            "imports": [
+              "freezeDeep",
+              "dict"
+            ],
+            "reExport": true
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "createNCRuntime",
+          "CreateNCRuntimeOptions",
+          "freezeDeep",
+          "dict"
+        ],
+        "reExported": [
+          "createNCRuntime",
+          "CreateNCRuntimeOptions",
+          "freezeDeep",
+          "dict"
+        ]
+      }
+    },
+    "types": {
+      "src/types/index.ts": {
+        "description": "SPDX-License-Identifier: Apache-2.0",
+        "externalDependencies": [],
+        "nodeDependencies": [],
+        "internalDependencies": [
+          {
+            "file": "./nc-types",
+            "imports": [
+              "NCIntentHandler",
+              "NCCatalogVersion",
+              "NCObserver",
+              "NCRuntime",
+              "AnyCatalog"
+            ],
+            "reExport": true,
+            "typeOnly": true
+          },
+          {
+            "file": "./nc-types",
+            "imports": [
+              "asNCCatalogVersion",
+              "isNCCatalogVersion"
+            ],
+            "reExport": true
+          }
+        ],
+        "workspaceDependencies": [],
+        "exports": [
+          "NCIntentHandler",
+          "NCCatalogVersion",
+          "NCObserver",
+          "NCRuntime",
+          "AnyCatalog",
+          "asNCCatalogVersion",
+          "isNCCatalogVersion"
+        ],
+        "reExported": [
+          "NCIntentHandler",
+          "NCCatalogVersion",
+          "NCObserver",
+          "NCRuntime",
+          "AnyCatalog",
+          "asNCCatalogVersion",
+          "isNCCatalogVersion"
+        ]
+      },
+      "src/types/nc-types.ts": {
+        "description": "Re-export of `@json-ui/core`'s `AnyCatalog`. Method variance makes a",
+        "externalDependencies": [
+          {
+            "package": "@json-ui/core",
+            "imports": [
+              "IntentEvent",
+              "StagingBuffer",
+              "ObservableDataModel",
+              "UITree",
+              "AnyCatalog"
+            ]
+          },
+          {
+            "package": "@json-ui/headless",
+            "imports": [
+              "NormalizedNode"
+            ]
+          }
+        ],
+        "nodeDependencies": [],
+        "internalDependencies": [],
+        "workspaceDependencies": [],
+        "exports": [
+          "AnyCatalog",
+          "isNCCatalogVersion",
+          "asNCCatalogVersion"
+        ],
+        "interfaces": [
+          "NCObserver",
+          "NCRuntime"
+        ],
+        "functions": [
+          "isNCCatalogVersion",
+          "asNCCatalogVersion"
+        ]
+      }
+    }
+  },
+  "cyclicComponents": {
+    "runtime": [],
+    "typeOnly": []
+  },
+  "layers": [
+    {
+      "name": "App",
+      "files": [
+        "src/app/index.ts",
+        "src/app/nc-app.tsx"
+      ]
+    },
+    {
+      "name": "Catalog",
+      "files": [
+        "src/catalog/durable-path.ts",
+        "src/catalog/field-id.ts",
+        "src/catalog/index.ts",
+        "src/catalog/limits.ts",
+        "src/catalog/nc-catalog.ts"
+      ]
+    },
+    {
+      "name": "Compute",
+      "files": [
+        "src/compute/index.ts",
+        "src/compute/limits.ts",
+        "src/compute/python-repl.ts",
+        "src/compute/types.ts",
+        "src/compute/worker-path.ts"
+      ]
+    },
+    {
+      "name": "Root",
+      "files": [
+        "src/core.ts",
+        "src/react.ts",
+        "src/test-setup.ts"
+      ]
+    },
+    {
+      "name": "Entry",
+      "files": [
+        "src/index.ts"
+      ]
+    },
+    {
+      "name": "Memory",
+      "files": [
+        "src/memory/index.ts",
+        "src/memory/projection.ts"
+      ]
+    },
+    {
+      "name": "Observer",
+      "files": [
+        "src/observer/index.ts",
+        "src/observer/nc-headless-components.ts",
+        "src/observer/nc-observer.ts"
+      ]
+    },
+    {
+      "name": "Orchestrator",
+      "files": [
+        "src/orchestrator/anthropic-transport.ts",
+        "src/orchestrator/handle-intent.ts",
+        "src/orchestrator/index.ts",
+        "src/orchestrator/limits.ts",
+        "src/orchestrator/llm-handler.ts",
+        "src/orchestrator/llm-transport.ts",
+        "src/orchestrator/observation.ts"
+      ]
+    },
+    {
+      "name": "Renderer",
+      "files": [
+        "src/renderer/error-boundary.tsx",
+        "src/renderer/field-id-stability.ts",
+        "src/renderer/index.ts",
+        "src/renderer/input-components.tsx",
+        "src/renderer/intent-flight-context.ts",
+        "src/renderer/nc-renderer.tsx",
+        "src/renderer/read-only-store.ts",
+        "src/renderer/use-committed-tree.ts"
+      ]
+    },
+    {
+      "name": "Runtime",
+      "files": [
+        "src/runtime/context.ts",
+        "src/runtime/freeze.ts",
+        "src/runtime/index.ts"
+      ]
+    },
+    {
+      "name": "Types",
+      "files": [
+        "src/types/index.ts",
+        "src/types/nc-types.ts"
+      ]
+    }
+  ]
+}

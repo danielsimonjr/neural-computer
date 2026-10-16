@@ -143,10 +143,10 @@ Access discipline: the LLM orchestrator sees exactly durable state plus intent p
 | Tool files            | 1                                    | `tools/`                  | `file-inventory.json` (area `tools`)                                  |
 | Config files          | 2                                    | repo-wide                 | `file-inventory.json` (area `config`)                                 |
 | Lines of code         | 9694                                 | repo-wide                 | `dependency-graph.json` (`totalLinesOfCode`)                          |
-| Exports               | 361                                  | repo-wide, tests included | `dependency-graph.json` (`totalExports`)                              |
-| Catalog version       | `nc-starter-0.3`                     | —                         | a direct read of `src/catalog`, not a `repo_map` metric               |
-| Named state surfaces  | 7 (compute is a tool, not a surface) | —                         | the spec, not a `repo_map` metric                                     |
-| Spec invariants       | 13 UI-runtime + compute rules        | —                         | `INVARIANTS.md`, not a `repo_map` metric                              |
+| Exports               | 365                                  | repo-wide, tests included | `dependency-graph.json` (`totalExports`)                              |
+| Catalog version       | `nc-starter-0.3`                     | —                         | a direct read of `src/catalog`, not a `repo-tools` metric             |
+| Named state surfaces  | 7 (compute is a tool, not a surface) | —                         | the spec, not a `repo-tools` metric                                   |
+| Spec invariants       | 13 UI-runtime + compute rules        | —                         | `INVARIANTS.md`, not a `repo-tools` metric                            |
 | Circular dependencies | 0                                    | runtime imports           | `dependency-graph.json` (`runtimeCircularDeps`)                       |
 
 The area counts and the test-file count use different rules, so read the
@@ -203,19 +203,19 @@ Node / orchestrator processes should import `neural-computer/core` so they do no
 
 ## Verification
 
-Generated 2026-09-15 by `repo_map.py map`.
-Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
+Generated 2026-10-16 by `repo-tools map`.
+Regenerate: `repo-tools map <repo> --out=<dir>` · Check: `repo-tools check <repo> --docs=docs/architecture`
 
 | Claim               | Value | Source                 |
 | ------------------- | ----- | ---------------------- |
 | totalFiles          | 66    | file-inventory.json    |
 | totalSourceFiles    | 66    | dependency-graph.json  |
 | totalLinesOfCode    | 9694  | dependency-graph.json  |
-| totalExports        | 361   | dependency-graph.json  |
+| totalExports        | 365   | dependency-graph.json  |
 | totalModules        | 4     | dependency-graph.json  |
 | runtimeCircularDeps | 0     | dependency-graph.json  |
 | unusedExportCount   | 3     | unused-analysis.json   |
-| noImporterFileCount | 6     | unused-analysis.json   |
+| noImporterFileCount | 1     | unused-analysis.json   |
 | duplicateCount      | 0     | duplicate-symbols.json |
 
 A file with no importer is not dead code by that fact alone. A static parser
