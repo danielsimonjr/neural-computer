@@ -268,15 +268,15 @@ Same signature as the stub. Requires `runtime`, `catalog`, `onTreeCommit`, and a
 
 ## Verification
 
-Generated 2026-09-15 by `repo_map.py map`.
-Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
+Generated 2026-10-16 by `repo-tools map`.
+Regenerate: `repo-tools map <repo> --out=<dir>` · Check: `repo-tools check <repo> --docs=docs/architecture`
 
 | Claim               | Value | Source                |
 | ------------------- | ----- | --------------------- |
 | totalFiles          | 66    | file-inventory.json   |
 | totalSourceFiles    | 66    | dependency-graph.json |
-| totalExports        | 361   | dependency-graph.json |
+| totalExports        | 365   | dependency-graph.json |
 | totalModules        | 4     | dependency-graph.json |
 | runtimeCircularDeps | 0     | dependency-graph.json |
 
-`totalExports` counts every export in the repository, tests included. It is not the size of the public surface. The public surface is the three entry points that this document lists, and a direct read of `src/index.ts`, `src/core.ts` and `src/react.ts` confirms them. That is a hand check, not a `repo_map` metric.
+`totalExports` counts every export in the repository, tests included. It is not the size of the public surface. The public surface is the three entry points that this document lists, and a direct read of `src/index.ts`, `src/core.ts` and `src/react.ts` confirms them. That is a hand check, not a `repo-tools` metric.

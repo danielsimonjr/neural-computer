@@ -165,7 +165,7 @@ These belong to `src/compute/` and do not extend the UI-runtime invariant list. 
 | 13  | Observer failure best-effort / detectable        | Covered | `nc-observer.test.ts`                                                          |
 
 The suite holds 22 test files under `src/**/*.test.*` and 147 test cases.
-Both come from a vitest run, not from a `repo_map` metric: `repo_map` counts
+Both come from a vitest run, not from a `repo-tools` metric: `repo-tools` counts
 files, never test cases. Compute tests (`python-repl.test.ts`,
 `isolation.test.ts`) are part of that total and cover the REPL rules above.
 
@@ -173,8 +173,8 @@ files, never test cases. Compute tests (`python-repl.test.ts`,
 
 ## Verification
 
-Generated 2026-09-15 by `repo_map.py map`.
-Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
+Generated 2026-10-16 by `repo-tools map`.
+Regenerate: `repo-tools map <repo> --out=<dir>` · Check: `repo-tools check <repo> --docs=docs/architecture`
 
 | Claim               | Value | Source                |
 | ------------------- | ----- | --------------------- |

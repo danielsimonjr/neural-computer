@@ -25,15 +25,15 @@ Key properties: every tree is validated against a Zod-typed catalog before JSON-
 
 ### Key Statistics
 
-| Metric                | Value                                         | Scope             | Source                                                  |
-| --------------------- | --------------------------------------------- | ----------------- | ------------------------------------------------------- |
-| Files, whole repo     | 66                                            | repo-wide         | `file-inventory.json` (`totalFiles`)                    |
-| Test files            | 22                                            | `src/**/*.test.*` | `git ls-files`; vitest runs the same 22                 |
-| Modules               | 4                                             | repo-wide         | `dependency-graph.json` (`totalModules`)                |
-| Catalog version       | `nc-starter-0.3`                              | —                 | a direct read of `src/catalog`, not a `repo_map` metric |
-| Named state surfaces  | 7 (compute is a tool, not a surface)          | —                 | the spec, not a `repo_map` metric                       |
-| Spec invariants       | 13 UI-runtime, all tested, plus compute rules | —                 | `INVARIANTS.md`, not a `repo_map` metric                |
-| Circular dependencies | 0                                             | runtime imports   | `dependency-graph.json` (`runtimeCircularDeps`)         |
+| Metric                | Value                                         | Scope             | Source                                                    |
+| --------------------- | --------------------------------------------- | ----------------- | --------------------------------------------------------- |
+| Files, whole repo     | 66                                            | repo-wide         | `file-inventory.json` (`totalFiles`)                      |
+| Test files            | 22                                            | `src/**/*.test.*` | `git ls-files`; vitest runs the same 22                   |
+| Modules               | 4                                             | repo-wide         | `dependency-graph.json` (`totalModules`)                  |
+| Catalog version       | `nc-starter-0.3`                              | —                 | a direct read of `src/catalog`, not a `repo-tools` metric |
+| Named state surfaces  | 7 (compute is a tool, not a surface)          | —                 | the spec, not a `repo-tools` metric                       |
+| Spec invariants       | 13 UI-runtime, all tested, plus compute rules | —                 | `INVARIANTS.md`, not a `repo-tools` metric                |
+| Circular dependencies | 0                                             | runtime imports   | `dependency-graph.json` (`runtimeCircularDeps`)           |
 
 `OVERVIEW.md` gives the per-area breakdown and explains why the area count for
 tests (17) is smaller than the test-file count (22).
@@ -253,8 +253,8 @@ Still deferred: catalog migration from `nc-starter-0.1`, persistent staging, a m
 
 ## Verification
 
-Generated 2026-09-15 by `repo_map.py map`.
-Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
+Generated 2026-10-16 by `repo-tools map`.
+Regenerate: `repo-tools map <repo> --out=<dir>` · Check: `repo-tools check <repo> --docs=docs/architecture`
 
 | Claim                | Value | Source                |
 | -------------------- | ----- | --------------------- |

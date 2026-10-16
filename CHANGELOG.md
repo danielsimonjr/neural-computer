@@ -8,6 +8,23 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Changed
+
+- **The architecture documents agree with repo-tools 2.2.3.** `repo-tools check . --docs=docs/architecture` failed 4
+  claims on the unmodified tree with 2.2.2 and 9 claims with 2.2.3. Every claim is repaired. `repo-tools map`
+  regenerates the generated reports. It also adds five reports that the canonical set holds and the repository did not:
+  `dependency-layers.json`, `duplicate-symbols.json`, `file-inventory.json`, `package-export-surfaces.json` and
+  `unused-analysis.json`.
+  `.prettierignore` lists `duplicate-symbols.md`, a generated report, as it lists the other generated reports.
+  The `.tsx` files now read with the TSX grammar, so `totalExports` is 365 (it was 361) and `totalSymbols` is 108 (it was
+  104).
+
+  The old figures for orphaned files (6) and test files (17) came from the earlier Python tool. They equal the new
+  figures (1 and 22) plus the five `.test.tsx` files, which the new tool files as tests. The one orphan is
+  `src/test-setup.ts`, which `vitest.config.ts` loads in `setupFiles`. `FILE_INVENTORY.md` states the new counts, a
+  line total for each area, and no longer needs a scope note. The documents name `repo-tools` and no longer the
+  removed Python tool. The drift gate exits 0 (44 claims in 7 documents).
+
 ### Fixed
 
 - **Removed the dead root `bun` Dependabot entry.** No dependency-update ecosystem works on a

@@ -1,11 +1,21 @@
 {
   "metadata": {
-    "generatedAt": "2026-09-15T23:11:30.851Z",
     "totalSourceFiles": 41,
     "totalTestFiles": 22,
     "testedCount": 33,
     "untestedCount": 8,
-    "coveragePercent": "80.5"
+    "coveragePercent": "80.5",
+    "effectiveCoverage": {
+      "policyLoaded": false,
+      "activeFiles": 41,
+      "testedActive": 33,
+      "activeUntested": 8,
+      "excludedTotal": 0,
+      "percent": "80.5",
+      "breakdown": {
+        "active_untested": 8
+      }
+    }
   },
   "untestedFiles": [
     "src/app/index.ts",
@@ -367,5 +377,39 @@
     "src/types/nc-types.test.ts": [
       "src/types/nc-types.ts"
     ]
-  }
+  },
+  "classifiedUntested": [
+    {
+      "file": "src/app/index.ts",
+      "category": null
+    },
+    {
+      "file": "src/core.ts",
+      "category": null
+    },
+    {
+      "file": "src/index.ts",
+      "category": null
+    },
+    {
+      "file": "src/memory/index.ts",
+      "category": null
+    },
+    {
+      "file": "src/observer/index.ts",
+      "category": null
+    },
+    {
+      "file": "src/react.ts",
+      "category": null
+    },
+    {
+      "file": "src/renderer/intent-flight-context.ts",
+      "category": null
+    },
+    {
+      "file": "src/test-setup.ts",
+      "category": null
+    }
+  ]
 }

@@ -1,0 +1,490 @@
+{
+  "totalFiles": 66,
+  "byDisposition": {
+    "reachable": 37,
+    "build-entry": 3,
+    "test-only": 0,
+    "orphan": 1,
+    "test": 22,
+    "tool": 1,
+    "config": 2,
+    "bench": 0,
+    "example": 0
+  },
+  "byArea": {
+    "src": 41,
+    "tests": 22,
+    "tools": 1,
+    "config": 2
+  },
+  "byPackage": {
+    "neural-computer": 63,
+    "(root)": 3
+  },
+  "files": [
+    {
+      "file": "src/app/index.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 3
+    },
+    {
+      "file": "src/app/nc-app.test.tsx",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 226
+    },
+    {
+      "file": "src/app/nc-app.tsx",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 96
+    },
+    {
+      "file": "src/catalog/durable-path.test.ts",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 19
+    },
+    {
+      "file": "src/catalog/durable-path.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 24
+    },
+    {
+      "file": "src/catalog/field-id.test.ts",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 31
+    },
+    {
+      "file": "src/catalog/field-id.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 26
+    },
+    {
+      "file": "src/catalog/index.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 24
+    },
+    {
+      "file": "src/catalog/limits.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 35
+    },
+    {
+      "file": "src/catalog/nc-catalog.test.ts",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 160
+    },
+    {
+      "file": "src/catalog/nc-catalog.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 151
+    },
+    {
+      "file": "src/compute/index.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 24
+    },
+    {
+      "file": "src/compute/isolation.test.ts",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 50
+    },
+    {
+      "file": "src/compute/limits.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 27
+    },
+    {
+      "file": "src/compute/python-repl.test.ts",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 248
+    },
+    {
+      "file": "src/compute/python-repl.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 623
+    },
+    {
+      "file": "src/compute/types.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 72
+    },
+    {
+      "file": "src/compute/worker-path.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 25
+    },
+    {
+      "file": "src/core.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "build-entry",
+      "loc": 90
+    },
+    {
+      "file": "src/index.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "build-entry",
+      "loc": 111
+    },
+    {
+      "file": "src/integration/path-c.test.tsx",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 562
+    },
+    {
+      "file": "src/memory/index.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 8
+    },
+    {
+      "file": "src/memory/projection.test.ts",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 93
+    },
+    {
+      "file": "src/memory/projection.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 106
+    },
+    {
+      "file": "src/observer/index.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 5
+    },
+    {
+      "file": "src/observer/nc-headless-components.test.ts",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 135
+    },
+    {
+      "file": "src/observer/nc-headless-components.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 138
+    },
+    {
+      "file": "src/observer/nc-observer.test.ts",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 193
+    },
+    {
+      "file": "src/observer/nc-observer.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 134
+    },
+    {
+      "file": "src/orchestrator/anthropic-transport.test.ts",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 48
+    },
+    {
+      "file": "src/orchestrator/anthropic-transport.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 146
+    },
+    {
+      "file": "src/orchestrator/buffer-isolation.test.ts",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 70
+    },
+    {
+      "file": "src/orchestrator/handle-intent.test.ts",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 144
+    },
+    {
+      "file": "src/orchestrator/handle-intent.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 75
+    },
+    {
+      "file": "src/orchestrator/index.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 46
+    },
+    {
+      "file": "src/orchestrator/limits.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 18
+    },
+    {
+      "file": "src/orchestrator/llm-handler.test.ts",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 511
+    },
+    {
+      "file": "src/orchestrator/llm-handler.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 465
+    },
+    {
+      "file": "src/orchestrator/llm-transport.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 95
+    },
+    {
+      "file": "src/orchestrator/observation.test.ts",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 85
+    },
+    {
+      "file": "src/orchestrator/observation.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 99
+    },
+    {
+      "file": "src/react.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "build-entry",
+      "loc": 20
+    },
+    {
+      "file": "src/renderer/error-boundary.tsx",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 45
+    },
+    {
+      "file": "src/renderer/field-id-stability.test.ts",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 72
+    },
+    {
+      "file": "src/renderer/field-id-stability.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 67
+    },
+    {
+      "file": "src/renderer/index.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 25
+    },
+    {
+      "file": "src/renderer/input-components.test.tsx",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 214
+    },
+    {
+      "file": "src/renderer/input-components.tsx",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 230
+    },
+    {
+      "file": "src/renderer/intent-flight-context.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 15
+    },
+    {
+      "file": "src/renderer/nc-renderer.test.tsx",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 671
+    },
+    {
+      "file": "src/renderer/nc-renderer.tsx",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 251
+    },
+    {
+      "file": "src/renderer/read-only-store.test.ts",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 16
+    },
+    {
+      "file": "src/renderer/read-only-store.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 34
+    },
+    {
+      "file": "src/renderer/use-committed-tree.test.tsx",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 69
+    },
+    {
+      "file": "src/renderer/use-committed-tree.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 28
+    },
+    {
+      "file": "src/runtime/context.test.ts",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 347
+    },
+    {
+      "file": "src/runtime/context.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 211
+    },
+    {
+      "file": "src/runtime/freeze.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 21
+    },
+    {
+      "file": "src/runtime/index.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 4
+    },
+    {
+      "file": "src/test-setup.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "orphan",
+      "loc": 8
+    },
+    {
+      "file": "src/types/index.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 11
+    },
+    {
+      "file": "src/types/nc-types.test.ts",
+      "package": "neural-computer",
+      "area": "tests",
+      "disposition": "test",
+      "loc": 61
+    },
+    {
+      "file": "src/types/nc-types.ts",
+      "package": "neural-computer",
+      "area": "src",
+      "disposition": "reachable",
+      "loc": 189
+    },
+    {
+      "file": "tools/create-dependency-graph/create-dependency-graph.ts",
+      "package": "(root)",
+      "area": "tools",
+      "disposition": "tool",
+      "loc": 1778
+    },
+    {
+      "file": "tsup.config.ts",
+      "package": "(root)",
+      "area": "config",
+      "disposition": "config",
+      "loc": 40
+    },
+    {
+      "file": "vitest.config.ts",
+      "package": "(root)",
+      "area": "config",
+      "disposition": "config",
+      "loc": 26
+    }
+  ],
+  "skippedLinks": [],
+  "warnings": []
+}

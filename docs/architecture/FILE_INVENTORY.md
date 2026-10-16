@@ -8,34 +8,18 @@ file for". `COMPONENTS.md` describes what each module does.
 
 ## Per-area counts
 
-| Area      | Files  | Lines of code | What it holds                                                     |
-| --------- | ------ | ------------- | ----------------------------------------------------------------- |
-| `src`     | 46     | —             | The runtime, plus the five `.tsx` test files (see the scope note) |
-| `tests`   | 17     | —             | The `.test.ts` files                                              |
-| `tools`   | 1      | —             | `tools/create-dependency-graph/create-dependency-graph.ts`        |
-| `config`  | 2      | —             | Build and test configuration                                      |
-| **Total** | **66** | **9694**      | —                                                                 |
+| Area      | Files  | Lines of code | What it holds                                              |
+| --------- | ------ | ------------- | ---------------------------------------------------------- |
+| `src`     | 41     | 3825          | The runtime, without test files                            |
+| `tests`   | 22     | 4025          | The `.test.ts` and `.test.tsx` files                       |
+| `tools`   | 1      | 1778          | `tools/create-dependency-graph/create-dependency-graph.ts` |
+| `config`  | 2      | 66            | Build and test configuration                               |
+| **Total** | **66** | **9694**      | —                                                          |
 
-Source: `file-inventory.json` (`byArea`) and `dependency-graph.json`
-(`totalLinesOfCode`). The line count is repo-wide; `repo_map` does not split
-it per area, so this table gives no per-area line figure rather than an
-estimate.
+Source: `file-inventory.json` (`byArea`, and the `loc` of each file). The line total is the same figure
+as `totalLinesOfCode` in `dependency-graph.json`.
 
-### The scope note that makes these numbers agree
-
-`file-inventory.json` files a `.tsx` test under the `src` area, not under
-`tests`. Area `tests` therefore counts only `.test.ts` and reads 17, while
-the tree holds 22 test files. The five `.tsx` test files are the difference:
-
-- `src/app/nc-app.test.tsx`
-- `src/integration/path-c.test.tsx`
-- `src/renderer/input-components.test.tsx`
-- `src/renderer/nc-renderer.test.tsx`
-- `src/renderer/use-committed-tree.test.tsx`
-
-Read either way, the tree sums to 66 files: 41 non-test source + 22 test +
-1 tool + 2 config. Give the scope whenever you quote one of these counts. A
-count of 17 and a count of 22 are both correct and describe different sets.
+The tree has 41 source files, 22 test files, 1 tool file and 2 configuration files. Together they make 66 files.
 
 ---
 
@@ -45,8 +29,8 @@ count of 17 and a count of 22 are both correct and describe different sets.
 | ------------- | ----- | ------------------------------------------------------------- |
 | `reachable`   | 37    | An entry root reaches the file through imports                |
 | `build-entry` | 3     | An entry point: `src/index.ts`, `src/core.ts`, `src/react.ts` |
-| `orphan`      | 6     | No importer found by static analysis                          |
-| `test`        | 17    | A `.test.ts` file                                             |
+| `orphan`      | 1     | No importer found by static analysis                          |
+| `test`        | 22    | A `.test.ts` or `.test.tsx` file                              |
 | `tool`        | 1     | Developer tooling, not shipped                                |
 | `config`      | 2     | Build and test configuration                                  |
 | `test-only`   | 0     | Reached only from a test                                      |
@@ -57,8 +41,9 @@ Source: `file-inventory.json` (`byDisposition`).
 
 ## A disposition count is not a list of files to delete
 
-Six files carry the `orphan` disposition and `noImporterFileCount` is 6. That
-is a static-analysis result, and it is not a deletion list.
+One file carries the `orphan` disposition and `noImporterFileCount` is 1. That
+is a static-analysis result, and it is not a deletion list. The file is
+`src/test-setup.ts`. `vitest.config.ts` loads it in `setupFiles`, and no import reaches it.
 
 - A static parser cannot see a dynamic `import()`, so a file that only such an
   import reaches looks orphaned.
@@ -82,8 +67,8 @@ caveats. Triage each entry against the source before acting on it.
 
 ## Verification
 
-Generated 2026-09-15 by `repo_map.py map`.
-Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py check . --docs docs/architecture`
+Generated 2026-10-16 by `repo-tools map`.
+Regenerate: `repo-tools map <repo> --out=<dir>` · Check: `repo-tools check <repo> --docs=docs/architecture`
 
 | Claim                | Value | Source                |
 | -------------------- | ----- | --------------------- |
@@ -93,10 +78,10 @@ Regenerate: `python repo_map.py map . --out <dir>` · Check: `python repo_map.py
 | totalLinesOfCode     | 9694  | dependency-graph.json |
 | entryRoots           | 3     | dependency-graph.json |
 | reachableFiles       | 40    | dependency-graph.json |
-| orphanedFiles        | 6     | dependency-graph.json |
-| dormantFiles         | 6     | dependency-graph.json |
+| orphanedFiles        | 1     | dependency-graph.json |
+| dormantFiles         | 1     | dependency-graph.json |
 | testOnlyFiles        | 0     | dependency-graph.json |
-| noImporterFileCount  | 6     | unused-analysis.json  |
+| noImporterFileCount  | 1     | unused-analysis.json  |
 
 `reachableFiles` is 40 and the `reachable` disposition is 37. The two count
 different sets: the reachability figure includes the 3 entry roots, which the
