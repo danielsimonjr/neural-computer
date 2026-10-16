@@ -25,6 +25,10 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
   line total for each area, and no longer needs a scope note. The documents name `repo-tools` and no longer the
   removed Python tool. The drift gate exits 0 (44 claims in 7 documents).
 
+- **The dependency-graph generator comment names the right gate.** The comment in
+  `tools/create-dependency-graph/create-dependency-graph.ts` named the removed Python tool `repo_map.py`. It now names
+  `repo-tools check`. No behaviour changes.
+
 ### Fixed
 
 - **Removed the dead root `bun` Dependabot entry.** No dependency-update ecosystem works on a
