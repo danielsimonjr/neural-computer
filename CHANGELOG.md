@@ -8,6 +8,14 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Security
+
+- **The `brace-expansion` lockfile entry moves from 5.0.9 to 5.0.12.** `bun audit` reported three advisories against 5.0.9:
+  GHSA-6j4f-fj2g-mc7p and GHSA-qhr7-859c-m2p7 (both high) and GHSA-q2hr-2g5m-vwhr (moderate). All three are denial of service
+  through brace patterns. 5.0.12 is the latest 5.x release and no advisory covers it. The package is a transitive development
+  dependency (`minimatch` under `eslint`), so no runtime dependency changes. Measured on the lockfile alone in an empty
+  directory: 5 findings before, 2 after. The two that remain (`source-map-js` and `esbuild`) are not part of this change.
+
 ### Changed
 
 - **The architecture documents agree with repo-tools 2.2.3.** `repo-tools check . --docs=docs/architecture` failed 4
